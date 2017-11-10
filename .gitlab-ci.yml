@@ -1,6 +1,8 @@
 image: node:9.1.0
 services:
   - postgres:10.0
+cache:
+  untracked: true
 
 stages:
   - build
