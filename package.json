@@ -3,7 +3,7 @@
   "description": "2017 Junior Honours Project - Backend Group 4",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha -r ts-node/register test/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -16,5 +16,15 @@
     "honours",
     "project"
   ],
-  "author": "2017 Junior Honours Backend Group 4"
+  "author": "2017 Junior Honours Backend Group 4",
+  "devDependencies": {
+    "@types/chai": "^4.0.4",
+    "@types/mocha": "^2.2.44",
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1",
+    "ts-node": "^3.3.0"
+  },
+  "dependencies": {
+    "typescript": "^2.6.1"
+  }
 }

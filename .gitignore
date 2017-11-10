@@ -1,0 +1,5 @@
+# npm module storage
+node_modules/
+
+# Vim swap files
+*.sw*
