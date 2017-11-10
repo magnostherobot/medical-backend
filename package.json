@@ -1,0 +1,20 @@
+{
+  "name": "cs3099jhbe4",
+  "description": "2017 Junior Honours Project - Backend Group 4",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.cs.st-andrews.ac.uk/cs3099group-be-4/project-code.git"
+  },
+  "keywords": [
+    "backend",
+    "database",
+    "university",
+    "honours",
+    "project"
+  ],
+  "author": "2017 Junior Honours Backend Group 4"
+}
