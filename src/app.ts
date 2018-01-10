@@ -1,11 +1,21 @@
-import * as express from 'express'
+import * as express from 'express';
+import * as logger from 'morgan';
+import * as bodyParser from 'body-parser';
 
 class App {
   public express
 
   constructor () {
     this.express = express()
+    this.middleware()
     this.mountRoutes()
+  }
+
+  // Configure Express middleware.
+  private middleware(): void {
+    this.express.use(logger('combined'));
+    this.express.use(bodyParser.json());
+    this.express.use(bodyParser.urlencoded({ extended: false }));
   }
 
   private mountRoutes (): void {
