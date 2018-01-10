@@ -1,6 +1,6 @@
 README
 
 Instructions to run:
-$ npm run build
-$ node dist/index.js
+$ ./getmenode.sh
+$ ./runmenode.sh
 
