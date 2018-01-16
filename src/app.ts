@@ -1,6 +1,8 @@
 import * as express from 'express';
 import * as logger from 'morgan';
 import * as bodyParser from 'body-parser';
+import FileRouter from './FileRouter';
+
 
 class App {
   public express
@@ -18,14 +20,16 @@ class App {
     this.express.use(bodyParser.urlencoded({ extended: false }));
   }
 
+  // Configure API endpoints.
   private mountRoutes (): void {
-    const router = express.Router()
-    router.get('/', (req, res) => {
+    const defRouter = express.Router()
+    defRouter.get('/', (req, res) => {
       res.json({
-        message: 'Hello World!'
+        message: 'Welcome to the CS3099 BE4 server!'
       })
     })
-    this.express.use('/', router)
+    this.express.use('/', defRouter)
+    this.express.use('/cs3099group-be-4/files/directory', FileRouter)
   }
 }
 
