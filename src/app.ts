@@ -29,7 +29,7 @@ class App {
       })
     })
     this.express.use('/', defRouter)
-    this.express.use('/cs3099group-be-4/files/directory', FileRouter)
+    this.express.use('/cs3099group-be-4', FileRouter)
   }
 }
 
