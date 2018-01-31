@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+      	<!--Import Google Icon Font-->
+      	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">      
+    	<!-- Compiled and minified CSS -->
+  		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+
+		<!--Let browser know website is optimized for mobile-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+        <style>
+            #users, #projects_table, #create_proj {                
+                margin-bottom: 5em;
+            }
+        </style>
+    </head>
+
+    <body>
+		<div class="container">
+			<div class="row" id="users">
+				<h3>Login</h3>
+				<div class="input-field">
+					<input id="username" type="text">
+					<label for="username">Username</label>
+				</div>
+				<div class="input-field">
+					<input id="password" type="password">
+					<label for="password">Password</label>
+				</div>
+                <a class="waves-effect waves-light btn" id="login_btn">Login</a>
+			</div>
+            
+            <div class="row" id="projects">
+                <h3>Projects</h3>
+                <table class="bordered" id="projects_table">
+                    <thead><tr>
+                        <th>Name</th>
+                        <th>Users</th>
+                        <th>Metadata</th>
+                    </tr></thead>                    
+                </table>
+
+                <h5>Create Project</h5>
+                <div class="input-field">
+                    <input id="project_name" type="text" />
+                    <label for="project_name">Name</label>
+                </div>
+                <div class="input-field">
+                    <select multiple>
+                        
+                    </select>
+                    <label>Select users</label>
+                </div>
+                <a class="waves-effect waves-light btn" id="create_proj">Create</a>
+
+                <h5>Upload File to Project</h5>
+                <div class="input-field">
+                    <select>
+
+                    </select>
+                    <label>Select Project</label>
+                </div>
+                <div class="file-field input-field">
+                    <div class="btn">
+                        <span>file</span>
+                        <input type="file" />
+                    </div>
+                    <div class="file-path-wrapper">
+                        <input class="file-path validate" type="text" />
+                    </div>
+                </div>
+                <a class="waves-effect waves-light btn" id="upload_file">Upload</a>
+            </div>
+		</div>		
+		<!--Import jQuery before materialize.js-->
+		<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+		<!-- Compiled and minified JavaScript -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+
+        <script>
+            //init select element
+            $(document).ready(function () {
+                $('select').material_select();
+            });
+
+            var serverUrl = "" //url needed
+
+            //login
+            $('#login_btn').click(function () {
+                var username = $('#username').val();
+                var password = $('#password').val();
+
+                $.post(serverUrl + "oauth/token", {
+                    "grant_type": "password",
+                    "username": username,
+                    "password": password
+                }, function (data, status, xhr) {
+                    if (xhr.status == 200) {
+                        console.log(data.token_type);
+                        console.log(data.access_token);
+                        console.log(data.refresh_token);
+                        console.log(data.expires_in);
+                    }
+                    else if (xhr.status == 400) {
+                        console.log(data.error);
+                        console.log(data.error_description);
+                    }
+                    
+                })
+                    .fail(function () {
+                        console.log("request failed");
+                    });
+            });
+
+            //show projects from database
+            function showProjects() {
+                $.get(serverUrl + "projects", function (data, status, xhr) {
+                    for (var i = 0; i < data.length; i++) {                       
+                        $('#projects_table > tbody').append("<tr><td>" + data[i].project_name + "<\td></tr>");
+                    }                    
+                });
+            }
+        </script>
+    </body>
+  </html>
