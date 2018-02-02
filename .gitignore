@@ -1,5 +1,8 @@
 # npm module storage
 node_modules/
 
+# compiled files
+dist/
+
 # Vim swap files
 *.sw*
