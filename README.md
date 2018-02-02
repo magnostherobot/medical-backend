@@ -10,13 +10,7 @@ $ npm install all
 $ ./runmenode.sh
 
 // alternative for home pc:
-$ npm install gulp -g
-$ gulp scripts
 $ npm start 
-
-### Notes on "gulp":
-
-npm module used to automate building and running but needs to be installed globally, so no use on host servers
 
 ## To test:
 
