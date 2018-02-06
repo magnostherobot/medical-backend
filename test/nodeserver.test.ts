@@ -22,5 +22,11 @@ describe('baseRoute', () => {
       expect(res.body.message).to.eql('Welcome to the CS3099 BE4 server!');
     });
   });
+  it('should have an important prop', () => {
+    return chai.request(app).get('/')
+    .then(res => {
+      expect(res.body.important).to.eql('Endpoints start from /cs3099group-be-4/');
+    });
+  });
 
 });
