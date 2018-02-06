@@ -16,7 +16,6 @@ class App {
 
   // Configure Express middleware.
   private middleware(): void {
-    console.log(this.log_enabled);
     if(this.log_enabled) this.express.use(logger('combined'));
     this.express.use(bodyParser.json());
     this.express.use(bodyParser.urlencoded({ extended: false }));

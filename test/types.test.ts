@@ -2,7 +2,7 @@ import * as mocha from 'mocha';
 import chai = require('chai');
 var should = chai.should();
 
-import { default as types } from './types';
+import { default as types } from '../src/matcher/types';
 
 describe('Type Checking:', () => {
   let x: string;
