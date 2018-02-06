@@ -1,6 +1,13 @@
 import { default as types } from './types';
 
-export function rough(template: Object, value: Object): boolean {
+type matchType<T = any>
+  = (boolean | ((T) => boolean));
+
+export function match(template: Object, value?: Object): matchType<Object> {
+  if (value === undefined) {
+    return match.bind(null, template);
+  }
+
   for (let k of Object.keys(template)) {
     if (!template[k](value[k])) {
       return false;
@@ -9,24 +16,34 @@ export function rough(template: Object, value: Object): boolean {
   return true;
 }
 
-export function match(template: Object): (Object) => boolean {
-  return rough.bind(null, template);
+export function exact(template: Object, value?: Object): matchType<Object> {
+  if (value === undefined) {
+    return exact.bind(null, template);
+  }
+
+  let k1 = Object.keys(template);
+  let k2 = Object.keys(value);
+
+  return match(template, value)
+      && k2.every((x) => k1.indexOf(x) < 0);
 }
 
-export function exact(template: Object): (Object) => boolean {
-  let m = match(template);
-  let revm = (value: Object) => rough(value, template);
-  return (v) => m(v) && revm(v);
+export function optional(template: Function, value?: any): matchType<any> {
+  if (value === undefined) {
+    return optional.bind(null, template);
+  }
+
+  return types.undefined(value)
+      || template(value);
 }
 
-export function optional(template: Function): (any) => boolean {
-  return (v) => types.undefined(v)
-             || template(v);
-}
+export function alternative(templates: any[], value?: any): matchType<any> {
+  if (value === undefined) {
+    return alternative.bind(null, templates);
+  }
 
-export function alternative(templates: any[]) {
   if (templates.length === 0) {
-    return () => false;
+    return false;
   } else {
     let t = templates.map((x) => {
       if (types.function(x)) {
@@ -37,11 +54,16 @@ export function alternative(templates: any[]) {
         return (v) => x === v;
       }
     });
-    return (v) => t.some((x) => x(v));
+    return t.some((x) => x(value));
   }
 }
 
-export function array(template: Object): (Array) => boolean {
-  let m = match(template);
-  return (v) => v.every(m);
+export function array(template: Object, values?: Array<Object>):
+matchType<Array<Object>> {
+  if (values === undefined) {
+    return array.bind(null, template);
+  }
+
+  let m = match(template) as ((Object) => boolean);
+  return values.every(m);
 }
