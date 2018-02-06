@@ -1,4 +1,5 @@
 import {Router, Request, Response, NextFunction} from 'express';
+var serverConfig = require('./serverConfig');
 const Files = null;//require('../data');
 
 
@@ -15,7 +16,7 @@ export class FileRouter {
 
   /*
    * Returns the supported Protocols
-   * 
+   *
    * The server's unwrapped response MUST match:
 
     exactly({
@@ -24,11 +25,15 @@ export class FileRouter {
     })
    */
   public getProtocols(req: Request, res: Response, next: NextFunction){
+      var returnValue = {};
+      returnValue['supported'] = ["BE50"];
+      returnValue['required'] = "BE01";
+      res.send(JSON.stringify(returnValue));
   }
 
   /*
    * Logging Endpoint for all components:
-   * 
+   *
    * with a request matching
 
     array({
@@ -38,13 +43,14 @@ export class FileRouter {
     })
    */
   public postLog(req: Request, res: Response, next: NextFunction){
+      res.status(501).send({error : "logging_not_enabled"});
   }
 
   /*
    * Clients authorised as a user with the admin privilege can access
-   * 
+   *
    * http://backend.endpoint/log?before=<datetime>&after=<datetime>&level=<level>
-   * 
+   *
    * the server response should match
 
     array({
@@ -56,13 +62,14 @@ export class FileRouter {
     })
    */
   public getLog(req: Request, res: Response, next: NextFunction){
+      res.status(501).send({error : "logging_not_enabled"});
   }
 
    /*
    * Any authenticated client can access
-   * 
+   *
    * http://backend.endpoint/properties
-   * 
+   *
    * the server SHOULD respond with a list of properties, with the unwrapped response matching
 
     array({
@@ -79,13 +86,14 @@ export class FileRouter {
     })
    */
   public getProperties(req: Request, res: Response, next: NextFunction){
+      res.status(200).send(serverConfig.default);
   }
 
   /*
    * To update properties the client POSTs to
-   * 
+   *
    * http://backend.endpoint/properties?action=update
-   * 
+   *
    * with body
 
       array({
@@ -93,12 +101,41 @@ export class FileRouter {
           "value": alternative([string, integer, boolean])
       })
    */
-  public postProperties(req: Request, res: Response, next: NextFunction){
-  }
+   public postProperties(req: Request, res: Response, next: NextFunction){
+        var success = true;
+
+        //For each property to update
+        for (var prop of req.body) {
+
+            //Check that the property has and id and a value
+            if (!prop.hasOwnProperty("id") || !prop.hasOwnProperty("value")) {
+                res.status(400).send({error : "invalid_request", error_description : "A supplied property is missing an id or value"});
+                success = false;
+                break;
+            }
+
+            //Find out if the property exists in the config and if so, at which index
+            var index = serverConfig.propertyExists(prop.id);
+
+            //check some of the properties values to ensure that it can be updated
+            if (index == -1 || serverConfig.default[index].read_only) {    /*TODO Implement an or, using Tom's type checker to ensure the value is "valid" based on the type of the property */
+                var description = index == -1 ? "Property not found" : "Property is Read_Only";
+                res.status(400).send({error : "invalid_property", error_data : prop.id, error_description : description});
+                success = false;
+                break;
+            }
+
+            //make the update to the property
+            serverConfig.default[index].value = prop.value;
+        }
+
+        //tell the client that everything was okay;
+        if (success) res.status(200).send();
+    }
 
   /*
    * Listing available privileges
-   * 
+   *
    * And the server's response, unwrapped, must match
 
     array({
@@ -108,12 +145,13 @@ export class FileRouter {
     })
    */
   public getUserPriveleges(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * Listing users
-   * 
-   * If the client is authorised as a user with the admin privilege 
+   *
+   * If the client is authorised as a user with the admin privilege
    * the server MUST respond with a list of users, with the unwrapped response matching
 
     array({
@@ -130,19 +168,22 @@ export class FileRouter {
     })
    */
   public getUsers(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
+
   }
 
   /*
    * expose additional configuration options for individual users
-   * 
-   * 
+   *
+   *
    */
   public getUserProperties(req: Request, res: Response, next: NextFunction, user?: String){
+      res.status(500).send();
   }
 
   /*
    * Listing a particular User
-   * 
+   *
    * If the client is authorised as a user with the admin privilege the server MUST respond with details of the particular user if they exist (unwrapped response):
 
     {
@@ -159,18 +200,20 @@ export class FileRouter {
     }
    */
   public getUsername(req: Request, res: Response, next: NextFunction, user?: String){
+      res.status(500).send();
   }
 
   public getCurUser(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
     let curUser : String = "";
     this.getUsername(req, res, next, curUser);
   }
 
   /*
    * Updating the current user
-   * 
+   *
    * http://backend.endpoint/current_user?action=update
-   * 
+   *
    * with body matching
 
     {
@@ -182,17 +225,18 @@ export class FileRouter {
         "private_user_metadata": optional(metadata),
         "public_admin_metadata": not_present,
         "private_admin_metadata": not_present
-    } 
+    }
   */
   public postCurUser(req: Request, res: Response, next: NextFunction){
-    
+      res.status(500).send();
+
   }
 
   /*
    * Creating a User/updating a user
-   * 
+   *
    * http://backend.endpoint/users/<username>?action=create
-   * 
+   *
    * with body matching
 
     {
@@ -205,11 +249,12 @@ export class FileRouter {
     }
    */
   public postUsername(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * Listing available Roles
-   * 
+   *
    * The servers response, unwrapped, must match
 
     array({
@@ -219,11 +264,12 @@ export class FileRouter {
     })
    */
   public getProjectRoles(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * Listing Projects
-   * 
+   *
    * The server MUST respond with a list of projects, with the unwrapped response matching
 
     array({
@@ -238,11 +284,12 @@ export class FileRouter {
     })
    */
   public getProjects(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * Listing a specific Project
-   * 
+   *
    * The server MUST respond with details of the particular project if it exists (unwrapped response):
 
     {
@@ -257,13 +304,14 @@ export class FileRouter {
     }
    */
   public getProjectName(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * Creating a Project / updating a project / deleting / Project grants
-   * 
+   *
    * http://backend.endpoint/projects/<project_name>?action=create
-   * 
+   *
    * with body matching
 
     {
@@ -273,30 +321,34 @@ export class FileRouter {
     }
    */
   public postProjectName(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /*
    * additional configuration options for individual projects
    */
   public getProjectProperties(req: Request, res: Response, next: NextFunction){
+      res.status(500).send();
   }
 
   /**
    * GET a File.
    */
   public getFile_path(req: Request, res: Response, next: NextFunction) {
-    let fileID = req.params.file;
-
-    res.send("File");
+      res.status(500).send();
+    // let fileID = req.params.file;
+    //
+    // res.send("File");
   }
 
   /**
    * GET a File.
    */
   public getFile_id(req: Request, res: Response, next: NextFunction) {
-    let fileID = req.params.file;
-
-    res.send("File");
+      res.status(500).send();
+    // let fileID = req.params.file;
+    //
+    // res.send("File");
   }
 
 
@@ -304,9 +356,10 @@ export class FileRouter {
    * Post a File. / delete / move / etc
    */
   public postFile_path(req: Request, res: Response, next: NextFunction) {
-    let fileID = req.params.file;
-
-    res.send("File");
+    // let fileID = req.params.file;
+    //
+    // res.send("File");
+    res.status(500).send();
   }
 
 
@@ -318,9 +371,10 @@ export class FileRouter {
     // General
     this.router.get ('/_supported_protocols_',  this.getProtocols);
     this.router.get ('/log',                    this.getLog);
-    this.router.post('/log',                    this.postLog);    
+    this.router.post('/log',                    this.postLog);
     this.router.get ('/properties',             this.getProperties);
     this.router.post('/properties',             this.postProperties);
+    // Users
     this.router.get ('/user_privileges',        this.getUserPriveleges);
     this.router.get ('/users',                  this.getUsers);
     this.router.get ('/users/:username',        this.getUsername);

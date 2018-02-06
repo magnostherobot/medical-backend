@@ -25,7 +25,8 @@ class App {
     const defRouter = express.Router()
     defRouter.get('/', (req, res) => {
       res.json({
-        message: 'Welcome to the CS3099 BE4 server!'
+        message: 'Welcome to the CS3099 BE4 server!',
+        important : 'Endpoints start from /cs3099group-be-4/'
       })
     })
     this.express.use('/', defRouter)
