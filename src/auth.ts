@@ -52,6 +52,11 @@ function checkErr(req, res, next) {
 	next();
 }
 
+//Checks if user is still authenticated otherwise redirects
+function ensureAuthenticated(req, res, next) {
+	if (req.isAuthenticated()) { return next(); }
+	res.redirect('/login');
+}
 
 
 //Configure local strategy to use with passport-js.
@@ -89,4 +94,6 @@ app.post('/login', checkErr, passport.authenticate('local', function(err, user) 
 	}
 }), genToken);
 
-app.get('/logout', )
+app.get('/logout', function(req, res) {
+	req.logout();
+});
