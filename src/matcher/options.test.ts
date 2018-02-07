@@ -75,13 +75,31 @@ describe('Object Matching:', () => {
       let matchee = {
         a: 432,
         b: {
-          ba: "barracus",
+          ba: "baracus",
           bb: new Function(),
         },
         c: true,
         x: false
       };
       options.match(template, matchee).should.be.true;
+    });
+    it('accepts literal matches', () => {
+      let template = {
+        a: "literal"
+      };
+      let matchee = {
+        a: "literal"
+      };
+      options.match(template, matchee).should.be.true;
+    });
+    it('rejects incorrect literal matches', () => {
+      let template = {
+        g: 99
+      };
+      let matchee = {
+        g: 80
+      };
+      options.match(template, matchee).should.be.false;
     });
   });
 });

@@ -9,9 +9,12 @@ export function match(template: Object, value?: Object) {
     let f;
     if (types.object(template[k])) {
       f = match(template[k]);
-    } else {
+    } else if (types.function(template[k])) {
       f = template[k];
+    } else {
+      f = (v) => v === template[k];
     }
+
     if (!f(value[k])) {
       return false;
     }
