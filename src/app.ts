@@ -6,7 +6,6 @@ import FileRouter from './FileRouter';
 
 class App {
   public express
-  public log_enabled : boolean;
 
   constructor () {
     this.express = express()
@@ -16,7 +15,7 @@ class App {
 
   // Configure Express middleware.
   private middleware(): void {
-    if(this.log_enabled) this.express.use(logger('combined'));
+    this.express.use(logger('combined'));
     this.express.use(bodyParser.json());
     this.express.use(bodyParser.urlencoded({ extended: false }));
   }

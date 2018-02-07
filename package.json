@@ -35,7 +35,6 @@
     "@types/node": "^6.0.46",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
-    "mocha-each": "^1.1.0",
     "morgan": "^1.9.0",
     "pg": "^7.4.1",
     "ts-node": "^3.3.0",
