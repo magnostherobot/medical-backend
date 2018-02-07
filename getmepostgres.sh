@@ -6,6 +6,15 @@ if [ -d "~/pg" ]; then
   exit 1;
 fi
 
+echo " ";
+echo " ";
+echo " ";
+echo "This installation process takes ~3:50 minutes to complete.";
+echo " ";
+echo " ";
+echo " ";
+sleep 3;
+
 echo "> Making postgres directory at ~/pg";
 mkdir ~/pg;
 currentDir=$(pwd);
@@ -16,30 +25,39 @@ cd ~/pg;
 echo "> Cloning Repo";
 git clone https://github.com/postgres/postgres.git;
 
-echo "> Checking out to version 10";
+echo "> Checking out to version 10.1";
 cd ./postgres;
-git reset --hard REL_10_0;
+git reset --hard REL_10_1;
 
 echo "> Configuring";
-sleep 2;
 ./configure --prefix=$HOME/pg/postgres/ --with-python PYTHON=/usr/bin/python2.7;
 
-
-read -p "Press [Enter] key to Build Postgres...";
 echo "> Building Postgres";
 make -j 5;
 
-read -p "Press [Enter] key to Install Postgres...";
 echo "> Installing Postgres";
 make install;
 
-echo "> Creating the Database";
+echo "> Initialise the Database";
 ~/pg/postgres/bin/initdb -D ~/pg/postgres/data/;
+echo " ";
+echo " ";
+echo " ";
+echo " ";
+echo "> Starting the postgres server";
+~/pg/postgres/bin/pg_ctl -D ~/pg/postgres/data/ -l POSTGRES_logfile start;
+echo "> Create the Database";
+~/pg/postgres/bin/createdb be4;
+echo "> Creating Admin user";
+~/pg/postgres/bin/psql -U ${USER} postgres -c "CREATE USER admin WITH PASSWORD 'eprprJacR0hBpmWvs5IDJZTnjRAY2gM3tSm0b1af';";
+echo "> Granting Admin Permissions";
+~/pg/postgres/bin/psql -U ${USER} postgres -c "ALTER DATABASE be4 OWNER TO admin;";
 
-echo "";
-echo "";
-echo "";
-echo "";
-echo "";
-echo "> Completed the installation of Postgres. Please use `./runmepostgres.sh` to run.";
+
+echo " ";
+echo " ";
+echo " ";
+echo " ";
+echo " ";
+echo "> Completed the installation of Postgres.";
 cd $currentDir;
