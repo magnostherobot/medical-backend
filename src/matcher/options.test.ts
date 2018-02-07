@@ -63,5 +63,25 @@ describe('Object Matching:', () => {
       };
       options.match(template, matchee).should.be.true;
     });
+    it('accepts nested objects that match', () => {
+      let template = {
+        a: types.number,
+        b: {
+          ba: types.string,
+          bb: types.function
+        },
+        c: types.boolean
+      };
+      let matchee = {
+        a: 432,
+        b: {
+          ba: "barracus",
+          bb: new Function(),
+        },
+        c: true,
+        x: false
+      };
+      options.match(template, matchee).should.be.true;
+    });
   });
 });

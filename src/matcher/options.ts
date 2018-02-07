@@ -6,7 +6,13 @@ export function match(template: Object, value?: Object) {
   }
 
   for (let k of Object.keys(template)) {
-    if (!template[k](value[k])) {
+    let f;
+    if (types.object(template[k])) {
+      f = match(template[k]);
+    } else {
+      f = template[k];
+    }
+    if (!f(value[k])) {
       return false;
     }
   }
