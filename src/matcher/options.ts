@@ -3,7 +3,7 @@ import { default as types } from './types';
 type matchType<T = any>
   = (boolean | ((T) => boolean));
 
-export function match(template: Object, value?: Object): matchType<Object> {
+export function match(template: Object, value?: Object) {
   if (value === undefined) {
     return match.bind(null, template);
   }
@@ -16,7 +16,7 @@ export function match(template: Object, value?: Object): matchType<Object> {
   return true;
 }
 
-export function exact(template: Object, value?: Object): matchType<Object> {
+export function exact(template: Object, value?: Object) {
   if (value === undefined) {
     return exact.bind(null, template);
   }
@@ -28,7 +28,7 @@ export function exact(template: Object, value?: Object): matchType<Object> {
       && k2.every((x) => k1.indexOf(x) < 0);
 }
 
-export function optional(template: Function, value?: any): matchType<any> {
+export function optional(template: Function, value?: any) {
   if (value === undefined) {
     return optional.bind(null, template);
   }
@@ -37,7 +37,7 @@ export function optional(template: Function, value?: any): matchType<any> {
       || template(value);
 }
 
-export function alternative(templates: any[], value?: any): matchType<any> {
+export function alternative(templates: any[], value?: any) {
   if (value === undefined) {
     return alternative.bind(null, templates);
   }
@@ -58,8 +58,7 @@ export function alternative(templates: any[], value?: any): matchType<any> {
   }
 }
 
-export function array(template: Object, values?: Array<Object>):
-matchType<Array<Object>> {
+export function array(template: Object, values?: Array<Object>) {
   if (values === undefined) {
     return array.bind(null, template);
   }

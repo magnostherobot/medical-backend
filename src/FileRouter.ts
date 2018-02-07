@@ -1,16 +1,13 @@
 import {Router, Request, Response, NextFunction} from 'express';
-var serverConfig = require('./serverConfig');
+import { default as serverConfig } from './serverConfig';
 const Files = null;//require('../data');
 
 
 export class FileRouter {
-  router: Router
-
   /**
    * Initialize the FileRouter
    */
-  constructor() {
-    this.router = Router();
+  constructor(public router: Router = Router()) {
     this.init();
   }
 
@@ -24,10 +21,11 @@ export class FileRouter {
         "required": array(string)
     })
    */
-  public getProtocols(req: Request, res: Response, next: NextFunction){
-      var returnValue = {};
-      returnValue['supported'] = ["BE50"];
-      returnValue['required'] = "BE01";
+  public getProtocols(req: Request, res: Response, _next?: NextFunction){
+      var returnValue = {
+        supported: "BE50",
+        required: "BE01"
+      };
       res.send(JSON.stringify(returnValue));
   }
 
@@ -42,7 +40,7 @@ export class FileRouter {
         "value": anything
     })
    */
-  public postLog(req: Request, res: Response, next: NextFunction){
+  public postLog(req: Request, res: Response, _next?: NextFunction){
       res.status(501).send({error : "logging_not_enabled"});
   }
 
@@ -61,7 +59,7 @@ export class FileRouter {
         "timestamp": string
     })
    */
-  public getLog(req: Request, res: Response, next: NextFunction){
+  public getLog(req: Request, res: Response, _next?: NextFunction){
       res.status(501).send({error : "logging_not_enabled"});
   }
 
@@ -85,8 +83,8 @@ export class FileRouter {
         "value": alternative([string, integer, boolean])
     })
    */
-  public getProperties(req: Request, res: Response, next: NextFunction){
-      res.status(200).send(serverConfig.default);
+  public getProperties(req: Request, res: Response, _next?: NextFunction){
+      res.status(200).send(serverConfig);
   }
 
   /*
@@ -101,7 +99,7 @@ export class FileRouter {
           "value": alternative([string, integer, boolean])
       })
    */
-   public postProperties(req: Request, res: Response, next: NextFunction){
+   public postProperties(req: Request, res: Response, _next?: NextFunction){
         var success = true;
 
         //For each property to update
@@ -115,10 +113,10 @@ export class FileRouter {
             }
 
             //Find out if the property exists in the config and if so, at which index
-            var index = serverConfig.propertyExists(prop.id);
+            var index = serverConfig.findIndex((p) => prop.id === p.id);
 
             //check some of the properties values to ensure that it can be updated
-            if (index == -1 || serverConfig.default[index].read_only) {    /*TODO Implement an or, using Tom's type checker to ensure the value is "valid" based on the type of the property */
+            if (index == -1 || serverConfig[index].read_only) {    /*TODO Implement an or, using Tom's type checker to ensure the value is "valid" based on the type of the property */
                 var description = index == -1 ? "Property not found" : "Property is Read_Only";
                 res.status(400).send({error : "invalid_property", error_data : prop.id, error_description : description});
                 success = false;
@@ -126,7 +124,7 @@ export class FileRouter {
             }
 
             //make the update to the property
-            serverConfig.default[index].value = prop.value;
+            serverConfig[index].value = prop.value;
         }
 
         //tell the client that everything was okay;
@@ -144,7 +142,7 @@ export class FileRouter {
         "internal": boolean
     })
    */
-  public getUserPriveleges(req: Request, res: Response, next: NextFunction){
+  public getUserPriveleges(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
@@ -167,7 +165,7 @@ export class FileRouter {
         "private_admin_metadata": metadata
     })
    */
-  public getUsers(req: Request, res: Response, next: NextFunction){
+  public getUsers(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
 
   }
@@ -177,7 +175,7 @@ export class FileRouter {
    *
    *
    */
-  public getUserProperties(req: Request, res: Response, next: NextFunction, user?: String){
+  public getUserProperties(req: Request, res: Response, _next?: NextFunction, user?: String){
       res.status(500).send();
   }
 
@@ -227,7 +225,7 @@ export class FileRouter {
         "private_admin_metadata": not_present
     }
   */
-  public postCurUser(req: Request, res: Response, next: NextFunction){
+  public postCurUser(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
 
   }
@@ -248,7 +246,7 @@ export class FileRouter {
         "private_admin_metadata": optional(metadata)
     }
    */
-  public postUsername(req: Request, res: Response, next: NextFunction){
+  public postUsername(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
@@ -263,7 +261,7 @@ export class FileRouter {
         "internal": boolean
     })
    */
-  public getProjectRoles(req: Request, res: Response, next: NextFunction){
+  public getProjectRoles(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
@@ -283,7 +281,7 @@ export class FileRouter {
         "admin_metadata": optional(metadata)
     })
    */
-  public getProjects(req: Request, res: Response, next: NextFunction){
+  public getProjects(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
@@ -303,7 +301,7 @@ export class FileRouter {
         "admin_metadata": optional(metadata)
     }
    */
-  public getProjectName(req: Request, res: Response, next: NextFunction){
+  public getProjectName(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
@@ -320,21 +318,21 @@ export class FileRouter {
         "admin_metadata": optional(metadata)
     }
    */
-  public postProjectName(req: Request, res: Response, next: NextFunction){
+  public postProjectName(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
   /*
    * additional configuration options for individual projects
    */
-  public getProjectProperties(req: Request, res: Response, next: NextFunction){
+  public getProjectProperties(req: Request, res: Response, _next?: NextFunction){
       res.status(500).send();
   }
 
   /**
    * GET a File.
    */
-  public getFile_path(req: Request, res: Response, next: NextFunction) {
+  public getFile_path(req: Request, res: Response, _next?: NextFunction) {
       res.status(500).send();
     // let fileID = req.params.file;
     //
@@ -344,7 +342,7 @@ export class FileRouter {
   /**
    * GET a File.
    */
-  public getFile_id(req: Request, res: Response, next: NextFunction) {
+  public getFile_id(req: Request, res: Response, _next?: NextFunction) {
       res.status(500).send();
     // let fileID = req.params.file;
     //
@@ -355,7 +353,7 @@ export class FileRouter {
   /**
    * Post a File. / delete / move / etc
    */
-  public postFile_path(req: Request, res: Response, next: NextFunction) {
+  public postFile_path(req: Request, res: Response, _next?: NextFunction) {
     // let fileID = req.params.file;
     //
     // res.send("File");

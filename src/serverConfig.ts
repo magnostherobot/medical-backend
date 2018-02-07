@@ -3,16 +3,13 @@ var serverConfig : Property[] = [];
 /* This is a class used to define the optional attribute of Property,
    if the property is user configurable*/
 class PropertyDisplay {
-    constructor(cat : string, grp : string, dn : string, desc : string) {
-      this.category = cat;
-      this.group = grp;
-      this.display_name = dn;
-      this.description = desc;
-    };
-    category : string;
-    group : string;
-    display_name : string;
-    description : string;
+    constructor(
+      public category: string,
+      public group: string,
+      public display_name: string,
+      public description: string
+    ) {
+    }
 };
 
 /* This is a class used to contain all of the protocol attributes of a Property
@@ -35,18 +32,4 @@ serverConfig.push({id : "Global_Cache_Limit", read_only : true, type : "integer"
 property_display = new PropertyDisplay("Caching", "BE4", "Caching Type", "This property defines the current caching style for this project.");
 serverConfig.push({id : "project_example", display : property_display, read_only : false, type : "integer", value : 1});
 
-function propertyExists (propKey : string): number {
-    var found = -1;
-    for (var prop in serverConfig) {
-        if (serverConfig[prop].id == propKey) {
-            found = parseInt(prop);
-            break;
-        }
-    }
-    return found;
-}
-
-module.exports = {
-    default : serverConfig,
-    propertyExists : propertyExists,
-}
+export default serverConfig;
