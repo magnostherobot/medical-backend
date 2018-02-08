@@ -14,7 +14,7 @@ describe('Object Matching:', () => {
       let matchee = {
         a: "yes"
       };
-      options.rough(template, matchee).should.be.true;
+      options.match(template, matchee).should.be.true;
     });
     it('accepts objects with superfluous properties', () => {
       let template = {
@@ -24,7 +24,7 @@ describe('Object Matching:', () => {
         a: 40,
         b: 20
       };
-      options.rough(template, matchee).should.be.true;
+      options.match(template, matchee).should.be.true;
     });
     it('rejects objects missing some properties', () => {
       let template = {
@@ -35,7 +35,7 @@ describe('Object Matching:', () => {
       let matchee = {
         b: 5
       };
-      options.rough(template, matchee).should.be.false;
+      options.match(template, matchee).should.be.false;
     });
     it('accepts objects that omit not_present properties', () => {
       let template = {
@@ -46,7 +46,7 @@ describe('Object Matching:', () => {
       let matchee = {
         a: new Function()
       };
-      options.rough(template, matchee).should.be.true;
+      options.match(template, matchee).should.be.true;
     });
   });
 });
