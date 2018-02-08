@@ -7,4 +7,4 @@ echo "> Starting Server";
 "$PGDIR/postgres/bin/pg_ctl" -D "$PGDIR/postgres/data/" -l POSTGRES_logfile start;
 
 echo "> Conecting as admin user: " + ${USER};
-~/pg/postgres/bin/psql -U ${USER} postgres;
+"$PGDIR/postgres/bin/psql" -U ${USER} postgres;
