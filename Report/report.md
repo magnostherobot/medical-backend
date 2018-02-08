@@ -6,7 +6,7 @@
 |trh     | Tom      | 150001937              |
 |har4    | Hafeez   | 15              |
 |jl247   | Josh     | 15              |
-|jw255   | Johannes | 15              |
+|jw255   | Johannes | 140013112              |
 
 
 
@@ -50,11 +50,16 @@ the entire finished product into versions.
 
 ### Design Choices:
 - Scrum
+Using the scrum approach as advised by the project specifications facilitated the planning and running of group meetings. As the year wide protocol continued to change throughout the development process, an agile working process addressed the complex problem of changing requirements through its iterative and incremental system. 
 
 - Database
+We chose to use Postgres for our database system, after considering the benefits and drawbacks of different databases compatible with NodeJS. Its greatest advantage is its object-relational data model, JSON support and scalability. 
+After discussions of the product backlog, we decided to divide data into the following tables:
+[tables and descriptions here]
+[some more explanation of the database structure]
 
 - Server
-
+For the implementation of the server, we chose a typescript-nodejs approach. NodeJS seemed an obvious approach, as all members of the team had previous experience and it is a scalable, and well-supported development framework that runs on both Unix and Windows infrastructures. It is easy to deploy and furthermore offers more speed and a nonblocking I/O API in comparison to Java or .Net servers. We then chose the TypeScript superset of JS as it provides typing, classes, interfaces and IDE support for developers which makes the language easier to use and more robust.
 
 
 
