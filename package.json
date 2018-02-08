@@ -37,6 +37,7 @@
     "@types/sequelize": "^4.27.5",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
+    "mocha-each": "^1.1.0",
     "morgan": "^1.9.0",
     "pg": "^7.4.1",
     "pg-hstore": "^2.3.2",

@@ -1,5 +1,8 @@
 import { default as types } from './types';
 
+type matchType<T = any>
+  = (boolean | ((T) => boolean));
+
 export function match(template: Object, value?: Object) {
   if (value === undefined) {
     return match.bind(null, template);
