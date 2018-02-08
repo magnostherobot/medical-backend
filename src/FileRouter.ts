@@ -1,11 +1,13 @@
 import {Router, Request, Response, NextFunction} from 'express';
 import {default as UserGroup} from './db/model/UserGroup';
 import {default as User} from './db/model/User';
+import { default as File } from './db/model/File';
 import Project from './db/model/Project';
+import ContributorGroup from './db/model/ContributorGroup';
 
 var serverConfig = require('./serverConfig');
 const Files = null;//require('../data');
-
+const BASE_FILE_STORAGE: string = __dirname + '/storage';
 
 export class FileRouter {
   router: Router
@@ -253,8 +255,7 @@ export class FileRouter {
     }
   */
   public postCurUser(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
-
+      res.json({todo: "need to implement meeeee"});
   }
 
   /*
@@ -274,7 +275,7 @@ export class FileRouter {
     }
    */
   public postUsername(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      res.json({todo: "need to implement meeeee"});
   }
 
   /*
@@ -289,7 +290,12 @@ export class FileRouter {
     })
    */
   public getProjectRoles(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      ContributorGroup.findAll()
+        .then((cgs: ContributorGroup[]) => {
+            res.json(cgs.map<any>(
+                (cg: ContributorGroup) => cg.getGroupFullInfo()
+            ));
+        });
   }
 
   /*
@@ -310,8 +316,8 @@ export class FileRouter {
    */
   public getProjects(req: Request, res: Response, next: NextFunction){
       Project.findAll()
-      .then((project) => {
-          res.json(project.map<any>(
+      .then((projects) => {
+          res.json(projects.map<any>(
               (p: Project) => p.getProjectFullInfo()
           ));
       });
@@ -356,45 +362,77 @@ export class FileRouter {
     }
    */
   public postProjectName(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      res.json({todo: "need to implement meeeee"});
   }
 
   /*
    * additional configuration options for individual projects
    */
   public getProjectProperties(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      res.status(500).send({error: "unsupported", error_description: "Projects on this server dont have additional configuration options."});
+  }
+
+  private async getChildFile(names: string[], parentUuid: string): Promise<File> {
+      //TODO: Check that this works lol :3
+      let child: File = await File.findOne({
+          where: {
+              parentFolderId: parentUuid,
+              name: names[0]
+          }
+      });
+      if (names.length === 1) {
+          return child;
+      } else {
+          names.splice(0, 1);
+          return await this.getChildFile(names, child.uuid);
+      }
   }
 
   /**
    * GET a File.
    */
-  public getFile_path(req: Request, res: Response, next: NextFunction) {
-      res.status(500).send();
-    // let fileID = req.params.file;
-    //
-    // res.send("File");
+  public async getFile_path(req: Request, res: Response, next: NextFunction) {
+      req.params.project_name
+      req.params.path
+
+      let project: Project = await Project.findOne({
+          where: {
+              name: req.params.project_name
+          }
+      });
+
+      let file: File = await this.getChildFile(
+          req.params.project_name, project.rootFolderId);
+
+      res.sendFile(`${BASE_FILE_STORAGE}/${req.params.project_name}/${file.uuid}`);
   }
 
   /**
    * GET a File.
    */
   public getFile_id(req: Request, res: Response, next: NextFunction) {
-      res.status(500).send();
-    // let fileID = req.params.file;
-    //
-    // res.send("File");
+
+      //TODO: implement correctness of project folder checking.
+      res.sendFile(`${BASE_FILE_STORAGE}/${req.params.project_name}/${req.params.id}`);
   }
+
+
+
+
+
+
+
+
+
+
+
 
 
   /**
    * Post a File. / delete / move / etc
    */
   public postFile_path(req: Request, res: Response, next: NextFunction) {
-    // let fileID = req.params.file;
-    //
-    // res.send("File");
-    res.status(500).send();
+      res.json({todo: "need to implement meeeee"});
   }
 
 

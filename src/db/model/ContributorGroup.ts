@@ -28,4 +28,24 @@ export default class ContributorGroup extends Model<ContributorGroup> {
 
   @Column
   canEditUserPermissions: boolean;
+
+  @Column
+  description: string;
+
+  @Column
+  isInternal: boolean;
+
+  getGroupFullInfo(): GroupFullInfo {
+      return {
+          role: this.name,
+          description: this.description,
+          internal: this.isInternal
+      };
+  }
 }
+
+type GroupFullInfo = {
+    role: string,
+    description: string,
+    internal: boolean
+};
