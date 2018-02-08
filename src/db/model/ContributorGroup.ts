@@ -1,12 +1,14 @@
-import * from 'sequelize-typescript';
+import {Table, Model, Column, AllowNull, HasMany} from 'sequelize-typescript';
 import { default as UserJoinsProject } from './UserJoinsProject';
 
+@Table
 export default class ContributorGroup extends Model<ContributorGroup> {
-  @Column
   @AllowNull
+  @Column
   name: string;
 
-  @HasMany(() => UserJoinsProject)
+  // "Error: Foreign key for "ContributorGroup" is missing on "UserJoinsProject"."
+  // @HasMany(() => UserJoinsProject)
   uses: UserJoinsProject[];
 
   @Column

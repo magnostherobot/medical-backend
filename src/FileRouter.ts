@@ -1,4 +1,8 @@
 import {Router, Request, Response, NextFunction} from 'express';
+import {default as UserGroup} from './db/model/UserGroup';
+import {default as User} from './db/model/User';
+import Project from './db/model/Project';
+
 var serverConfig = require('./serverConfig');
 const Files = null;//require('../data');
 
@@ -145,7 +149,12 @@ export class FileRouter {
     })
    */
   public getUserPriveleges(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+    UserGroup.findAll()
+    .then((permissions) => {
+        res.json(permissions.map<any>(
+            (p: UserGroup) => p.getPrivelege()
+        ));
+    });
   }
 
   /*
@@ -168,8 +177,12 @@ export class FileRouter {
     })
    */
   public getUsers(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
-
+      User.findAll()
+      .then((user) => {
+          res.json(user.map<any>(
+              (u: User) => u.getUserFullInfo()
+          ));
+      });
   }
 
   /*
@@ -178,7 +191,17 @@ export class FileRouter {
    *
    */
   public getUserProperties(req: Request, res: Response, next: NextFunction, user?: String){
-      res.status(500).send();
+      res.status(500).send({error: "unsupported", error_description: "Users on this server dont have additional configuration options."});
+  }
+
+  private async userInfoFromName(name: string) {
+      let user: User = await User.findOne({
+          where: {
+              username: name
+          }
+      });
+
+      return user.getUserFullInfo();
   }
 
   /*
@@ -200,13 +223,15 @@ export class FileRouter {
     }
    */
   public getUsername(req: Request, res: Response, next: NextFunction, user?: String){
-      res.status(500).send();
+      this.userInfoFromName(req.params.username)
+        .then((info) => res.json(info));
   }
 
   public getCurUser(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
-    let curUser : String = "";
-    this.getUsername(req, res, next, curUser);
+      // TODO need to findo out where authenticated user info goes
+      // this.userInfoFromName(req.params.username)
+      //   .then((info) => res.json(info));
+      res.json({todo: "need to findo out where authenticated user info goes"});
   }
 
   /*
@@ -284,7 +309,12 @@ export class FileRouter {
     })
    */
   public getProjects(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      Project.findAll()
+      .then((project) => {
+          res.json(project.map<any>(
+              (p: Project) => p.getProjectFullInfo()
+          ));
+      });
   }
 
   /*
@@ -304,7 +334,12 @@ export class FileRouter {
     }
    */
   public getProjectName(req: Request, res: Response, next: NextFunction){
-      res.status(500).send();
+      Project.findOne({
+          where: {
+              name: req.params.project_name
+          }
+      }).then((project: Project) => res.json(project));
+
   }
 
   /*
@@ -400,4 +435,5 @@ export class FileRouter {
 const fileRoutes = new FileRouter();
 fileRoutes.init();
 
-export default fileRoutes.router;
+var ex: Router = fileRoutes.router;
+export default ex;

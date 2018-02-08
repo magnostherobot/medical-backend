@@ -1,23 +1,26 @@
-import * from 'sequelize-typescript';
+import {Table, Model, Column, ForeignKey, CreatedAt, BelongsTo} from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as Project } from './Project';
 import { default as ContributorGroup } from './UserGroup';
 
 @Table
 export default class UserJoinsProject extends Model<UserJoinsProject> {
-  @Column
   @ForeignKey(() => User)
+  @Column
   username: string;
 
-  @Column
   @ForeignKey(() => Project)
+  @Column
   projectName: string;
 
-  @Column
   @CreatedAt
+  @Column
   joinDate: Date;
 
-  @Column
   @ForeignKey(() => ContributorGroup)
-  userGroupId: number;
+  @Column
+  contributorGroupId: number;
+
+  @BelongsTo(() => ContributorGroup)
+  contributorGroup: ContributorGroup;
 }

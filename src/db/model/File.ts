@@ -1,48 +1,52 @@
-import * from 'sequelize-typescript';
+import {Table, Model, Column, Unique, PrimaryKey, ForeignKey, AllowNull,
+        HasMany, BelongsTo, CreatedAt, UpdatedAt} from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as Project } from './Project';
 
 @Table
 export default class File extends Model<File> {
   @Column
-  @Unique
   name: string;
 
-  @Column
   @PrimaryKey
+  @Column
   uuid: string;
 
   @Column
   mimetype: string;
 
-  @Column
   @ForeignKey(() => File)
   @AllowNull
+  @Column
   parentFolderId: string;
 
   @BelongsTo(() => File)
-  @AllowNull
   parentFolder: File;
 
   @HasMany(() => File)
   containedFiles: File[];
 
-  @Column
   @ForeignKey(() => User)
   @AllowNull
+  @Column
   creatorName: string;
 
   @BelongsTo(() => User)
   creator: User;
 
-  @BelongsTo(() => Project)
-  rootFolderOf: Project;
+  // @ForeignKey(() => Project)
+  // @AllowNull
+  // @Column
+  // rootFolderOfProjectId: string;
+  //
+  // @BelongsTo(() => Project)
+  // rootFolderOf: Project;
 
-  @Column
   @CreatedAt
+  @Column
   uploadDate: Date;
 
-  @Column
   @UpdatedAt
+  @Column
   modifyDate: Date;
 }

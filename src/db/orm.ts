@@ -6,7 +6,7 @@ const seq = new Sequelize({
   username: 'admin',
   password: '',
   operatorsAliases: false,
-  modelPaths: [__dirname + 'model']
+  modelPaths: [__dirname + '/model']
 });
 
 export default seq;
