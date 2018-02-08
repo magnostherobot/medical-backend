@@ -50,7 +50,7 @@ echo "> Starting the postgres server";
 echo "> Create the Database";
 "$PGDIR/postgres/bin/createdb" be4;
 echo "> Creating Admin user";
-"$PGDIR/postgres/bin/psql" -U ${USER} postgres -c "CREATE USER admin WITH PASSWORD 'eprprJacR0hBpmWvs5IDJZTnjRAY2gM3tSm0b1af';";
+"$PGDIR/postgres/bin/psql" -U ${USER} postgres -c "CREATE USER admin;";
 echo "> Granting Admin Permissions";
 "$PGDIR/postgres/bin/psql" -U ${USER} postgres -c "ALTER DATABASE be4 OWNER TO admin;";
 
