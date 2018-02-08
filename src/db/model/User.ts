@@ -11,7 +11,6 @@ export default class User extends Model<User> {
   username: string;
 
   @Column
-  @NotNull
   password: string;
 
   @Column

@@ -9,7 +9,6 @@ export default class Project extends Model<Project> {
   @PrimaryKey
   name: string;
 
-  @Column
   @BelongsToMany(() => User, () => UserJoinsProject)
   contributors: User[];
 

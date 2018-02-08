@@ -6,7 +6,6 @@ import { default as Project } from './Project';
 export default class File extends Model<File> {
   @Column
   @Unique
-  @NotNull
   name: string;
 
   @Column
@@ -18,9 +17,11 @@ export default class File extends Model<File> {
 
   @Column
   @ForeignKey(() => File)
+  @AllowNull
   parentFolderId: string;
 
   @BelongsTo(() => File)
+  @AllowNull
   parentFolder: File;
 
   @HasMany(() => File)
@@ -28,6 +29,7 @@ export default class File extends Model<File> {
 
   @Column
   @ForeignKey(() => User)
+  @AllowNull
   creatorName: string;
 
   @BelongsTo(() => User)
@@ -36,9 +38,11 @@ export default class File extends Model<File> {
   @BelongsTo(() => Project)
   rootFolderOf: Project;
 
+  @Column
   @CreatedAt
   uploadDate: Date;
 
+  @Column
   @UpdatedAt
   modifyDate: Date;
 }
