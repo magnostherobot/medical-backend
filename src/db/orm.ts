@@ -9,5 +9,4 @@ const seq = new Sequelize({
   modelPaths: [__dirname + 'model']
 });
 
-seq.authenticate()
-  .then(() => console.log('Logged in!'));
+export default seq;

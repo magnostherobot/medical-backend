@@ -1,14 +1,24 @@
-console.log('Welcome to the CS3099 Server thingy!');
-
-import app from './app'
+import { default as seq } from './db/orm';
+import { default as app } from './app';
 
 // use default port 3000 or port supplied by OS
-const port = process.env.PORT || 3000
+const port: number = process.env.PORT || 3000;
 
-app.listen(port, (err) => {
-  if (err) {
-    return console.log(err)
-  }
+(async () => {
+  console.log('Booting PSQL database');
 
-  return console.log(`server is listening on port ${port}`)
-})
+  await seq.authenticate();
+  await seq.sync({
+    force: true
+  });
+
+  console.log('Booting ExpressJS server');
+
+  app.listen(port, (err) => {
+    if (err) {
+      return console.log(err);
+    } else {
+      return console.log(`server is listening on port ${port}`);
+    }
+  });
+})();
