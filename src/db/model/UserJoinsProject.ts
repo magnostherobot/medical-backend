@@ -1,4 +1,7 @@
 import * from 'sequelize-typescript';
+import { default as User } from './User';
+import { default as Project } from './Project';
+import { default as ContributorGroup } from './UserGroup';
 
 @Table
 export default class UserJoinsProject extends Model<UserJoinsProject> {
@@ -15,6 +18,6 @@ export default class UserJoinsProject extends Model<UserJoinsProject> {
   joinDate: Date;
 
   @Column
-  @ForeignKey(() => UserGroup)
+  @ForeignKey(() => ContributorGroup)
   userGroupId: number;
 }
