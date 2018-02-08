@@ -6,3 +6,6 @@ dist/
 
 # Vim swap files
 *.sw*
+
+# PostgreSQL log files
+*logfile
