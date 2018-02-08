@@ -85,8 +85,68 @@ It was initially decided that Tom would be the "Scrum Master", and Calum would b
 approximately bi-weekly.  
 A quick brainstorming session was then had to interpret our specification and quickly fill
 in the User Epic stories, along with some more decomposed stories and requirements.
+As the specification requires, the following is a list of the stories the group came up with.
 
-    - Need to upload the pictures of our scrum board to the repository!
+- User Epic stories  
+    - Create a "plug and play" module, providing backend functionality to the clients requirements.
+    - Conform to a year-wide protocol specification to ensure inter-operability.
+    - Support the notion of 'Projects', 'Users' with specialisations such as Admin, 'Conversion to Standard File Formats'.
+    - Be Complete by 23rd April 2018.
+- Design
+    - Design Test Interface  
+        - Separation of Machine Learning tests & HCI tests.
+        - Plan what mocks of other groups are required to ensure usability.
+    - Design Server
+        - Stubs for conforming to protocol
+        - Structure and Core Packages
+        - Language(s)? we will use & why.
+    - Design Database
+        - Which database will we use?
+        - Schema
+        - ER Diagram
+- Database Implementation
+    - Interface/Linking with the root to the file system.
+    - Notion of Secure Access for the database.
+    - Dealing with various filetypes - Conversion / Standardisation for storage.
+    - Standard procedures for fetching.
+    - Deal with Storing Image Data (+ other binary formats?) / JSON.
+    - Deal with storing plain text + tabular data.
+    - Create Database from schema
+- Server Implementation
+    - Setup initial HelloWorld Sever to ensure correct installation & dependencies.
+    - Create Strong/Reliable link between server functions and underlying filesystem for database.
+    - Create Strong/Reliable link between server functions and the database.
+    - Create pre-processing functions to standardise Data passed in. (images->png & plaintext->csv/json)
+    - Deal with responses to a client
+        - Involving continuous file transfer (For example, whilst panning Large Pathology photos.)
+        - Involving 'simple' file transfer (getting whole file at once for csv etc.)
+        - Involving file uploads All at once.
+        - Involving file uploads in chunks for files above 8Mb.
+    - Create Node "router" to capture all required URLs and forward to functions to handle based on protocol.
+    - Create Basic error response functions which can be called from anywhere to deal with any potential problems and safely respond to client.
+- Server Testing
+    - Create methods to test logic of JS/TS which can be re-run on each commit
+        - From Backend's perspective
+        - From HCI's perspective
+- Database Testing
+    - Carrying out Optimisations/Streamlining
+    - Profiling of performance of UnCommon Actions (delete)
+    - Profiling of performance of common actions (file creation/file reads)
+    - Accuracy of file retrieval
+- TestInterface Implementation
+    - Create HTML5/JS to retrieve NON image data and display
+    - Create HTML5/JS to retrieve image (or section of) data and display
+    - Create HTML5/JS to begin an ML session on some data and retrieve results.
+    - Create HTML5/JS to check a user/group information
+    - Create HTML5/JS to upload various filetypes and ensure they convert to universal format.
+    - Create HTML5/JS to action a login
+- Extension Implementation
+    - Develop a Caching function for frequently accessed files, or anticipate UUIDs next to be accessed for increased performance.
+    - Upgrade all HTTP interactions to HTTPS
+    - Add support for Lecia file conversion (heavily licenced)
+
+
+    - Need to upload the pictures of our scrum board to the repository/report!
 
 
 
