@@ -4,8 +4,8 @@
 |:------:|:--------:|:----------------------:|
 |cjd24   | Calum    | 150011830              |
 |trh     | Tom      | 150001937              |
-|har4    | Hafeez   | 15              |
-|jl247   | Josh     | 15              |
+|har4    | Hafeez   | 160006551              |
+|jl247   | Josh     | 150010415              |
 |jw255   | Johannes | 140013112              |
 
 
@@ -51,6 +51,7 @@ the entire finished product into versions.
 ### Design Choices:
 - Scrum  
 Using the scrum approach as advised by the project specifications facilitated the planning and running of group meetings. As the year wide protocol continued to change throughout the development process, an agile working process addressed the complex problem of changing requirements through its iterative and incremental system.
+One of the essential parts of this process was distribution of responsibility, planning of time and ordering of tasks for the next release. Oftentimes we had to spend some time researching a topic before we could decide on the task allocation and if it should be included in the next release. For example, we decided early on that the file-conversion was less important... **To be continued**
 **MORE SHOULD BE SAID HERE PLZ?**
 
 - Database  
@@ -129,23 +130,25 @@ in the User Epic stories, along with some more decomposed stories and requiremen
 As the specification requires, the following is a list of the stories the group came up with.  
 
 
+(Time Est | Time taken)
 - User Epic stories  ------- (Continuous)  
     - Create a "plug and play" module, providing backend functionality to the clients requirements.  ------- (Continuous)
     - Conform to a year-wide protocol specification to ensure inter-operability.  ------- (Continuous)
     - Support the notion of 'Projects', 'Users' with specialisations such as Admin, 'Conversion to Standard File Formats'.  ------- (Continuous)
     - Be Complete by 23rd April 2018.
-- Design  ------- (2-3 Weeks)
-    - Design Test Interface ------- (3 Days)
-        - Separation of Machine Learning tests & HCI tests.  ------- (1 Day)
-        - Plan what mocks of other groups are required to ensure usability.  ------- (2 Days)
-    - Design Server  ------- (1 week)
-        - Stubs for conforming to protocol  ------- (1 Day)
-        - Structure and Core Packages  ------- (5 Days)
-        - Language(s)? we will use & why.  ------- (1 Day)
-    - Design Database  ------- (1 week)
-        - Which database will we use?  ------- (1 Day)
-        - Schema  ------- (2 Days)
-        - ER Diagram  ------- (5 Days)
+	- First Release 9th February 2018
+- Design  ------- (2-3 Weeks | 3 Weeks)
+    - Design Test Interface ------- (3 Days | 1 Week)
+        - Separation of Machine Learning tests & HCI tests.  ------- (1 Day | 3 days)
+        - Plan what mocks of other groups are required to ensure usability.  ------- (2 Days | 4 days)
+    - Design Server  ------- (1 week | 1.5 Weeks)
+        - Stubs for conforming to protocol  ------- (1 Day | 3 Days)
+        - Structure and Core Packages  ------- (5 Days | 1 week)
+        - Language(s)? we will use & why.  ------- (1 Day | 1 Day)
+    - Design Database  ------- (1 week | 1.5 Weeks)
+        - Which database will we use?  ------- (1 Day | 1 Day)
+        - Schema  ------- (2 Days | 2 Days)
+        - ER Diagram  ------- (5 Days | 1 Week)
 - Implementation   ------- (Continuous)
     - Database Implementation ------- (~3 Weeks)
         - Interface/Linking with the root to the file system.  ------- (3 Days)
@@ -155,36 +158,37 @@ As the specification requires, the following is a list of the stories the group 
         - Deal with Storing Image Data (+ other binary formats?) / JSON. ------- (5 Days)
         - Deal with storing plain text + tabular data. ------- (5 Days)
         - Create Database from schema  ------- (3 Days)
-    - Server Implementation ------- (~1.5 Months)
-        - Setup initial HelloWorld Sever to ensure correct installation & dependencies. ------- (1 Day)
-        - Create Strong/Reliable link between server functions and underlying filesystem for database. ------- (1 Weeks)
-        - Create Strong/Reliable link between server functions and the database. ------- (5 Days)
-        - Create pre-processing functions to standardise Data passed in. (images->png & plaintext->csv/json) ------- (1 Week)
-        - Deal with responses to a client ------- (4 Weeks)
+    - Server Implementation ------- (~1.5 Months | 2 Months)
+        - Setup initial HelloWorld Sever to ensure correct installation & dependencies. ------- (1 Day| 1 Day)
+        - Create Strong/Reliable link between server functions and underlying filesystem for database. ------- (1 Weeks | 2 Weeks)
+        - Create Strong/Reliable link between server functions and the database. ------- (5 Days 1 Week)
+        - Create pre-processing functions to standardise Data passed in. (images->png & plaintext->csv/json) ------- (1 Week | in proc.)
+        - Deal with responses to a client ------- (4 Weeks | in proc.)
             - Involving continuous file transfer (For example, whilst panning Large Pathology photos.) ------- (1 Week)
             - Involving 'simple' file transfer (getting whole file at once for csv etc.) ------- (1 Week)
             - Involving file uploads All at once. ------- (1 Week)
             - Involving file uploads in chunks for files above 8Mb. ------- (1 Week)
         - Create Node "router" to capture all required URLs and forward to functions to handle based on protocol. ------- (1 Day)
         - Create Basic error response functions which can be called from anywhere to deal with any potential problems and safely respond to client. ------- (2 Days)
-- Testing  ------- (2 Weeks)
-    - Server Testing ------- (2 Weeks)
-        - Create methods to test logic of JS/TS which can be re-run on each commit ------- (2 Weeks)
-            - From Backend's perspective ------- (1 Week)
-            - From HCI's perspective ------- (1 Weeks)
-    - Database Testing ------- (2 Weeks)
+- Testing  ------- (9 Weeks | in proc)
+    - Server Testing ------- (3 Weeks | in proc)
+        - Create methods to test logic of JS/TS which can be re-run on each commit ------- (2 Weeks | in proc)
+            - From Backend's perspective ------- (1 Week | 2 Weeks)
+            - From HCI's perspective ------- (1 Weeks | in proc)
+	- Create unit tests for individual files can be re-run on each commit ------- (1 Weeks | 1 Weeks)
+    - Database Testing ------- (2 Weeks | in proc.)
         - Carrying out Optimisations/Streamlining ------- (5 Days)
         - Profiling of performance of UnCommon Actions (delete) ------- (4 Days)
         - Profiling of performance of common actions (file creation/file reads) ------- (4 Days)
         - Accuracy of file retrieval ------- (1 Day)
-    - TestInterface Implementation ------- (2 Weeks)
-        - Create HTML5/JS to retrieve NON image data and display ------- (1 Day)
-        - Create HTML5/JS to retrieve image (or section of) data and display ------- (1 Day)
-        - Create HTML5/JS to begin an ML session on some data and retrieve results. ------- (1 Day)
-        - Create HTML5/JS to check a user/group information ------- (1 Day)
-        - Create HTML5/JS to upload various filetypes and ensure they convert to universal format. ------- (1 Day)
-        - Create HTML5/JS to action a login ------- (1 Day)
-- Extension Implementation ------- (~3 Weeks)
+    - TestInterface Implementation ------- (2 Weeks | 2 Weeks)
+        - Create HTML5/JS to retrieve NON image data and display ------- (1 Day | 2 Days)
+        - Create HTML5/JS to retrieve image (or section of) data and display ------- (1 Day | 4 Days)
+        - Create HTML5/JS to begin an ML session on some data and retrieve results. ------- (1 Day | 1 Day)
+        - Create HTML5/JS to check a user/group information ------- (1 Day | 1 Day)
+        - Create HTML5/JS to upload various filetypes and ensure they convert to universal format. ------- (1 Day | 2 days)
+        - Create HTML5/JS to action a login ------- (1 Day | 2 days)
+- Extension Implementation ------- (~3 Weeks | outstanding)
     - Develop a Caching function for frequently accessed files, or anticipate UUIDs next to be accessed for increased performance. ------- (1 Week)
     - Extend our basic server implementation, to support multiple instances and ensure ATOMICity of DB and sensible file distribution. ------- (2 Weeks)
     - Upgrade all HTTP interactions to HTTPS ------- (2 Days)
