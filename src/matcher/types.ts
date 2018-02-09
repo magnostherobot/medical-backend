@@ -4,19 +4,19 @@ function typeCheckerGenerator<T>(test: T): (v: any) => v is T {
   return f;
 }
 
-let isObject    = typeCheckerGenerator<Object>({});
-let isNumber    = typeCheckerGenerator<Number>(0);
-let isString    = typeCheckerGenerator<String>("");
-let isBoolean   = typeCheckerGenerator<Boolean>(true);
-let isArray     = typeCheckerGenerator<Array<any>>([]);
-let isFunction  = typeCheckerGenerator<Function>(new Function());
-let isNull      = (v) => v === null;
-let isUndefined = (v) => v === undefined;
-let isPresent   = (v) => !isUndefined(v);
-let isInteger   = (value: any) => isNumber(value)
-                               && Number.isInteger(value as number);
+export const isObject    = typeCheckerGenerator<Object>({});
+export const isNumber    = typeCheckerGenerator<Number>(0);
+export const isString    = typeCheckerGenerator<String>("");
+export const isBoolean   = typeCheckerGenerator<Boolean>(true);
+export const isArray     = typeCheckerGenerator<Array<any>>([]);
+export const isFunction  = typeCheckerGenerator<Function>(new Function());
+export const isNull      = (v) => v === null;
+export const isUndefined = (v) => v === undefined;
+export const isPresent   = (v) => !isUndefined(v);
+export const isInteger   = (value: any) => isNumber(value)
+  && Number.isInteger(value as number);
 
-let types = {
+const types = {
   object:      isObject,
   number:      isNumber,
   string:      isString,
@@ -29,5 +29,4 @@ let types = {
   undefined:   isUndefined,
   anything:    isPresent
 };
-
 export default types;

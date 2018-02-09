@@ -45,9 +45,10 @@ export default class User extends Model<User> {
   }
 
   getUserFullInfo() : UserFullInfo {
+    console.log(this);
       return {
           username : this.username,
-          privileges : [this.userGroup.name],
+          privileges: [this.userGroup.name],
           projects : this.projects.map<ProjectInfo>(
               (p: Project) => this.getProjectInfo(p)
           ),

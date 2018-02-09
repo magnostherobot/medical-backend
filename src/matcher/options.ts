@@ -75,3 +75,12 @@ export function array(template: Object, values?: Array<Object>) {
   let m = match(template) as ((Object) => boolean);
   return values.every(m);
 }
+
+const options = {
+  match = match,
+  exact = exact,
+  optional = optional,
+  alternative = alternative,
+  array = array
+};
+export default options;

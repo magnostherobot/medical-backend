@@ -1,5 +1,5 @@
 import {Table, Model, Column, Unique, PrimaryKey, ForeignKey, AllowNull,
-        HasMany, BelongsTo, CreatedAt, UpdatedAt} from 'sequelize-typescript';
+        HasMany, BelongsTo, CreatedAt, UpdatedAt, HasOne} from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as Project } from './Project';
 
@@ -33,14 +33,9 @@ export default class File extends Model<File> {
 
   @BelongsTo(() => User)
   creator: User;
-
-  // @ForeignKey(() => Project)
-  // @AllowNull
-  // @Column
-  // rootFolderOfProjectId: string;
-  //
-  // @BelongsTo(() => Project)
-  // rootFolderOf: Project;
+ 
+  @HasOne(() => Project)
+  rootFolderOf: Project;
 
   @CreatedAt
   @Column

@@ -8,7 +8,7 @@ export default class ContributorGroup extends Model<ContributorGroup> {
   name: string;
 
   // "Error: Foreign key for "ContributorGroup" is missing on "UserJoinsProject"."
-  // @HasMany(() => UserJoinsProject)
+  @HasMany(() => UserJoinsProject, 'contributorGroupId')
   uses: UserJoinsProject[];
 
   @Column

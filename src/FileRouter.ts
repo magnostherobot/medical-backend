@@ -31,9 +31,12 @@ export class FileRouter {
     })
    */
   public getProtocols(req: Request, res: Response, next: NextFunction){
-      var returnValue = {};
-      returnValue['supported'] = ["BE50"];
-      returnValue['required'] = "BE01";
+      var returnValue = {
+        supported: [],
+        required: [
+          "BE01"
+        ]
+      };
       res.send(JSON.stringify(returnValue));
   }
 
@@ -179,8 +182,12 @@ export class FileRouter {
     })
    */
   public getUsers(req: Request, res: Response, next: NextFunction){
-      User.findAll()
-      .then((user) => {
+    User.findAll({
+      include: [
+        UserGroup,
+        Project
+      ]
+    }).then((user) => {
           res.json(user.map<any>(
               (u: User) => u.getUserFullInfo()
           ));
@@ -200,7 +207,11 @@ export class FileRouter {
       let user: User = await User.findOne({
           where: {
               username: name
-          }
+          },
+          include: [
+            UserGroup,
+            Project
+          ]
       });
 
       return user.getUserFullInfo();
@@ -315,8 +326,11 @@ export class FileRouter {
     })
    */
   public getProjects(req: Request, res: Response, next: NextFunction){
-      Project.findAll()
-      .then((projects) => {
+    Project.findAll({
+      include: [
+        User
+      ]
+    ).then((projects) => {
           res.json(projects.map<any>(
               (p: Project) => p.getProjectFullInfo()
           ));
