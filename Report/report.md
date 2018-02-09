@@ -56,9 +56,85 @@ One of the essential parts of this process was distribution of responsibility, p
 
 - Database  
 We chose to use Postgres for our database system, after considering the benefits and drawbacks of different databases compatible with NodeJS. Its greatest advantage is its object-relational data model, JSON support and scalability. We also decided that it would be significantly less efficient to store our raw files inside the database as Blobs etc. This is because the nature of the files that we will be dealing with are likely to be huge. So storing masses of binary data in the database which is likely to never actually be "edited" in the same way as some other binary data might, then it would be a significant overhead for no return. As such we opted for designing our infrastructure in such a way that we will have a (nearly) '*flat*' filesystem, where all files are stored under a UUID. All notion of "directory hierarchy" and "filenames" would be stored internally with relations in the database. As possible extensions, we could then store direct references to files (or perhaps even offsets within files) to act as a very high performing cache server for frequent data, or data that we could predict is going to be accessed in short time proximity.
-After discussions of the product backlog, we decided to divide data into the following tables:  
-**[tables and descriptions here]**  
-**[some more explanation of the database structure?]**
+
+- File management
+
+-- Folders
+A part of the specification required the use of folders to group together files in a project. The issue I first came across were how folders not just contained other files but would quite often have other folders inside them as well. My second issue was navigating through the folders to get to the files, this meant that given a folder you could return the contents of that folder as well as being able to find all other files at the same level in the system.
+
+To manage my first issue I included a table called dirent with an inheritance relation so that a dirent could either be a folder, image or text. Having this table made it easy to query on data as well as better representing how files could be stored within folders. This meant that a folder would be related to a dirent which could then be linked to the specific type on creation. 
+
+There were two ways to manage the navigability, either store the file path with each dirent or store the ID of the superfolder it was contained in, I decided on storing the ID. This created a link system and to therefore view files within a folder you would search all files which had the same ID as the super folder. 
+
+E.g 1) To locate an image called image1 at folder1/folder2/folder3/image1 to find it you would use the queries 
+
+SELECT * FROM dirent NATURAL JOIN folder WHERE folder_name = 'folder1' AND super_folder is null AND project_name = 'project 1';
+SELECT * FROM dirent WHERE super_folder = '77dea3b7-523e-463a-aff1-3d8b92259fbb';
+SELECT * FROM dirent WHERE super_folder = '12596fe5-2838-4cc0-8d2f-4745e91738f5';
+SELECT * FROM dirent NATURAL JOIN image WHERE super_folder = '22b94214-6942-40dd-b8af-deb1371fa298';
+![Alt text](1.png?raw=true "eg1")
+
+From this directory if you wanted to find dirents contained within folder 2 you could use the queries 
+
+SELECT * FROM dirent WHERE id = '22b94214-6942-40dd-b8af-deb1371fa298';
+SELECT * FROM dirent WHERE super_folder = '12596fe5-2838-4cc0-8d2f-4745e91738f5';
+![Alt text](2.png?raw=true "eg1_cont")
+Showing all three dirents in this folder.
+
+-- File identification
+In choosing the ID for the files I originally had an auto increment ID. The issue with this would be that a hazardous user could guess the ID of a specific file, accessing files without the required permission. To get around this I used a randomly generated UUID. This made it almost impossible to guess the ID and is universally unique.
+
+-- File storage
+Originally I thought of storing files within the database in blob format although this seemed to work well I felt that the scalability of this method would be not be effective. I also felt that it would be a lot harder to backup the database as the number of files grew. Instead the database contained the structure of the file system with info for each file including the UUID for each file. This made it easy to return files from our own file storage system with matching UUID each time a request was made.
+
+-- Projects
+Another requirement of the database was the need for projects which also helped group together files. A user could also have per project privileges such as adding files into that project. To manage this, on creation of a project it was given an owner matching the current logged in user. I created a trigger which also granted all permissions (admin) to the owner giving them control over the permissions for their project.
+
+E.g 2) using 
+INSERT INTO project ("project_name", "owner") VALUES ('project 1', 'josh')
+Would give all permissions to josh in project 1.
+
+
+
+- User management 
+
+Once the file system had been set up I wanted to have a robust user permission system that would consistently allow the API to check permissions. 
+
+Permissions were split into 2 types 
+User based permissions.
+The user based permissions were create project, create user, remove user , edit user, view projects and view users.
+
+Project based permissions.
+The project based permissions were add files, edit files, remove files and view files (remove project could also be included here but I decided to make that only accessible to the owner and an admin user) This was more difficult because each user would have different privileges on different projects.
+
+-- Set up
+My initial thought was to have columns for each permission in the user table. I soon realised this was hard to manage once revoking privileges is implemented. I decided on creating a tree system for user permissions similar to how the database manages its own privileges. This meant that if one user granted many permissions and then had their own permission removed, all user permissions granted by the revoked user would also be removed. I decided to represent this by having a table for each permission. There were two main reasons for this 
+
+1) This made it easy to check permissions e.g to check whether a user had add file permissions you would just go into the add_files table and check whether it contained a row corresponding to that user. 
+
+2) On each grant the permission ID is stored as a foreign key of its own table representing how a specific user was given that permission . This meant that if a user was deleted or a privilege was revoked it would also remove privileges of sub grants by using ‘on delete cascade’
+
+E.g 3) the image below shows the table add_files 
+![Alt text](3.png?raw=true "add_files")
+Josh granted permission to user 2 who then granted permission to both user 3 and back to user2. When user 2 has his permission revoked both permissions that were granted by user 2 are also revoked. 
+![Alt text](4.png?raw=true "granted permissions")
+
+
+-- Returning all permissions for each user
+On looking at the specification it seemed clear that there were a lot of API requests to get all permissions that a user had been granted. By storing the permissions in their own table required searching every single table every time you wanted to do this which would be ineffective. Combining this with my original idea I created a summary table, if a user was then granted a permission it was added into the summary table with the permission ID by means of a trigger. This meant a slower insert but was highly beneficial in being easy to search. The combination of these two methods kept the system robust whilst making it easy to query on.
+
+Ex 4) Following on from example 2 it is now easy to see how all the permissions are given to a user when a project is created.  
+![Alt text](5.png?raw=true "eg4")
+Also if josh grants permission to user2 to add files you can see below the permission is added.
+![Alt text](6.png?raw=true "eg4_cont")
+When the permission is revoked that column for user2 is set null. 
+![Alt text](7.png?raw=true "eg4_cont2")
+
+-- User information
+In order to login the user the user table  contains a password to each user. This password was stored md5 hashed. (I also want to add salting for a later hand in for additional security).
+Also in the user data is metadata both private and public that could be seen/ managed based on your own permissions or whether you are viewing yourself. I used views to represent the different accesses on the user table to prevent things such as password being included in the query result. I also stored this metadata as Json type instead of individual columns for each attribute. This made it easier to match the expected request format and also helped group together the metadata. 
+
+
 
 - Server  
 For the implementation of the server, we chose a typescript-nodejs approach. NodeJS seemed a common and sensible choice, as all members of the team had previous experience and it is a scalable, and well-supported development framework that runs on both Unix and Windows infrastructures. It is easy to deploy and furthermore offers more speed and a nonblocking I/O API in comparison to Java or .Net servers. We then chose the TypeScript superset of JS as it provides typing, classes, interfaces and IDE support for developers which makes the language easier to use and more robust. In particular we chose to specialise our node app with express, and a comprehensive middleware stack. This middleware stack would carry out tasks such as logging, body parsing, type checking, with potential to be expanded as the project matures. We also decided on Sequelize as our ORM. This was due to wide support in the deployment community with favourable reviews of its functionality - as well as having a specialisation called sequelize-typescript, which massively simplifies syntax, and appeared to integrate to our design model very nicely.
