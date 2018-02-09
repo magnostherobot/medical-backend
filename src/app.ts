@@ -6,6 +6,7 @@ import FileRouter from './FileRouter';
 
 class App {
   public express
+  public log_enabled : boolean;
 
   constructor () {
     this.express = express()
@@ -15,7 +16,7 @@ class App {
 
   // Configure Express middleware.
   private middleware(): void {
-    this.express.use(logger('combined'));
+    if(this.log_enabled) this.express.use(logger('combined'));
     this.express.use(bodyParser.json());
     this.express.use(bodyParser.urlencoded({ extended: false }));
   }
@@ -25,7 +26,8 @@ class App {
     const defRouter = express.Router()
     defRouter.get('/', (req, res) => {
       res.json({
-        message: 'Welcome to the CS3099 BE4 server!'
+        message: 'Welcome to the CS3099 BE4 server!',
+        important : 'Endpoints start from /cs3099group-be-4/'
       })
     })
     this.express.use('/', defRouter)
