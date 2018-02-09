@@ -49,17 +49,42 @@ the entire finished product into versions.
 
 
 ### Design Choices:
-- Scrum
-Using the scrum approach as advised by the project specifications facilitated the planning and running of group meetings. As the year wide protocol continued to change throughout the development process, an agile working process addressed the complex problem of changing requirements through its iterative and incremental system. 
+- Scrum  
+Using the scrum approach as advised by the project specifications facilitated the planning and running of group meetings. As the year wide protocol continued to change throughout the development process, an agile working process addressed the complex problem of changing requirements through its iterative and incremental system.
+**MORE SHOULD BE SAID HERE PLZ?**
 
-- Database
-We chose to use Postgres for our database system, after considering the benefits and drawbacks of different databases compatible with NodeJS. Its greatest advantage is its object-relational data model, JSON support and scalability. 
-After discussions of the product backlog, we decided to divide data into the following tables:
-[tables and descriptions here]
-[some more explanation of the database structure]
+- Database  
+We chose to use Postgres for our database system, after considering the benefits and drawbacks of different databases compatible with NodeJS. Its greatest advantage is its object-relational data model, JSON support and scalability. We also decided that it would be significantly less efficient to store our raw files inside the database as Blobs etc. This is because the nature of the files that we will be dealing with are likely to be huge. So storing masses of binary data in the database which is likely to never actually be "edited" in the same way as some other binary data might, then it would be a significant overhead for no return. As such we opted for designing our infrastructure in such a way that we will have a (nearly) '*flat*' filesystem, where all files are stored under a UUID. All notion of "directory hierarchy" and "filenames" would be stored internally with relations in the database. As possible extensions, we could then store direct references to files (or perhaps even offsets within files) to act as a very high performing cache server for frequent data, or data that we could predict is going to be accessed in short time proximity.
+After discussions of the product backlog, we decided to divide data into the following tables:  
+**[tables and descriptions here]**  
+**[some more explanation of the database structure?]**
 
-- Server
-For the implementation of the server, we chose a typescript-nodejs approach. NodeJS seemed an obvious approach, as all members of the team had previous experience and it is a scalable, and well-supported development framework that runs on both Unix and Windows infrastructures. It is easy to deploy and furthermore offers more speed and a nonblocking I/O API in comparison to Java or .Net servers. We then chose the TypeScript superset of JS as it provides typing, classes, interfaces and IDE support for developers which makes the language easier to use and more robust.
+- Server  
+For the implementation of the server, we chose a typescript-nodejs approach. NodeJS seemed a common and sensible choice, as all members of the team had previous experience and it is a scalable, and well-supported development framework that runs on both Unix and Windows infrastructures. It is easy to deploy and furthermore offers more speed and a nonblocking I/O API in comparison to Java or .Net servers. We then chose the TypeScript superset of JS as it provides typing, classes, interfaces and IDE support for developers which makes the language easier to use and more robust. In particular we chose to specialise our node app with express, and a comprehensive middleware stack. This middleware stack would carry out tasks such as logging, body parsing, type checking, with potential to be expanded as the project matures. We also decided on Sequelize as our ORM. This was due to wide support in the deployment community with favourable reviews of its functionality - as well as having a specialisation called sequelize-typescript, which massively simplifies syntax, and appeared to integrate to our design model very nicely.
+
+- Project Approach and Expansion  
+Once most of the core decisions had been made in isolation of the incorporation into the submission as a whole, we had a **meeting** to decide how these should best operate together.  
+The approximate approach that was decided on is as follows:  
+    - The Node Server would catch all valid API endpoint requests and pass them to handler functions.  
+    - Since almost all requests that are made to the server, some way or another need to talk to the database, then during initialisation of the server, a connection would be made to the postgres database, which would persist throughout the life of the server. This connection would then be utilised by our ORM solution to carry out queries.  
+    - The request would be formulated through the ORM (or by direct file access for things like server config.) and then passed to the DB serer.
+    - The response would hopefully be ready as we require it, however at this stage there can be logical checks done of the data if necessary.
+    - We would then run it through some typechecking middleware to ensure that the content that we are serving back to a client is valid JSON.
+    - The Response would be served back to the client and the request would be considered *successful*.  
+
+  Expansion:
+  - Once the basic implementation according to the protocol was complete, it was discussed on multiple occasions, and in detail of possible ways to make this core service better.
+  - Building on the ATOMIC nature of a database transaction, and given the Users deployment scenario - multiple research facilities potentially across multiple geographically diverse locations, we thought it would be critical to allow the database to have multiple instances operating concurrently.
+      - Approximately how this would look, is that clients talk to the backend server they are physically closest to on the network for the best possible latency.
+      - Since there can be multiple nodes however to serve clients in different locations, then the servers would then need to make best attempt to synchronise in an Atomic manner.
+      - This would make our system far more scalable in the future, and may have potential applications for things such as a "live" backup server - since medical data is all fairly critical.
+  - On top of the transactions to the Database being atomic and synchronised across all instances of the server, we would additionally need to consider the physical distribution of file storage.
+      - Since we made the design decision to store all of the actual files, outside of the database, then keeping ATOMIC communication to each instance server, does not necessarily solve the issue of file replication.
+      - For example, if a memeber of a group is working on a node other than the "root" node where that project was created and all of the data happens to be stored for it, then we will need to include some kind of notion of a "server reference" for each file known about by the database.
+      - Then, if a client made a request for data not locally stored, it could either be re-directed by the server to the other node, or the server forwards the request then pipes it back to the client.
+      - Alternatively as a further specialisation of this functionality, the server could intelligently detect related data to the "foreign" request being made, and pre-emptively load in the data from the alt server, so it is ready to serve future data locally. This data could be cached locally and used, then re-synchronised if changes were made back to the original, or dropped if it was just for reading. It is likely however that most of these interactions will be reads, so things like carrying out a machine learning session on some data, would only require the (probably) smaller file containing the results to be synchronised back which is a much easier task as it would likely just be new file upload to the remote server.
+
+
 
 
 
@@ -69,11 +94,14 @@ For the implementation of the server, we chose a typescript-nodejs approach. Nod
 As part of this practical, a final solution to the over-arching problem is that the end-user
 should be able to "*pick-n-mix*" one submission from each [Backend, HCI, Machine Learning].  
 In order to successfully achieve this, all of the participating groups throughout the year
-are required to formulate between themselves and agree on a single protocol for each
+are required to formulate between themselves and agree upon a single protocol for each
 component to talk over.
 Various meetings were organised on a variety of topics between members who were interested
 in affecting the outcome. Minutes of these meetings can be seen at:
-[Maybe Here?](https://github.com/CS3099JH2017/cs3099jh)
+[Maybe Here?](https://github.com/CS3099JH2017/cs3099jh)  
+**We should also probably detail roughly what was said at each of these meetings/summaries etc? GET THE RECORDED DATES**
+
+
 
 
 
@@ -85,75 +113,104 @@ in affecting the outcome. Minutes of these meetings can be seen at:
 After groups were eventually allocated for this group project, the team met up quickly to
 discuss the **Scrum** method of doing work, and figure out how roles should be shared amongst
 the team members.  
+  Team Structure and Role assignment  
+  -Supervisor ->    Adam  
+  -Scrum Master ->  Tom  
+  -Product Owner -> Calum  
+  -Developer ->     Hafeez  
+  -Developer ->     Josh  
+  -Developer ->     Johannes  
+
 It was initially decided that Tom would be the "Scrum Master", and Calum would be the
 "Product Owner", and that the roles would be rotated around other group members,
 approximately bi-weekly.  
 A quick brainstorming session was then had to interpret our specification and quickly fill
 in the User Epic stories, along with some more decomposed stories and requirements.
-As the specification requires, the following is a list of the stories the group came up with.
+As the specification requires, the following is a list of the stories the group came up with.  
 
-- User Epic stories  
-    - Create a "plug and play" module, providing backend functionality to the clients requirements.
-    - Conform to a year-wide protocol specification to ensure inter-operability.
-    - Support the notion of 'Projects', 'Users' with specialisations such as Admin, 'Conversion to Standard File Formats'.
+
+- User Epic stories  ------- (Continuous)  
+    - Create a "plug and play" module, providing backend functionality to the clients requirements.  ------- (Continuous)
+    - Conform to a year-wide protocol specification to ensure inter-operability.  ------- (Continuous)
+    - Support the notion of 'Projects', 'Users' with specialisations such as Admin, 'Conversion to Standard File Formats'.  ------- (Continuous)
     - Be Complete by 23rd April 2018.
-- Design
-    - Design Test Interface  
-        - Separation of Machine Learning tests & HCI tests.
-        - Plan what mocks of other groups are required to ensure usability.
-    - Design Server
-        - Stubs for conforming to protocol
-        - Structure and Core Packages
-        - Language(s)? we will use & why.
-    - Design Database
-        - Which database will we use?
-        - Schema
-        - ER Diagram
-- Database Implementation
-    - Interface/Linking with the root to the file system.
-    - Notion of Secure Access for the database.
-    - Dealing with various filetypes - Conversion / Standardisation for storage.
-    - Standard procedures for fetching.
-    - Deal with Storing Image Data (+ other binary formats?) / JSON.
-    - Deal with storing plain text + tabular data.
-    - Create Database from schema
-- Server Implementation
-    - Setup initial HelloWorld Sever to ensure correct installation & dependencies.
-    - Create Strong/Reliable link between server functions and underlying filesystem for database.
-    - Create Strong/Reliable link between server functions and the database.
-    - Create pre-processing functions to standardise Data passed in. (images->png & plaintext->csv/json)
-    - Deal with responses to a client
-        - Involving continuous file transfer (For example, whilst panning Large Pathology photos.)
-        - Involving 'simple' file transfer (getting whole file at once for csv etc.)
-        - Involving file uploads All at once.
-        - Involving file uploads in chunks for files above 8Mb.
-    - Create Node "router" to capture all required URLs and forward to functions to handle based on protocol.
-    - Create Basic error response functions which can be called from anywhere to deal with any potential problems and safely respond to client.
-- Server Testing
-    - Create methods to test logic of JS/TS which can be re-run on each commit
-        - From Backend's perspective
-        - From HCI's perspective
-- Database Testing
-    - Carrying out Optimisations/Streamlining
-    - Profiling of performance of UnCommon Actions (delete)
-    - Profiling of performance of common actions (file creation/file reads)
-    - Accuracy of file retrieval
-- TestInterface Implementation
-    - Create HTML5/JS to retrieve NON image data and display
-    - Create HTML5/JS to retrieve image (or section of) data and display
-    - Create HTML5/JS to begin an ML session on some data and retrieve results.
-    - Create HTML5/JS to check a user/group information
-    - Create HTML5/JS to upload various filetypes and ensure they convert to universal format.
-    - Create HTML5/JS to action a login
-- Extension Implementation
-    - Develop a Caching function for frequently accessed files, or anticipate UUIDs next to be accessed for increased performance.
-    - Upgrade all HTTP interactions to HTTPS
-    - Add support for Lecia file conversion (heavily licenced)
+- Design  ------- (2-3 Weeks)
+    - Design Test Interface ------- (3 Days)
+        - Separation of Machine Learning tests & HCI tests.  ------- (1 Day)
+        - Plan what mocks of other groups are required to ensure usability.  ------- (2 Days)
+    - Design Server  ------- (1 week)
+        - Stubs for conforming to protocol  ------- (1 Day)
+        - Structure and Core Packages  ------- (5 Days)
+        - Language(s)? we will use & why.  ------- (1 Day)
+    - Design Database  ------- (1 week)
+        - Which database will we use?  ------- (1 Day)
+        - Schema  ------- (2 Days)
+        - ER Diagram  ------- (5 Days)
+- Implementation   ------- (Continuous)
+    - Database Implementation ------- (~3 Weeks)
+        - Interface/Linking with the root to the file system.  ------- (3 Days)
+        - Notion of Secure Access for the database. ------- (1 Week)
+        - Dealing with various filetypes - Conversion / Standardisation for storage. ------- (2 Days)
+        - Standard procedures for fetching. ------- (2 Days)
+        - Deal with Storing Image Data (+ other binary formats?) / JSON. ------- (5 Days)
+        - Deal with storing plain text + tabular data. ------- (5 Days)
+        - Create Database from schema  ------- (3 Days)
+    - Server Implementation ------- (~1.5 Months)
+        - Setup initial HelloWorld Sever to ensure correct installation & dependencies. ------- (1 Day)
+        - Create Strong/Reliable link between server functions and underlying filesystem for database. ------- (1 Weeks)
+        - Create Strong/Reliable link between server functions and the database. ------- (5 Days)
+        - Create pre-processing functions to standardise Data passed in. (images->png & plaintext->csv/json) ------- (1 Week)
+        - Deal with responses to a client ------- (4 Weeks)
+            - Involving continuous file transfer (For example, whilst panning Large Pathology photos.) ------- (1 Week)
+            - Involving 'simple' file transfer (getting whole file at once for csv etc.) ------- (1 Week)
+            - Involving file uploads All at once. ------- (1 Week)
+            - Involving file uploads in chunks for files above 8Mb. ------- (1 Week)
+        - Create Node "router" to capture all required URLs and forward to functions to handle based on protocol. ------- (1 Day)
+        - Create Basic error response functions which can be called from anywhere to deal with any potential problems and safely respond to client. ------- (2 Days)
+- Testing  ------- (2 Weeks)
+    - Server Testing ------- (2 Weeks)
+        - Create methods to test logic of JS/TS which can be re-run on each commit ------- (2 Weeks)
+            - From Backend's perspective ------- (1 Week)
+            - From HCI's perspective ------- (1 Weeks)
+    - Database Testing ------- (2 Weeks)
+        - Carrying out Optimisations/Streamlining ------- (5 Days)
+        - Profiling of performance of UnCommon Actions (delete) ------- (4 Days)
+        - Profiling of performance of common actions (file creation/file reads) ------- (4 Days)
+        - Accuracy of file retrieval ------- (1 Day)
+    - TestInterface Implementation ------- (2 Weeks)
+        - Create HTML5/JS to retrieve NON image data and display ------- (1 Day)
+        - Create HTML5/JS to retrieve image (or section of) data and display ------- (1 Day)
+        - Create HTML5/JS to begin an ML session on some data and retrieve results. ------- (1 Day)
+        - Create HTML5/JS to check a user/group information ------- (1 Day)
+        - Create HTML5/JS to upload various filetypes and ensure they convert to universal format. ------- (1 Day)
+        - Create HTML5/JS to action a login ------- (1 Day)
+- Extension Implementation ------- (~3 Weeks)
+    - Develop a Caching function for frequently accessed files, or anticipate UUIDs next to be accessed for increased performance. ------- (1 Week)
+    - Extend our basic server implementation, to support multiple instances and ensure ATOMICity of DB and sensible file distribution. ------- (2 Weeks)
+    - Upgrade all HTTP interactions to HTTPS ------- (2 Days)
+    - Add support for Lecia file conversion (heavily licenced) ------- (2 Weeks)
 
 
-    - Need to upload the pictures of our scrum board to the repository/report!
+Additionally as part of following the scrum methodology of development, the group carried out a selection of meetings to:  
+1) Evaluate the current sprint (Work complete, standard, sprint time etc.  
+2) Retrospectively plan anything with crept up throughout the past sprint, and evaluate how we dealt with it.  
+3) Catch up with each others' progress and decide on work distribution  
+The Following is a quick summary of these meetings:
 
+> Meeting 1:
+> > Date:  
+> Time:  
+> Attendance:  
+> Content :  
 
+> Meeting 2:
+> > Date:  
+> Time:  
+> Attendance:  
+> Content :  
+
+# Need to upload the pictures of our scrum board to the repository/report!  
+# ALSO need to upload our burn-down charts to this report.  
 
 
 
