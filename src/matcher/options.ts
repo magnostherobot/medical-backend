@@ -77,10 +77,10 @@ export function array(template: Object, values?: Array<Object>) {
 }
 
 const options = {
-  match = match,
-  exact = exact,
-  optional = optional,
-  alternative = alternative,
-  array = array
+  match : match,
+  exact : exact,
+  optional : optional,
+  alternative : alternative,
+  array : array
 };
 export default options;

@@ -330,7 +330,7 @@ export class FileRouter {
       include: [
         User
       ]
-    ).then((projects) => {
+    }).then((projects) => {
           res.json(projects.map<any>(
               (p: Project) => p.getProjectFullInfo()
           ));
