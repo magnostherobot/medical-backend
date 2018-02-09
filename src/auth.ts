@@ -5,12 +5,14 @@ import {Router, Request, Response, NextFunction} from 'express';
 import * as expressJwt from 'express-jwt';
 
 export class AuthRouter {
-	LocalStrategy: any
 	router: Router
+	LocalStrategy
+	ensureAuth	
 
 	constructor() {
 		this.LocalStrategy = passportLocal.Strategy();
-		this.router();
+		this.ensureAuth = expressJwt({secret: 'Mr Secret'}); //protect routes
+		this.router();		
 		this.init();
 	}
 
@@ -31,7 +33,7 @@ export class AuthRouter {
 	}
 
 	//middleware which generates token and sends it as response
-	public genToken(req: Request, res: Response) {	
+	private genToken(req: Request, res: Response) {	
 		var userid = findUserByID(req.body.username);
 		
 		var token = jwt.sign({
@@ -48,8 +50,22 @@ export class AuthRouter {
 		});
 	}
 
+	private authenticate(req: Request, res: Response, next: NextFunction) {
+		passport.authenticate('local', { session: false }, function(err, user) {
+			if (err) { console.log(err); }		
+	
+			if (!user) {
+				res.status(400).json({
+					"error": "invalid_grant",
+					"error_description": "Incorrect authentication details"
+				});
+			}		
+		});
+		next();
+	}
+
 	//checks for errors within request before authentication
-	public checkErr(req: Request, res: Response, next: NextFunction) {	
+	private checkErr(req: Request, res: Response, next: NextFunction) {	
 		if (!req.body.grant_type || !req.body.username || !req.body.password) {
 			res.status(400).json({
 				"error": "invalid_request",
@@ -84,7 +100,7 @@ export class AuthRouter {
 
 	//Configure local strategy to use with passport-js.
 	private configStrategy() {
-	passport.use(new LocalStrategy( (username, password, done) => {
+		passport.use(new this.LocalStrategy( (username, password, done) => {
 			var user = findByUsername(username);
 
 			if (!user || user.password != password) { 
@@ -93,36 +109,23 @@ export class AuthRouter {
 			return done(null, user);
 		}));
 	}
-}
-///////////////////////////////////////////////////
 
-var app = express();
-var ensureAuth = expressJwt({secret: 'Mr Secret'}); //protect routes
+	init() { 
+		this.configStrategy();
+
+		this.router.post('/login', this.checkErr, this.authenticate, this.genToken);
+		this.router.get('/logout', (req, res) => { req.logout(); });
+	}
+}
+
+const authRoutes = new AuthRouter();
+authRoutes.init();
+
+export default authRoutes.router;
+///////////////////////////////////////////////////
 
 app.use(passport.initialize());
 app.use(unauthorisedErr); //currently does not handle userdefined error
-
-app.post('/login', checkErr, function(req, res, next) {	
-	passport.authenticate('local', { session: false }, function(err, user) {
-		if (err) { console.log(err); }		
-
-		if (!user) {
-			res.status(400).json({
-				"error": "invalid_grant",
-				"error_description": "Incorrect authentication details"
-			});
-		}		
-	});
-	next();
-}, genToken);
-
-app.get('/logout', function(req, res) {
-	req.logout();
-});
-
-app.get('/test', ensureAuth, function(req, res) {
-	res.send("you are authenticated!");
-});
 
 
 /*
