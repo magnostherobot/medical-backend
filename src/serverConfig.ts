@@ -44,7 +44,7 @@ class PropertyDisplay {
  * A server property that infuences the running of the server.
  * Loaded from configs at launch, and possibly editable during run-time.
  */
-interface Property {
+export interface Property {
 	/**
 	 * The property's unique ID.
 	 */
