@@ -14,3 +14,6 @@ POSTGRES_logfile
 
 # Vim swap files
 *.sw*
+
+# Typedoc-generated documentation
+docs/
