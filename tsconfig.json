@@ -5,7 +5,8 @@
     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */
     "module": "commonjs",
     /* Where to output .js files */
-    "outDir": "dist"
+    "outDir": "dist",
+    "strict": true
   },
   /* Where to look for .ts files */
   "include": [
