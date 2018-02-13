@@ -1,0 +1,115 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{a4wide}
+
+\begin{document}
+\title{Report --- Juniour Honours Project Submission 1}
+\author{Hafeez Abdul-Rehaman, Johannes Weck, Josh Lee, Calum Duff, Tom Harley}
+\date{\today}
+
+\maketitle
+
+\section{Requirements Overview}
+For our Junior Honours project, we are to design and create a database
+for a system which will be used primarily for the sharing and viewing
+of various medical and pathological media.
+
+Our database is to be:
+\begin{description}
+  \item[User-aware] The system should act as a platform for managing
+    users and their permissions, with respect to viewing and affecting
+    projects and media.
+  \item[Filetype-agnostic] The system should accept files in a
+    variety of filetypes and be able to translate between them, in order to
+    provide a user with a desirable output filetype.
+  \item[Substitutable] The system should follow standardised
+    communication protocols, to participate in a framework of modularised
+    systems created by the other Junior Honours groups.
+\end{description}
+
+\section{Using Scrum}
+The Scrum approach facilitated the
+planning and running of group meetings. As the year-wide protocol changed
+over time, an AGILE working process provided the granular iteration
+required to address the frequent design changes.
+
+\subsection{Scrum Board}
+Throughout the project a Scrum board has been used to keep track of current tasks
+and further items to implement. A whiteboard in the John Honey main computer lab
+was used throughout this process. Examples of the board in use can be found in
+Appendix A.
+
+The Scrum board made visualizing tasks and progression straightforward.
+Using it in meetings helped with determining how much was still to be done.
+
+At times the \emph{In Progress} section of the Scrum board seemed unbalanced;
+at these times several people were working on the same large task, and so fewer
+notes were placed in this column.
+
+\subsection{Time Management}
+Based on how tasks were split, and the difficulty of various tasks, we estimated
+durations for each task. Due to the widely-varying estimated completion times,
+we decided to distribute our Sprint durations accordingly.
+Initially, we divided our total available time with the number of available tasks,
+but over time experience from previous work and from previous meetings was helpful in
+refining the expected duration of the future tasks.
+This, combined with
+the late reveal of the specification meant that work wqs done over holidays, greatly 
+warping the duration of several Sprints to be longer than anticipated. This is
+evident in the burnout graphs provided for the period over December%
+\footnote{The burnout graph we generated is available in Appendix B.}.
+
+\subsection{Meetings}
+...
+\footnote{The minutes for formal meetings are available in Appendix C.}
+
+\subsection{Paired Programming/Teamwork}
+Paired Programming was used extensively throughout implementation of basic server
+functions, such as writing logic for the public protocol endpoints.
+
+Multiple people working on a single task reduces the total actual time it takes to
+complete. This allowed larger tasks that would not normally fit into a regular Sprint
+to still be tackled within a single Sprint.
+
+At times the entire team was in labs, working concurrently on separate tasks.
+
+Having everyone in the same place focussed everyone on the task at hand and greatly
+improved communication, keeping everyone working on what was important and not dallying.
+
+\subsection{Evaluation of Work Done/To Do}
+The Scrum board and regular meetings greatly aided in our evaluation of how much work
+had been completed, and how much there was left to do, at the time. Now that we're
+used to Scrum, evaluation of further tasks (such as extensions) should be more
+realistic, and tasks are more likely to be assigned to Sprints with enough time to
+accommodate them, instead of persisting to the next Sprint.
+
+\section{Design Decisions}
+\subsection{Database}
+Passwords in the database are currently stored totally unencrypted. Initially,
+the focus of the team's work was on routing traffic, and for this purpose salting
+passwords is unnecessary. Once the server is past development phase, passwords
+will be encrypted in some secure fashion.
+
+\subsection{Server Framework}
+The protocol designed by the entire year uses a token-based authentication service
+similar to and inspired by OAuth2. Using token-based authentication removes the need
+for sessions or for cookies while still providing a smooth and secure user experience,
+and simplifying client design.
+It was decided that implementing OAuth2 in its entirety would be superfluous. OAuth2
+relies on the acquisition of tokens from third parties, which would be unsuitable for
+a simple system such as this.
+
+\subsection{Testing Framework}
+...
+
+\section{Looking Ahead}
+\subsection{File Agnosticity}
+
+\subsection{Advanced Telemetry}
+
+\subsection{ACID Distribution}
+
+
+\end{document}
+

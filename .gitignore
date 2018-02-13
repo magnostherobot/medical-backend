@@ -4,5 +4,13 @@ node_modules/
 # compiled files
 dist/
 
+# LaTeX output files
+*.aux
+*.log
+*.pdf
+
+# PostreSQL log files
+POSTGRES_logfile
+
 # Vim swap files
 *.sw*
