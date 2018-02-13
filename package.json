@@ -6,7 +6,9 @@
   "scripts": {
     "test": "mocha --reporter spec -r ts-node/register 'test/**/*.test.ts'",
     "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts",
+    "lint": "tslint --fix --force -p './tsconfig.json'",
+    "_gl-lint": "tslint -p './tsconfig.json'"
   },
   "repository": {
     "type": "git",
@@ -29,13 +31,15 @@
     "chai-http": "^3.0.0",
     "mocha": "^3.1.2",
     "nodemon": "^1.14.10",
-    "typedoc": "^0.10.0"
+    "typedoc": "^0.10.0",
+    "tslint": "^5.9.1"
   },
   "dependencies": {
     "@types/body-parser": "0.0.33",
     "@types/express": "^4.0.33",
     "@types/morgan": "^1.7.32",
     "@types/node": "^6.0.46",
+    "@types/sequelize": "^4.27.5",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "morgan": "^1.9.0",
