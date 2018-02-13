@@ -5,6 +5,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "test": "mocha --reporter spec -r ts-node/register 'test/**/*.test.ts'",
+    "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
     "start": "ts-node src/index.ts"
   },
   "repository": {
@@ -27,7 +28,8 @@
     "chai": "^3.5.0",
     "chai-http": "^3.0.0",
     "mocha": "^3.1.2",
-    "nodemon": "^1.14.10"
+    "nodemon": "^1.14.10",
+    "typedoc": "^0.10.0"
   },
   "dependencies": {
     "@types/body-parser": "0.0.33",
