@@ -6,7 +6,8 @@
   "scripts": {
     "test": "mocha --reporter spec -r ts-node/register 'test/**/*.test.ts'",
     "start": "ts-node src/index.ts",
-    "lint": "tslint --fix -p './tsconfig.json'"
+    "lint": "tslint --fix --force -p './tsconfig.json'",
+    "_gl-lint": "tslint -p './tsconfig.json'"
   },
   "repository": {
     "type": "git",
