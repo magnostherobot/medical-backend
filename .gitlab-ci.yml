@@ -11,14 +11,15 @@ stages:
 install:
   stage: build
   script:
-    - npm install
+    - npm install --global yarn
+    - yarn
 
 mocha:
   stage: test
   script:
-    - npm test
+    - yarn test
 
 lint:
   stage: test
   script:
-    - npm run _gl-lint
+    - yarn run _gl-lint
