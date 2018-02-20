@@ -1,51 +1,54 @@
-import {Table, Model, Column, AllowNull, HasMany} from 'sequelize-typescript';
+import { AllowNull, Column, DataType, HasMany, Model, Table
+	} from 'sequelize-typescript';
 import { default as UserJoinsProject } from './UserJoinsProject';
 
 @Table
 export default class ContributorGroup extends Model<ContributorGroup> {
-  @AllowNull
-  @Column
-  name: string;
+	@AllowNull
+	@Column(DataType.TEXT)
+	public name: string | null = null;
 
-  // "Error: Foreign key for "ContributorGroup" is missing on "UserJoinsProject"."
-  @HasMany(() => UserJoinsProject, 'contributorGroupId')
-  uses: UserJoinsProject[];
+	/* "Error: Foreign key for "ContributorGroup"
+	 * is missing on "UserJoinsProject"." */
+	@HasMany(() => UserJoinsProject, 'contributorGroupId')
+	public uses: UserJoinsProject[] = [];
 
-  @Column
-  canCreateFiles: boolean;
+	@Column
+	public canCreateFiles: boolean = false;
 
-  @Column
-  canDeleteFiles: boolean;
+	@Column
+	public canDeleteFiles: boolean = false;
 
-  @Column
-  canViewFiles: boolean;
+	@Column
+	public canViewFiles: boolean = false;
 
-  @Column
-  canAddUsers: boolean;
+	@Column
+	public canAddUsers: boolean = false;
 
-  @Column
-  canRemoveUsers: boolean;
+	@Column
+	public canRemoveUsers: boolean = false;
 
-  @Column
-  canEditUserPermissions: boolean;
+	@Column
+	public canEditUserPermissions: boolean = false;
 
-  @Column
-  description: string;
+	@AllowNull
+	@Column(DataType.TEXT)
+	public description: string | null = null;
 
-  @Column
-  isInternal: boolean;
+	@Column
+	public isInternal: boolean = true;
 
-  getGroupFullInfo(): GroupFullInfo {
-      return {
-          role: this.name,
-          description: this.description,
-          internal: this.isInternal
-      };
-  }
+	public getContributorGroupFullInfo(): ContributorGroupFullInfo {
+		return {
+			role: `${this.name}`,
+			description: `${this.description}`,
+			internal: this.isInternal
+		};
+	}
 }
 
-type GroupFullInfo = {
-    role: string,
-    description: string,
-    internal: boolean
-};
+export interface ContributorGroupFullInfo {
+	role: string;
+	description: string;
+	internal: boolean;
+}

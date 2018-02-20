@@ -1,86 +1,99 @@
-import { default as types } from './types';
+import { Atom, default as types } from './types';
 
-type matchType<T = any>
-  = (boolean | ((T) => boolean));
+type Checker = ((value: Value | undefined) => boolean);
 
-export function match(template: Object, value?: Object) {
-  if (value === undefined) {
-    return match.bind(null, template);
-  }
+export type TemplateValue =
+	Atom | Template | Checker;
 
-  for (let k of Object.keys(template)) {
-    let f;
-    if (types.object(template[k])) {
-      f = match(template[k]);
-    } else if (types.function(template[k])) {
-      f = template[k];
-    } else {
-      f = (v) => v === template[k];
-    }
-
-    if (!f(value[k])) {
-      return false;
-    }
-  }
-  return true;
+export interface Template {
+	[key: string]: TemplateValue | undefined;
 }
 
-export function exact(template: Object, value?: Object) {
-  if (value === undefined) {
-    return exact.bind(null, template);
-  }
+export type Value =
+	{ [key: string]: Value | undefined } | Atom;
 
-  let k1 = Object.keys(template);
-  let k2 = Object.keys(value);
+const matchNoCurry:
+	(template: TemplateValue, value: Value | undefined) => boolean =
+	(template: TemplateValue, value: Value | undefined): boolean => {
+	if (types.atom(template)) {
+		return template === value;
+	} else if (types.function(template)) {
+		return template(value);
+	} else if (types.atom(value) || value === undefined) {
+		return false;
+	} else if (types.object(template)) {
+		return Object.keys(template)
+			.every((key: string): boolean => {
+				const v: Value | undefined = value[key];
+				return matchNoCurry(template[key] as TemplateValue, v);
+			});
+	} else {
+		throw new Error(`Unknown template value: ${template}`);
+	}
+};
 
-  return match(template, value)
-      && k2.every((x) => k1.indexOf(x) < 0);
-}
+// tslint:disable-next-line:typedef
+export const match = (template: TemplateValue, value?: Value) => {
+	if (value === undefined) {
+		return matchNoCurry.bind(null, template);
+	}
+	return matchNoCurry(template, value);
+};
 
-export function optional(template: Function, value?: any) {
-  if (value === undefined) {
-    return optional.bind(null, template);
-  }
+// tslint:disable-next-line:typedef
+export const exact = (template: Template, value?: Value) => {
+	if (value === undefined) {
+		return exact.bind(null, template);
+	}
+	if (!match(template, value)) {
+		return false;
+	}
+	if (!types.atom(value)) {
+		const k1: string[] = Object.keys(template);
+		const k2: string[] = Object.keys(value);
+		return k2.every((x: string) => k1.indexOf(x) < 0);
+	} else {
+		return true;
+	}
+};
 
-  return types.undefined(value)
-      || template(value);
-}
+// tslint:disable-next-line:typedef
+export const optional = (template: TemplateValue, value?: Value) => {
+	if (value === undefined) {
+		return optional.bind(null, template);
+	}
+	return types.undefined(value) || match(template, value);
+};
 
-export function alternative(templates: any[], value?: any) {
-  if (value === undefined) {
-    return alternative.bind(null, templates);
-  }
+// tslint:disable-next-line:typedef
+export const alternative = (templates: TemplateValue[], value?: Value) => {
+	if (value === undefined) {
+		return alternative.bind(null, templates);
+	}
+	if (templates.length === 0) {
+		return false;
+	} else {
+		return templates.some((t: TemplateValue): boolean => match(t, value));
+	}
+};
 
-  if (templates.length === 0) {
-    return false;
-  } else {
-    let t = templates.map((x) => {
-      if (types.function(x)) {
-        return x;
-      } else if (types.object(x)) {
-        return match(x);
-      } else {
-        return (v) => x === v;
-      }
-    });
-    return t.some((x) => x(value));
-  }
-}
+// tslint:disable-next-line:typedef
+export const array = (template: TemplateValue, values?: Value[]) => {
+	if (values === undefined) {
+		return array.bind(null, template);
+	}
+	const m: Checker = types.function(template)
+		? template
+		: match.bind(null, template);
+	return values.every(m);
+};
 
-export function array(template: Object, values?: Array<Object>) {
-  if (values === undefined) {
-    return array.bind(null, template);
-  }
-
-  let m = match(template) as ((Object) => boolean);
-  return values.every(m);
-}
-
+// tslint:disable-next-line:typedef
 const options = {
-  match : match,
-  exact : exact,
-  optional : optional,
-  alternative : alternative,
-  array : array
+	match,
+	exact,
+	optional,
+	alternative,
+	array
 };
 export default options;

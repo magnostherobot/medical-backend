@@ -4,8 +4,17 @@ node_modules/
 # compiled files
 dist/
 
+# LaTeX output files
+*.aux
+*.log
+*.pdf
+
+# PostreSQL log files
+POSTGRES_logfile
+*logfile
+
 # Vim swap files
 *.sw*
 
-# PostgreSQL log files
-*logfile
+# Typedoc-generated documentation
+docs/
