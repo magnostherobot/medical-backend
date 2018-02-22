@@ -1,25 +1,25 @@
 image: node:9.1.0
 services:
-  - postgres:10.0
+	- postgres:10.0
 cache:
-  untracked: true
+	untracked: true
 
 stages:
-  - build
-  - test
+	- build
+	- test
 
 install:
-  stage: build
-  script:
-    - npm install --global yarn
-    - yarn
+	stage: build
+	script:
+		- npm install --global yarn
+		- yarn
 
 mocha:
-  stage: test
-  script:
-    - yarn test
+	stage: test
+	script:
+		- yarn test
 
 lint:
-  stage: test
-  script:
-    - yarn run _gl-lint
+	stage: test
+	script:
+		- yarn run _gl-lint
