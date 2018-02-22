@@ -6,14 +6,16 @@
     "module": "commonjs",
     /* Where to output .js files */
     "outDir": "dist",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "strict": true
   },
+  /* Where to look for .ts files */
   "include": [
     "src/**/*.ts"
   ],
+  /* Exclude directory */
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "experimentalDecorators": true,
+  "emitDecoratorMetadata": true
 }

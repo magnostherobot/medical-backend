@@ -69,10 +69,7 @@
       ],
       "unified-signatures": true,
 
-      "await-promise": [
-        true,
-        "Bluebird"
-      ],
+      "await-promise": true,
       "ban-comma-operator": true,
       "ban": [ false ],
       "curly": true,
@@ -91,12 +88,9 @@
       "no-dynamic-delete": true,
       "no-empty": true,
       "no-eval": true,
-      "no-floating-promises": [
-        true,
-        "Bluebird"
-      ],
+      "no-floating-promises": true,
       "no-for-in-array": false,
-      "no-implicit-dependencies": [ true, "dev" ],
+      "no-implicit-dependencies": true,
       "no-inferred-empty-object-type": true,
       "no-invalid-template-strings": true,
       "no-invalid-this": true,
