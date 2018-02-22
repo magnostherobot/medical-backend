@@ -1,9 +1,12 @@
 /* tslint:disable:no-console
  * This only goes here until we have a logging system */
 
-import app from './app';
+console.log('begin import');
+import { default as app } from './app';
+import { default as seq } from './db/orm';
+console.log('end import');
 
-console.log('Welcome to the CS3099 Server thingy!');
+import { default as UserGroup } from './db/model/UserGroup';
 
 const DEFAULT_PORT: number = 3000;
 
@@ -12,10 +15,40 @@ const port: number = process.env.PORT
 	? process.env.PORT
 	: DEFAULT_PORT;
 
-app.listen(port, (err: Error): void => {
-	if (err) {
-		return console.log(err);
-	}
+// tslint:disable:no-floating-promises
+(async(): Promise<void> => {
+	console.log('Booting PSQL database');
 
-	return console.log(`server is listening on port ${port}`);
-});
+	await seq.authenticate();
+
+	console.log('Resetting Database');
+
+	await seq.sync({
+		force: true
+	});
+
+	const admin: UserGroup = new UserGroup({
+		name: 'admin',
+		canCreateUsers: true,
+		canDeleteUsers: true,
+		canEditUsers: true,
+		canCreateProjects: true,
+		canDeleteProjects: true,
+		canEditProjects: true,
+		isInternal: false,
+		description: 'Systems admin'
+	});
+
+	// tslint:disable:no-floating-promises
+	admin.save();
+
+	console.log('Booting ExpressJS server');
+
+	app.listen(port, (err: Error) => {
+		if (err) {
+			return console.log(err);
+		} else {
+			return console.log(`server is listening on port ${port}`);
+		}
+	});
+})();
