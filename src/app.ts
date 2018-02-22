@@ -1,7 +1,9 @@
 import * as bodyParser from 'body-parser';
 import * as ex from 'express';
-import FileRouter from './FileRouter';
 import * as logger from 'morgan';
+
+import { errorHandler } from './errors/errorware';
+import FileRouter from './FileRouter';
 
 class App {
 	public express: ex.Express;
@@ -11,6 +13,7 @@ class App {
 		this.express = ex();
 		this.middleware();
 		this.mountRoutes();
+		this.errorware();
 	}
 
 	// Configure Express middleware.
@@ -33,6 +36,10 @@ class App {
 		});
 		this.express.use('/', defRouter);
 		this.express.use('/cs3099group-be-4', FileRouter);
+	}
+
+	private errorware(): void {
+		this.express.use(errorHandler);
 	}
 }
 
