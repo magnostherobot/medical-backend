@@ -1,26 +1,20 @@
 import * as bodyParser from 'body-parser';
 import * as ex from 'express';
-import * as logger from 'morgan';
-
-import { errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
+import * as logger from 'morgan';
 
 class App {
 	public express: ex.Express;
-	public logEnabled: boolean = true;
 
 	public constructor() {
 		this.express = ex();
 		this.middleware();
 		this.mountRoutes();
-		this.errorware();
 	}
 
 	// Configure Express middleware.
 	private middleware(): void {
-		if (this.logEnabled) {
-			this.express.use(logger('combined'));
-		}
+		this.express.use(logger('combined'));
 		this.express.use(bodyParser.json());
 		this.express.use(bodyParser.urlencoded({ extended: false }));
 	}
@@ -36,10 +30,6 @@ class App {
 		});
 		this.express.use('/', defRouter);
 		this.express.use('/cs3099group-be-4', FileRouter);
-	}
-
-	private errorware(): void {
-		this.express.use(errorHandler);
 	}
 }
 
