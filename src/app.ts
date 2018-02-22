@@ -5,17 +5,19 @@ import * as logger from 'morgan';
 
 class App {
 	public express: ex.Express;
-	public logEnabled: boolean = true;
+	private logEnabled: boolean;
 
-	public constructor() {
+	public constructor(enableLog: boolean) {
 		this.express = ex();
 		this.middleware();
 		this.mountRoutes();
+		this.logEnabled = enableLog;
 	}
 
 	// Configure Express middleware.
 	private middleware(): void {
 		if (this.logEnabled) {
+			console.log("log enabled")
 			this.express.use(logger('combined'));
 		}
 		this.express.use(bodyParser.json());
@@ -36,4 +38,7 @@ class App {
 	}
 }
 
-export default new App().express;
+export default new App(true).express;
+export function TestApp(){
+	return new App(false).express;
+} 

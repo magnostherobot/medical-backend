@@ -22,7 +22,9 @@ import { Template, alternative, array, exact, match, optional
 	} from '../src/matcher/options';
 import { default as types } from '../src/matcher/types';
 
-import app from '../src/app';
+import * as App from '../src/app';
+let app = App.TestApp();
+
 
 const responseTemplate: Template = {
 	status: types.string,
