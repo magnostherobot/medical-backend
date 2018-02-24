@@ -6,7 +6,7 @@ dist/
 
 # LaTeX output files
 *.aux
-*.log
+*.log*
 *.pdf
 
 # PostreSQL log files

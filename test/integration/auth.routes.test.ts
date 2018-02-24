@@ -17,7 +17,7 @@ import 'mocha';
 import * as App from '../../src/app';
 let app = App.TestApp();
 
-describe('baseRoute', () => {
+describe('authentication', () => {
 	it('should be json', () => {
 		return chai.request(app).get('/')
 		.then((res: ChaiHttp.Response) => {

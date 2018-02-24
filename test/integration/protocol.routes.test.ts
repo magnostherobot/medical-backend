@@ -19,10 +19,10 @@ import 'mocha';
 import forEach = require('mocha-each');
 
 import { Template, alternative, array, exact, match, optional
-	} from '../src/matcher/options';
-import { default as types } from '../src/matcher/types';
+	} from '../../src/matcher/options';
+import { default as types } from '../../src/matcher/types';
 
-import * as App from '../src/app';
+import * as App from '../../src/app';
 let app = App.TestApp();
 
 
@@ -35,9 +35,36 @@ const responseTemplate: Template = {
 	error_data: optional(types.anything)
 };
 
+const errorResponseTemplate: Template = {
+	status: 'error',
+	error: types.string,
+	error_description: optional(types.string),
+	user_message: optional(types.string),
+	error_data: optional(types.anything)
+};
+
 type MochaForEachInput = [ string, string, Template ];
 
-describe('Protocol', () => {
+describe('routes : errors', () => {
+	describe('GET invalid routes', function(){
+		it('should have response code 404', () => {
+			return chai.request(app).get('/invalid/route')
+			.catch(function (res) {
+				expect(res.status).to.equal(404);
+			});
+		});
+		it('should conform to the error protocol', function(){
+			return chai.request(app).get('/invalid/route')
+			.catch(function (err: any) {
+				match(errorResponseTemplate)(err.response.body).should.be.true;
+			});
+		})
+	});
+
+});
+
+describe('routes : protocol', () => {
+	const base: string = '/cs3099group-be-4';
 	const completeProtocol: MochaForEachInput[] = [
 		['get', '/_supported_protocols_', exact({
 				supported: array(types.string),
@@ -159,45 +186,55 @@ describe('Protocol', () => {
 		['get', '/projects/:project_name/files_by_id/:id', null]
 	];
 
-	describe('Response specification', () => {
+	describe('GET/POST all valid routes', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template) => {
 			const request: ChaiHttp.Request = method === 'get'
-				? chai.request(app).get(path)
-				: chai.request(app).post(path);
-			request.then((res: ChaiHttp.Response) => {
+				? chai.request(app).get(base + path)
+				: chai.request(app).post(base + path);
+			return request.then((res: ChaiHttp.Response) => {
 				expect(res.type).to.equal('application/json');
-			});
+			}).catch(function (err: any) {
+				match(errorResponseTemplate)(err.response.body).should.be.true;
+			});;
 		});
 		forEach(completeProtocol).it(
 			'%s %s should have a status 200',
 			(method: string, path: string, temp: Template) => {
 			const request: ChaiHttp.Request = method === 'get'
-				? chai.request(app).get(path)
-				: chai.request(app).post(path);
-			request.then((res: ChaiHttp.Response) => {
+				? chai.request(app).get(base + path)
+				: chai.request(app).post(base + path);
+			return request.then((res: ChaiHttp.Response) => {
 				expect(res).to.have.status(200);
-			});
+			}).catch(function (err: any) {
+				match(errorResponseTemplate)(err.response.body).should.be.true;
+			});;
 		});
 		forEach(completeProtocol).it(
 			'%s %s should conform to the standard response protocol',
 			(method: string, path: string, temp: Template) => {
 			const request: ChaiHttp.Request = method === 'get'
-				? chai.request(app).get(path)
-				: chai.request(app).post(path);
-			request.then((res: ChaiHttp.Response) => {
+				? chai.request(app).get(base + path)
+				: chai.request(app).post(base + path);
+			return request.then((res: ChaiHttp.Response) => {
 				match(responseTemplate, JSON.parse(res.body)).shoul.be.true;
-			});
+			}).catch(function (err: any) {
+				match(errorResponseTemplate)(err.response.body).should.be.true;
+			});;
 		});
 		forEach(completeProtocol).it(
 			'the response for %s %s should conform to its specific response protocol',
 			(method: string, path: string, temp: Template) => {
 			if (method === 'get' && temp != null) {
-				return chai.request(app).get(path)
+				return chai.request(app).get(base + path)
 				.then((res: ChaiHttp.Response) => {
 					match(temp)(JSON.parse(res.body)).should.be.true;
+				}).catch(function (err: any) {
+					match(errorResponseTemplate)(err.response.body).should.be.true;
 				});
+			}else{
+				return true;
 			}
 		});
 	});

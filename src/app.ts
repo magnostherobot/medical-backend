@@ -33,8 +33,18 @@ class App {
 				important : 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		this.express.use('/', defRouter);
+		defRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
+			res.status(404)
+			.json({
+				status: 'error',
+				error : 'invalid_route',
+				error_description: 'Endpoints start from /cs3099group-be-4/\n'
+						+' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
+						+ ' for further details.'
+			});
+		})
 		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/', defRouter);
 	}
 }
 
