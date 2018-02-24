@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for project-code/src/matcher/options.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../../index.html">All files</a> / <a href="index.html">project-code/src/matcher</a> options.ts
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">63.04% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>29/46</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">46.67% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>14/30</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">77.78% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>7/9</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">65.91% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>29/44</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100</td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Atom, default as types } from './types';
+&nbsp;
+type Checker = ((value: Value | undefined) =&gt; boolean);
+&nbsp;
+export type TemplateValue =
+	Atom | Template | Checker;
+&nbsp;
+export interface Template {
+	[key: string]: TemplateValue | undefined;
+}
+&nbsp;
+export type Value =
+	{ [key: string]: Value | undefined } | Atom;
+&nbsp;
+const matchNoCurry:
+	(template: TemplateValue, value: Value | undefined) =&gt; boolean =
+	(template: TemplateValue, value: Value | undefined): boolean =&gt; {
+	if (types.atom(template)) {
+		return template === value;
+	} else if (types.function(template)) {
+		return template(value);
+	} else <span class="missing-if-branch" title="if path not taken" >I</span>if (types.atom(value) || value === undefined) {
+<span class="cstat-no" title="statement not covered" >		return false;</span>
+	} else <span class="missing-if-branch" title="else path not taken" >E</span>if (types.object(template)) {
+		return Object.keys(template)
+			.every((key: string): boolean =&gt; {
+				const v: Value | undefined = value[key];
+				return matchNoCurry(template[key] as TemplateValue, v);
+			});
+	} else {
+<span class="cstat-no" title="statement not covered" >		throw new Error(`Unknown template value: ${template}`);</span>
+	}
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+export const match = (template: TemplateValue, value?: Value) =&gt; {
+	if (value === undefined) {
+		return matchNoCurry.bind(null, template);
+	}
+	return matchNoCurry(template, value);
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+export const exact = (template: Template, value?: Value) =&gt; {
+	<span class="missing-if-branch" title="else path not taken" >E</span>if (value === undefined) {
+		return exact.bind(null, template);
+	}
+<span class="cstat-no" title="statement not covered" >	if (!match(template, value)) {</span>
+<span class="cstat-no" title="statement not covered" >		return false;</span>
+	}
+<span class="cstat-no" title="statement not covered" >	if (!types.atom(value)) {</span>
+		const k1: string[] = <span class="cstat-no" title="statement not covered" >Object.keys(template);</span>
+		const k2: string[] = <span class="cstat-no" title="statement not covered" >Object.keys(value);</span>
+<span class="cstat-no" title="statement not covered" >		return k2.every(<span class="fstat-no" title="function not covered" >(x</span>: string) =&gt; <span class="cstat-no" title="statement not covered" >k1.indexOf(x) &lt; 0)</span>;</span>
+	} else {
+<span class="cstat-no" title="statement not covered" >		return true;</span>
+	}
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+export const optional = (template: TemplateValue, value?: Value) =&gt; {
+	<span class="missing-if-branch" title="else path not taken" >E</span>if (value === undefined) {
+		return optional.bind(null, template);
+	}
+<span class="cstat-no" title="statement not covered" >	return types.undefined(value) || match(template, value);</span>
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+export const alternative = (templates: TemplateValue[], value?: Value) =&gt; {
+	<span class="missing-if-branch" title="else path not taken" >E</span>if (value === undefined) {
+		return alternative.bind(null, templates);
+	}
+<span class="cstat-no" title="statement not covered" >	if (templates.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >		return false;</span>
+	} else {
+<span class="cstat-no" title="statement not covered" >		return templates.some(<span class="fstat-no" title="function not covered" >(t</span>: TemplateValue): boolean =&gt; <span class="cstat-no" title="statement not covered" >match(t, value))</span>;</span>
+	}
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+export const array = (template: TemplateValue, values?: Value[]) =&gt; {
+	<span class="missing-if-branch" title="else path not taken" >E</span>if (values === undefined) {
+		return array.bind(null, template);
+	}
+	const m: Checker = <span class="cstat-no" title="statement not covered" >types.function(template)</span>
+		? template
+		: match.bind(null, template);
+<span class="cstat-no" title="statement not covered" >	return values.every(m);</span>
+};
+&nbsp;
+// tslint:disable-next-line:typedef
+const options = {
+	match,
+	exact,
+	optional,
+	alternative,
+	array
+};
+export default options;
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Feb 24 2018 16:06:15 GMT+0000 (GMT)
+</div>
+</div>
+<script src="../../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../../sorter.js"></script>
+</body>
+</html>

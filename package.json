@@ -4,9 +4,9 @@
   "main": "index.ts",
   "license": "UNLICENSED",
   "scripts": {
-    "test": "mocha --reporter spec -r ts-node/register './**/*.test.ts'",
-    "test_unit": "mocha --reporter spec -r ts-node/register './**/*.unit.test.ts'",
-    "test_node": "mocha --reporter spec -r ts-node/register './**/*.node.test.ts'",
+    "test": "mocha --reporter spec -r ts-node/register './test/**/*.test.ts'",
+    "test_routes": "mocha --reporter spec -r ts-node/register './test/**/*.routes.test.ts'",
+    "test_unit": "mocha --reporter spec -r ts-node/register './test/**/*.unit.test.ts'",
     "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
     "start": "ts-node src/index.ts",
     "lint": "tslint --fix --force -p './tsconfig.json'",

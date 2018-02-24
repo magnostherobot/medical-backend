@@ -10,8 +10,8 @@
 import * as chai from 'chai';
 chai.should();
 
-import * as options from './options';
-import { default as types } from './types';
+import * as options from '../../src/matcher/options';
+import { default as types } from '../../src/matcher/types';
 
 // tslint:disable-next-line:no-require-imports
 

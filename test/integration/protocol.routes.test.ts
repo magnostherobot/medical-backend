@@ -35,32 +35,9 @@ const responseTemplate: Template = {
 	error_data: optional(types.anything)
 };
 
-describe('baseRoute', () => {
-	it('should be json', () => {
-		return chai.request(app).get('/')
-		.then((res: ChaiHttp.Response) => {
-			expect(res.type).to.eql('application/json');
-		});
-	});
-
-	it('should have a message prop', () => {
-		return chai.request(app).get('/')
-		.then((res: ChaiHttp.Response) => {
-			expect(res.body.message).to.eql('Welcome to the CS3099 BE4 server!');
-		});
-	});
-	it('should have an important prop', () => {
-		return chai.request(app).get('/')
-		.then((res: ChaiHttp.Response) => {
-			expect(res.body.important).to.eql('Endpoints start from /cs3099group-be-4/');
-		});
-	});
-
-});
-
 type MochaForEachInput = [ string, string, Template ];
 
-describe('General protocol', () => {
+describe('Protocol', () => {
 	const completeProtocol: MochaForEachInput[] = [
 		['get', '/_supported_protocols_', exact({
 				supported: array(types.string),
@@ -182,7 +159,7 @@ describe('General protocol', () => {
 		['get', '/projects/:project_name/files_by_id/:id', null]
 	];
 
-	describe('Checking complete Protocol', () => {
+	describe('Response specification', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template) => {
@@ -204,7 +181,7 @@ describe('General protocol', () => {
 			});
 		});
 		forEach(completeProtocol).it(
-			'%s %s should conform to standard protocol',
+			'%s %s should conform to the standard response protocol',
 			(method: string, path: string, temp: Template) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(path)
@@ -214,7 +191,7 @@ describe('General protocol', () => {
 			});
 		});
 		forEach(completeProtocol).it(
-			'the response for %s %s should comply with its own protocol',
+			'the response for %s %s should conform to its specific response protocol',
 			(method: string, path: string, temp: Template) => {
 			if (method === 'get' && temp != null) {
 				return chai.request(app).get(path)

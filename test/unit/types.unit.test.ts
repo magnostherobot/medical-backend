@@ -4,7 +4,7 @@
 import * as chai from 'chai';
 chai.should();
 
-import { default as types } from './types';
+import { default as types } from '../../src/matcher/types';
 
 describe('Type Checking:', () => {
   for (const x of [
