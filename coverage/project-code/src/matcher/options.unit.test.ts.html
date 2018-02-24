@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for project-code/src/matcher/options.unit.test.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../../index.html">All files</a> / <a href="index.html">project-code/src/matcher</a> options.unit.test.ts
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>0/69</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>0/29</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>0/69</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/* tslint:disable:typedef */
+// Disabled to allow quick template creation.
+&nbsp;
+/* tslint:disable:newline-per-chained-call */
+// Disabled to allow Chai- and Mocha-style test formatting.
+&nbsp;
+/* tslint:disable:no-unused-expression */
+// Disabled to allow `...to.be.true`.
+&nbsp;
+import * as chai from 'chai';
+<span class="cstat-no" title="statement not covered" >chai.should();</span>
+&nbsp;
+import * as options from './options';
+import { default as types } from './types';
+&nbsp;
+// tslint:disable-next-line:no-require-imports
+&nbsp;
+<span class="cstat-no" title="statement not covered" >describe('Matching:', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >	describe('Rough Matching', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >		context('for literals', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >			context('accepts matching', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >				it('strings', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match('a', 'a').should.be.true;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('numbers', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(3, 3).should.be.true;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('boolean values', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(true, true).should.be.true;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('null to null', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(null, null).should.be.true;</span>
+				});
+			});
+<span class="cstat-no" title="statement not covered" >			context('rejects', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >				it('different strings', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match('x', 'y').should.be.false;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('different numbers', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(20, 42).should.be.false;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('different boolean values', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(true, false).should.be.false;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('different types', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match('55', 55).should.be.false;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('null matched with non-null values', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(null, false).should.be.false;</span>
+				});
+<span class="cstat-no" title="statement not covered" >				it('non-null values matched with null', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(0, null).should.be.false;</span>
+				});
+			});
+		});
+<span class="cstat-no" title="statement not covered" >		context('for checker functions', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >			context('accepts', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >				it('values that succeed the checker function', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(types.number, 9).should.be.true;</span>
+				});
+			});
+<span class="cstat-no" title="statement not covered" >			context('rejects', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >				it('values that do not succeed the checker function', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >					options.match(types.boolean, 'true').should.be.false;</span>
+				});
+			});
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts basic things', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.string
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 'yes'
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts objects with superfluous properties', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.number
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 40,
+				b: 20
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('rejects objects missing some properties', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.boolean,
+				b: types.number,
+				c: types.number
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				b: 5
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.false;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts objects that omit not_present properties', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.number,
+				b: types.not_present,
+				c: types.not_present
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 4
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('rejects empty objects for non-empty templates', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.boolean
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.false;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts empty objects for empty templates', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts nested objects that match', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: types.number,
+				b: {
+					ba: types.string,
+					bb: types.string
+				},
+				c: types.boolean
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 432,
+				b: {
+					ba: 'baracus',
+					bb: 'ATEAM'
+				},
+				c: true,
+				x: false
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('accepts literal matches', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 'literal'
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				a: 'literal'
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.true;</span>
+		});
+<span class="cstat-no" title="statement not covered" >		it('rejects incorrect literal matches', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+			const template = <span class="cstat-no" title="statement not covered" >{</span>
+				g: 99
+			};
+			const matchee = <span class="cstat-no" title="statement not covered" >{</span>
+				g: 80
+			};
+<span class="cstat-no" title="statement not covered" >			options.match(template, matchee).should.be.false;</span>
+		});
+	});
+});
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Sat Feb 24 2018 16:12:47 GMT+0000 (GMT)
+</div>
+</div>
+<script src="../../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../../sorter.js"></script>
+</body>
+</html>

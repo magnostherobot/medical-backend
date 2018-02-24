@@ -426,8 +426,8 @@ export class FileRouter {
 	 * Initialize the FileRouter
 	 */
 	public constructor() {
-	this.router = Router();
-	this.init();
+		this.router = Router();
+		this.init();
 	}
 
 	/**

@@ -5,16 +5,21 @@ import * as logger from 'morgan';
 
 class App {
 	public express: ex.Express;
+	private logEnabled: boolean;
 
-	public constructor() {
+	public constructor(enableLog: boolean) {
 		this.express = ex();
 		this.middleware();
 		this.mountRoutes();
+		this.logEnabled = enableLog;
 	}
 
 	// Configure Express middleware.
 	private middleware(): void {
-		this.express.use(logger('combined'));
+		if (this.logEnabled) {
+			console.log("log enabled")
+			this.express.use(logger('combined'));
+		}
 		this.express.use(bodyParser.json());
 		this.express.use(bodyParser.urlencoded({ extended: false }));
 	}
@@ -28,9 +33,22 @@ class App {
 				important : 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		this.express.use('/', defRouter);
+		defRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
+			res.status(404)
+			.json({
+				status: 'error',
+				error : 'invalid_route',
+				error_description: 'Endpoints start from /cs3099group-be-4/\n'
+						+' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
+						+ ' for further details.'
+			});
+		})
 		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/', defRouter);
 	}
 }
 
-export default new App().express;
+export default new App(true).express;
+export function TestApp(){
+	return new App(false).express;
+} 
