@@ -33,8 +33,8 @@
     "chai-http": "^3.0.0",
     "mocha": "^3.1.2",
     "nodemon": "^1.14.10",
-    "typedoc": "^0.10.0",
-    "tslint": "^5.9.1"
+    "tslint": "^5.9.1",
+    "typedoc": "^0.10.0"
   },
   "dependencies": {
     "@types/body-parser": "0.0.33",
@@ -44,6 +44,7 @@
     "@types/sequelize": "^4.27.5",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
+    "mocha-each": "^1.1.0",
     "morgan": "^1.9.0",
     "pg": "^7.4.1",
     "pg-hstore": "^2.3.2",
