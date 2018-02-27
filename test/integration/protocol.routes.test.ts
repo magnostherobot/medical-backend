@@ -22,8 +22,8 @@ import * as App from '../../src/app';
 let app = App.TestApp();
 
 
-chai.use(chaiHttp);
-const expect = chai.expect;
+//chai.use(chaiHttp);
+//const expect = chai.expect;
 
 const errorResponseTemplate: Template = {
 	status: 'error',
