@@ -10,3 +10,6 @@ trim_trailing_whitespace = true
 
 [*.y*ml]
 indent_style = space
+
+[*{Makefile,.mak}]
+indent_size = 8
