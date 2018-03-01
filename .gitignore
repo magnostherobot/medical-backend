@@ -8,6 +8,10 @@ dist/
 *.aux
 *.log
 *.pdf
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
 
 # PostreSQL log files
 POSTGRES_logfile
