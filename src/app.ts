@@ -18,6 +18,15 @@ class App {
 		this.precondition();
 		this.middleware();
 		this.mountRoutes();
+		this.express.use(
+			async(req: ex.Request, res: ex.Response, next: ex.NextFunction):
+			Promise<void> => {
+				res.json({
+					status: 'success',
+					data: await res.locals.data
+				});
+			}
+		);
 		this.errorware();
 	}
 
