@@ -83,6 +83,14 @@ export class AuthRouter {
 		next();
 	}
 
+	//middleware to check privileges - admin
+	public isAdmin(req: Request, res: Response, next: NextFunction) {
+		if (!req.user.admin) {
+			next(new RequestError(401, 'not_authorised', 'user is not authorised to perform task'));
+		}
+		next();
+	}
+
 	// Configure local strategy to use with passport-js.
 	private configStrategy() {
 		passport.use(new localStrategy( (username, password, done) => {
