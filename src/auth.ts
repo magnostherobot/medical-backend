@@ -8,9 +8,11 @@ import { default as User } from './db/model/User';
 export class AuthRouter {
 	public localStrategy: Strategy;
 	public router: Router;
+	ensureAuth;
 
 	public constructor() {
 		this.localStrategy = Strategy();
+		this.ensureAuth = expressJwt({secret: 'Mr Secret'}); //protects routes
 		this.router();
 		this.init();
 	}
@@ -48,25 +50,26 @@ export class AuthRouter {
 		});
 	}
 
+	private authenticate(req: Request, res: Response, next: NextFunction) {
+		passport.authenticate('local', { session: false }, function(err, user) {
+			if (err) { console.log(err); }
+
+			if (!user) {
+				next(new RequestError(400, 'invalid_grant', 'Incorrect authentication details'));
+			}
+		});
+		next();
+	}
+
 	// Checks for errors within request before authentication
 	public checkErr(req: Request, res: Response, next: NextFunction) {
 		if (!req.body.grant_type || !req.body.username || !req.body.password) {
-			res.status(400)
-				.json({
-				error: 'invalid_request',
-				error_description: 'Missing parameters'
-			});
-			res.end();
+			next(new RequestError(400, 'invalid_request', 'Missing parameters'));
 		}
 
 		if (req.body.grant_type !== 'refresh_token'
 			&& req.body.grant_type !== 'password') {
-			res.status(400)
-				.json({
-				error: 'unsupported_grant_type',
-				error_description: 'invalid grant type'
-			});
-			res.end();
+			next(new RequestError(400, 'unsupported_grant_type', 'invalid grant type'));
 		}
 
 		next();
@@ -75,19 +78,14 @@ export class AuthRouter {
 	// Handle error if user is unauthorised
 	public unauthorisedErr(err, req: Request, res: Response, next: NextFunction) {
 		if (err.name === 'UnauthorizedError') {
-			res.status(401).json({
-				status: 'error',
-				error: 'not_authorised',
-				error_description:
-					'user does not have correct authorisation to complete task'
-			});
+			next(new RequestError(401, 'not_authorised', 'user does not have correct authorisation to complete task'));
 		}
 		next();
 	}
 
 	// Configure local strategy to use with passport-js.
 	private configStrategy() {
-	passport.use(new localStrategy( (username, password, done) => {
+		passport.use(new localStrategy( (username, password, done) => {
 			const user = findByUsername(username);
 
 			if (!user || user.password != password) {
@@ -96,36 +94,23 @@ export class AuthRouter {
 			return done(null, user);
 		}));
 	}
-}
-///////////////////////////////////////////////////
 
-const app = express();
-const ensureAuth = expressJwt({secret: 'Mr Secret'}); //protect routes
+	init() {
+		this.configStrategy();
+
+		this.router.post('/login', this.checkErr, this.authenticate, this.genToken);
+		this.router.get('/logout', (req, res) => { req.logout(); });
+	}
+}
+
+const authRoutes = new AuthRouter();
+authRoutes.init();
+
+export default authRoutes.router;
+///////////////////////////////////////////////////
 
 app.use(passport.initialize());
 app.use(unauthorisedErr); //currently does not handle userdefined error
-
-app.post('/login', checkErr, function(req, res, next) {
-	passport.authenticate('local', { session: false }, function(err, user) {
-		if (err) { console.log(err); }
-
-		if (!user) {
-			res.status(400).json({
-				error: 'invalid_grant',
-				error_description: 'Incorrect authentication details'
-			});
-		}
-	});
-	next();
-},       genToken);
-
-app.get('/logout', function(req, res) {
-	req.logout();
-});
-
-app.get('/test', ensureAuth, function(req, res) {
-	res.send('you are authenticated!');
-});
 
 /*
 tasks left:
