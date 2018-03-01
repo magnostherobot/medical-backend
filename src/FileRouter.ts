@@ -6,7 +6,12 @@ import { UserFullInfo, default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
 import { NextFunction, Request, Response, Router } from 'express';
-import { default as serverConfig } from './serverConfig';
+
+import { RequestError } from './errors/errorware';
+import { files } from './files';
+import { logger } from './logger';
+import { Property, default as serverConfig } from './serverConfig';
+import { uuid } from './uuid';
 
 // TODO: figure this out
 const BASE_FILE_STORAGE: string = 'TODO: figure this out';
@@ -29,16 +34,13 @@ type Middleware =
  */
 const getProtocols: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	const returnValue: {
-		supported: string[];
-		required: string[];
-	} = {
-	supported: [],
-	required: [
-		'BE01'
-	]
+	res.locals.data = {
+		supported: [],
+		required: [
+			'BE01'
+		]
 	};
-	res.send(JSON.stringify(returnValue));
+	next();
 };
 
 /**
@@ -60,8 +62,21 @@ const getProtocols: Middleware =
  */
 const postLog: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	res.status(501)
-		.send({error : 'logging_not_enabled'});
+	if (!req.user.hasPrivilege('logging')) {
+		next(new RequestError(400, 'invalid_privilege'));
+		return;
+	} else if (!logger.isEnabled()) {
+		next(new RequestError(501, 'logging_not_enabled'));
+		return;
+	}
+	for (const item of req.body) {
+		logger.log(item.level, item.value, {
+			component: item.component,
+			user: req.user.username,
+			external: true
+		});
+	}
+	next();
 };
 
 /**
@@ -87,8 +102,16 @@ const postLog: Middleware =
  */
 const getLog: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	res.status(501)
-		.send({error : 'logging_not_enabled'});
+	if (!req.user.hasPrivilege('admin')) {
+		next(new RequestError(400, 'invalid_privilege'));
+	}
+	res.locals.data = logger.fetch(
+		req.params.level, {
+			before: new Date(req.params.before),
+			after: new Date(req.params.after)
+		}
+	);
+	next();
 };
 
 /**
@@ -114,8 +137,8 @@ const getLog: Middleware =
  */
 const getProperties: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	res.status(200)
-		.send(serverConfig);
+	res.locals.data = serverConfig;
+	next();
 };
 
 /**
@@ -132,51 +155,26 @@ const getProperties: Middleware =
  */
 const postProperties: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	let success: boolean = true;
-
-	// For each property to update
-	for (const prop of req.body) {
-
-		// Check that the property has and id and a value
-		if (!prop.hasOwnProperty('id') || !prop.hasOwnProperty('value')) {
-			res.status(400)
-				.send({
-					error: 'invalid_request',
-					error_description: 'A supplied property is missing an id or value'
-				});
-			success = false;
-			break;
+	for (const newProp of req.body) {
+		const prop: Property | undefined = serverConfig.find(
+			(p: Property): boolean => p.id === newProp.id
+		);
+		if (prop === undefined) {
+			next(new RequestError(400, 'invalid_property', undefined, newProp.id));
+			return;
+		} else if (prop.readOnly) {
+			next(new RequestError(400, 'invalid_property', undefined, newProp.id));
+			return;
 		}
-
-		// Find out if the property exists in the config and if so, at which index
-		const index: number = serverConfig.indexOf(prop.id);
-
-		// Check some of the properties values to ensure that it can be updated
-		if (index === -1 || serverConfig[index].readOnly) {
-			/* TODO Implement an or, using Tom's type checker
-			 * to ensure the value is "valid" based on the type of the property */
-			const description: string = index === -1
-				? 'Property not found'
-				: 'Property is Read_Only';
-			res.status(400)
-				.send({
-				error: 'invalid_property',
-				error_data: prop.id,
-				error_description: description
-			});
-			success = false;
-			break;
+		try {
+			prop.value = newProp.value;
+		} catch (err) {
+			// FIXME: Assuming it's a value-type error, but it might not be!
+			next(new RequestError(400, 'invalid_property_value', undefined, newProp.id));
+			return;
 		}
-
-		// Make the update to the property
-		serverConfig[index].value = prop.value;
 	}
-
-	// Tell the client that everything was okay;
-	if (success) {
-		res.status(200)
-			.send();
-	}
+	next();
 };
 
 /**
@@ -190,12 +188,13 @@ const postProperties: Middleware =
  *     "internal": boolean
  * })
  */
-const getUserPriveleges: Middleware =
+const getUserPrivileges: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const usergroups: UserGroup[] = await UserGroup.findAll();
-	res.json(usergroups.map(
-		(ug: UserGroup) => ug.getPrivelege()
-	));
+	res.locals.data = usergroups.map(
+		(ug: UserGroup) => ug.getPrivilege()
+	);
+	next();
 };
 
 /**
@@ -226,41 +225,26 @@ const getUsers: Middleware =
 			Project
 		]
 	});
-	res.json(users.map<UserFullInfo>(
-		(u: User) => u.getUserFullInfo()
-	));
+	res.locals.data = users.map<UserFullInfo>(
+		(u: User) => {
+			const info: UserFullInfo = u.fullInfo;
+			if (!req.user.hasPrivilege('admin')) {
+				info.private_user_metadata = undefined;
+				info.private_admin_metadata = undefined;
+			}
+			return info;
+		}
+	);
+	next();
 };
 
 /**
  * Expose additional configuration options for individual users
  */
 const getUserProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction, user?: string): void => {
-	res.status(500)
-	.send({
-		error: 'unsupported',
-		error_description:
-			'Users on this server dont have additional configuration options.'
-	});
-};
-
-const userInfoFromName: (name: string) => Promise<UserFullInfo> =
-	async(name: string): Promise<UserFullInfo> =>  {
-	const user: User | null = await User.findOne({
-		where: {
-			username: name
-		},
-		include: [
-			UserGroup,
-			Project
-		]
-	});
-
-	if (user === null) {
-		throw new Error(`No user of name ${name} in database.`);
-	} else {
-		return user.getUserFullInfo();
-	}
+	(req: Request, res: Response, next: NextFunction): void => {
+	res.locals.data = res.locals.user.properties;
+	next();
 };
 
 /**
@@ -284,16 +268,19 @@ const userInfoFromName: (name: string) => Promise<UserFullInfo> =
  * }
  */
 const getUsername: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
-	const info: UserFullInfo = await userInfoFromName(req.params.username);
-	res.json(info);
+	(req: Request, res: Response, next: NextFunction): void => {
+	if (res.locals.user === null) {
+		next(new RequestError(404, 'user_not_found'));
+		return;
+	}
+	res.locals.data = res.locals.user.fullInfo;
+	next();
 };
 
 const getCurUser: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	res.json({
-		todo: 'need to findo out where authenticated user info goes'
-	});
+	res.locals.data = req.user.fullInfo;
+	next();
 };
 
 /**
@@ -315,8 +302,15 @@ const getCurUser: Middleware =
  * }
  */
 const postCurUser: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
-	res.json({todo: 'need to implement meeeee'});
+	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+	try {
+		await req.user.updateInfo(req.body);
+		await req.user.save();
+	} catch (err) {
+		next(err);
+		return;
+	}
+	next();
 };
 
 /**
@@ -336,8 +330,18 @@ const postCurUser: Middleware =
  * }
  */
 const postUsername: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
-	res.json({todo: 'need to implement meeeee'});
+	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+	let user: User | null | undefined = res.locals.user;
+	if (user == null) {
+		user = new User({
+			username: req.params.username,
+			password: req.params.password
+		});
+	} else {
+		user.password = req.params.password;
+	}
+	user.metadata = req.body;
+	next();
 };
 
 /**
@@ -354,9 +358,12 @@ const postUsername: Middleware =
 const getProjectRoles: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const roles: ContributorGroup[] = await ContributorGroup.findAll();
-	res.json(roles.map<ContributorGroupFullInfo>(
-		(cg: ContributorGroup) => cg.getContributorGroupFullInfo()
-	));
+	res.locals.data = roles.filter(
+		(cg: ContributorGroup): boolean => !cg.isInternal
+	).map(
+		(cg: ContributorGroup): ContributorGroupFullInfo => cg.fullInfo
+	);
+	next();
 };
 
 /**
@@ -383,9 +390,10 @@ const getProjects: Middleware =
 			User
 		]
 	});
-	res.json(projects.map<ProjectFullInfo>(
-		(p: Project) => p.getProjectFullInfo()
-	));
+	res.locals.data = projects.map(
+		(p: Project): ProjectFullInfo => p.fullInfo
+	);
+	next();
 };
 
 /**
@@ -407,15 +415,12 @@ const getProjects: Middleware =
  */
 const getProjectName: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
-	const project: Project | null = await Project.findOne({
-		where: {
-			name: req.params.project_name
-		}
-	});
+	const project: Project | null = res.locals.project;
 	if (project === null) {
-		throw new Error(`Project ${req.params.project_name} does not exist`);
+		next(new RequestError(404, 'project_not_found'));
 	} else {
-		res.json(project);
+		res.locals.data = project.fullInfo;
+		next();
 	}
 };
 
@@ -433,42 +438,37 @@ const getProjectName: Middleware =
  * }
  */
 const postProjectName: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
-	res.json({todo: 'need to implement meeeee'});
+	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+	let project: Project | null = res.locals.project;
+	let promise: PromiseLike<File> | null = null;
+	if (project === null) {
+		const file: File = new File({
+			mimetype: 'inode/directory'
+		});
+		promise = file.save();
+		project = new Project({
+			uuid: uuid.generate(),
+			name: req.params.project_name,
+			rootFolder: file
+		});
+	}
+	project.metadata = req.body;
+	// tslint:disable-next-line:await-promise
+	await promise;
+	await project.save();
+	next();
 };
 
-/*
+/**
  * additional configuration options for individual projects
  */
 const getProjectProperties: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	res.status(500)
-	.send({
-		error: 'unsupported',
-		error_description:
-			'Projects on this server dont have additional configuration options.'
-	});
-};
-
-const getChildFile: (names: string[], parentUuid: string) => Promise<File> =
-	async(names: string[], parentUuid: string): Promise<File> => {
-	// TODO: Check that this works lol :3
-	const child: File | null = await File.findOne({
-		where: {
-			parentFolderId: parentUuid,
-			name: names[0]
-		}
-	});
-
-	if (child === null) {
-		throw new Error(`File of name ${names[0]} does not exist`);
+	if (res.locals.project == null) {
+		next(new RequestError(404, 'project_not_found'));
 	} else {
-		if (names.length === 1) {
-			return child;
-		} else {
-			names.splice(0, 1);
-			return getChildFile(names, child.uuid);
-		}
+		res.locals.data = res.locals.project.properties;
+		next();
 	}
 };
 
@@ -477,25 +477,15 @@ const getChildFile: (names: string[], parentUuid: string) => Promise<File> =
  */
 const getFilePath: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
-	const project: Project | null = await Project.findOne({
-		where: {
-			name: req.params.project_name
-		}
-	});
-
-	if (project === null) {
-		throw new Error(
-			`Project of name ${req.params.project_name} does not exist`
-		);
-	} else {
-		const file: File = await getChildFile(
-			req.params.project_name, project.rootFolderId
-		);
-
-		res.sendFile(
-			`${BASE_FILE_STORAGE}/${req.params.project_name}/${file.uuid}`
-		);
+	const file: File | null = res.locals.file;
+	if (file === null) {
+		next(new RequestError(404, 'file_not_found'));
+		return;
 	}
+	res.locals.function = res.sendFile;
+	res.locals.data =
+		`${BASE_FILE_STORAGE}/${res.locals.project.name}/${file.uuid}`;
+	next();
 };
 
 /**
@@ -503,10 +493,14 @@ const getFilePath: Middleware =
  */
 const getFileId: Middleware =
 	(req: Request, res: Response, next: NextFunction): void =>  {
-	// TODO: implement correctness of project folder checking.
-	res.sendFile(
-		`${BASE_FILE_STORAGE}/${req.params.project_name}/${req.params.id}`
-	);
+	const file: File | null = res.locals.file;
+	if (file === null) {
+		next(new RequestError(404, 'file_not_found'));
+		return;
+	}
+	res.locals.function = res.sendFile;
+	res.locals.data = files.path(req.params.id, res.locals.project.name);
+	next();
 };
 
 /**
@@ -514,7 +508,16 @@ const getFileId: Middleware =
  */
 const postFilePath: Middleware =
 	(req: Request, res: Response, next: NextFunction): void =>  {
-	res.json({todo: 'need to implement meeeee'});
+	if (res.locals.file != null) {
+		next(new RequestError(400, 'file_exists'));
+	}
+	const file: File = new File({
+		uuid: uuid.generate(),
+		name: res.locals.filename,
+		parentFolder: res.locals.parentFolder
+	});
+	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
+	next();
 };
 
 export class FileRouter {
@@ -524,8 +527,8 @@ export class FileRouter {
 	 * Initialize the FileRouter
 	 */
 	public constructor() {
-	this.router = Router();
-	this.init();
+		this.router = Router();
+		this.init();
 	}
 
 	/**
@@ -540,7 +543,7 @@ export class FileRouter {
 		this.router.get ('/properties',						          getProperties);
 		this.router.post('/properties',						         postProperties);
 		// Users
-		this.router.get ('/user_privileges',				      getUserPriveleges);
+		this.router.get ('/user_privileges',				      getUserPrivileges);
 		this.router.get ('/users',									       getUsers);
 		this.router.get ('/users/:username',				            getUsername);
 		this.router.post('/users/:username',				           postUsername);
