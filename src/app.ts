@@ -1,6 +1,10 @@
 import * as bodyParser from 'body-parser';
 import * as ex from 'express';
+import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
+import * as passport from 'passport';
+
+import { default as authRouter } from './auth';
 
 import { errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -18,6 +22,8 @@ class App {
 
 	// Configure Express middleware.
 	private middleware(): void {
+		this.express.use(expressJwt({secret: 'Mr Secret'}).unless({path: ['/cs3099group-be-4/login', '/cs3099group-be-4/_supported_protocols_'] }));
+		this.express.use(passport.initialize());
 		if (this.logEnabled) {
 			this.express.use(logger('combined'));
 		}
@@ -36,9 +42,11 @@ class App {
 		});
 		this.express.use('/', defRouter);
 		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/cs3099group-be-4', authRouter);
 	}
 
 	private errorware(): void {
+		//this.express.use(authRouter.unauthorisedErr);
 		this.express.use(errorHandler);
 	}
 }

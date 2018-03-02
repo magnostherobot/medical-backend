@@ -9,14 +9,14 @@ import { default as UserJoinsProject } from './UserJoinsProject';
 export default class User extends Model<User> {
 	@PrimaryKey
 	@Column
-	public username: string = '';
+	public username!: string;
 
 	@Column
-	public password: string = '';
+	public password!: string;
 
 	@ForeignKey(() => UserGroup)
 	@Column
-	public userGroupId: number = 0;
+	public userGroupId!: number;
 
 	@BelongsTo(() => UserGroup)
 	public userGroup: UserGroup = new UserGroup();

@@ -6,6 +6,7 @@ import { default as app } from './app';
 import { default as seq } from './db/orm';
 console.log('end import');
 
+import { default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
 const DEFAULT_PORT: number = 3000;
@@ -39,8 +40,17 @@ const port: number = process.env.PORT
 		description: 'Systems admin'
 	});
 
-	// tslint:disable:no-floating-promises
-	admin.save();
+	await admin.save();
+
+	console.log(admin.id);
+
+	const root: User = new User({
+		username: 'hafeez',
+		password: 'pass',
+		userGroup: admin
+	});
+
+	root.save();
 
 	console.log('Booting ExpressJS server');
 

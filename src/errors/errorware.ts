@@ -42,10 +42,15 @@ export class RequestError extends Error {
 }
 
 type Errorware =
-	(err: RequestError, req: Request, res: Response, next: NextFunction) => void;
+	(err: Error, req: Request, res: Response, next: NextFunction) => void;
 
 export const errorHandler: Errorware =
-	(err: RequestError, req: Request, res: Response, next: NextFunction): void => {
-	res.status(err.code)
-		.json(err.responseBlock());
+	(err: Error, req: Request, res: Response, next: NextFunction): void => {
+	if ((err as RequestError).responseBlock) {
+		const rerr: RequestError = err as RequestError;
+		res.status(rerr.code)
+			.json(rerr.responseBlock());
+		} else {
+			res.send(err);
+		}
 };
