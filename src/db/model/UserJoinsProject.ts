@@ -8,20 +8,20 @@ import { default as ContributorGroup } from './UserGroup';
 export default class UserJoinsProject extends Model<UserJoinsProject> {
 	@ForeignKey(() => User)
 	@Column
-	public username: string = '';
+	public username!: string;
 
 	@ForeignKey(() => Project)
 	@Column
-	public projectName: string = '';
+	public projectName!: string;
 
 	@CreatedAt
 	@Column
-	public joinDate: Date = new Date();
+	public joinDate!: Date;
 
 	@ForeignKey(() => ContributorGroup)
 	@Column
-	public contributorGroupId: number = 0;
+	public contributorGroupId!: number;
 
 	@BelongsTo(() => ContributorGroup)
-	public contributorGroup: ContributorGroup = new ContributorGroup();
+	public contributorGroup?: ContributorGroup;
 }

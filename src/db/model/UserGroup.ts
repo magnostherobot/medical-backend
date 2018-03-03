@@ -1,6 +1,7 @@
-import { AllowNull, Column, DataType, HasMany, Model, Table
-	} from 'sequelize-typescript';
+import { AllowNull, BelongsToMany, Column, DataType, Model, Table,
+	Unique } from 'sequelize-typescript';
 import { default as User } from './User';
+import { default as UserHasPrivilege } from './UserHasPrivilege';
 
 interface UserPrivilege {
 	privilege: string;
@@ -11,38 +12,39 @@ interface UserPrivilege {
 @Table
 export default class UserGroup extends Model<UserGroup> {
 	@AllowNull
+	@Unique
 	@Column(DataType.TEXT)
-	public name: string | null = null;
+	public name!: string | null;
 
-	@HasMany(() => User)
-	public users: User[] = [];
-
-	@Column
-	public canCreateUsers: boolean = false;
+	@BelongsToMany(() => User, () => UserHasPrivilege)
+	public users?: User[];
 
 	@Column
-	public canDeleteUsers: boolean = false;
+	public canCreateUsers!: boolean;
 
 	@Column
-	public canEditUsers: boolean = false;
+	public canDeleteUsers!: boolean;
 
 	@Column
-	public canCreateProjects: boolean = false;
+	public canEditUsers!: boolean;
 
 	@Column
-	public canDeleteProjects: boolean = false;
+	public canCreateProjects!: boolean;
 
 	@Column
-	public canEditProjects: boolean = false;
+	public canDeleteProjects!: boolean;
 
 	@Column
-	public isInternal: boolean = true;
+	public canEditProjects!: boolean;
+
+	@Column
+	public isInternal!: boolean;
 
 	@AllowNull
 	@Column(DataType.TEXT)
-	public description: string | null = null;
+	public description!: string | null;
 
-	public getPrivelege(): UserPrivilege {
+	public getPrivilege(): UserPrivilege {
 		return {
 			privilege : `${this.name}`,
 			description : `${this.description}`,
