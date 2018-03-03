@@ -69,7 +69,10 @@
 		],
 		"unified-signatures": true,
 
-		"await-promise": true,
+		"await-promise": [
+			true,
+			"Bluebird"
+		],
 		"ban-comma-operator": true,
 		"ban": [ false ],
 		"curly": true,
@@ -88,9 +91,15 @@
 		"no-dynamic-delete": true,
 		"no-empty": true,
 		"no-eval": true,
-		"no-floating-promises": true,
+		"no-floating-promises":[
+			true,
+			"Bluebird"
+		],
 		"no-for-in-array": false,
-		"no-implicit-dependencies": true,
+		"no-implicit-dependencies": [
+			true,
+			"dev"
+		],
 		"no-inferred-empty-object-type": true,
 		"no-invalid-template-strings": true,
 		"no-invalid-this": true,
@@ -215,7 +224,7 @@
 		],
 		"match-default-export-name": false,
 		"newline-before-return": false,
-		"newline-per-chained-call": true,
+		"newline-per-chained-call": false,
 		"new-parens": true,
 		"no-angle-bracket-type-assertion": true,
 		"no-boolean-literal-compare": true,

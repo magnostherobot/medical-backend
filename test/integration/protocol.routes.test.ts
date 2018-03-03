@@ -2,29 +2,18 @@ import * as mocha from 'mocha';
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
 
-// Chai-http must be imported this way:
-// tslint:disable-next-line:no-var-requires no-require-imports
 chai.use(require('chai-http'));
-
-// Mocha must be imported as a side-effect library:
-// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
-
-// Mocha-each must be imported using a require call:
-// tslint:disable-next-line:no-require-imports
 import forEach = require('mocha-each');
+import request = require('supertest');
 
 import { Template, alternative, array, exact, match, optional
 	} from '../../src/matcher/options';
 import { default as types } from '../../src/matcher/types';
-
 import * as App from '../../src/app';
 let app = App.TestApp();
 
-
-//chai.use(chaiHttp);
-//const expect = chai.expect;
-
+// The error response template according to protocol
 const errorResponseTemplate: Template = {
 	status: 'error',
 	error: types.string,
@@ -33,14 +22,32 @@ const errorResponseTemplate: Template = {
 	error_data: optional(types.anything)
 };
 
-type MochaForEachInput = [ string, string, Template ];
+type MochaForEachInput = [ string, string, Template, number ];
+
+const userCredentials = {
+	email: 'sponge@bob.com', 
+	password: 'garyTheSnail'
+}
+  
+//now let's login the user before we run any tests
+let authenticatedUser = request.agent(app);
+  
+before(function(done){
+	authenticatedUser
+		.post('/login')
+		.send(userCredentials)
+		.end(function(err, response){
+			expect(response.statusCode).to.equal(200);
+			done();
+		});
+});
 
 describe('routes : errors', () => {
 	describe('GET invalid routes', function(){
 		it('should have response code 404', () => {
 			return chai.request(app).get('/invalid/route')
-			.catch(function (res) {
-				expect(res.status).to.equal(404);
+			.catch(function (err: any) {
+				expect(err.status).to.equal(404);
 			});
 		});
 		it('should conform to the error protocol', function(){
@@ -55,11 +62,13 @@ describe('routes : errors', () => {
 
 describe('routes : protocol', () => {
 	const base: string = '/cs3099group-be-4';
+	// format:
+	// <method> <route> <json-response-template> <response-code>
 	const completeProtocol: MochaForEachInput[] = [
 		['get', '/_supported_protocols_', exact({
 				supported: array(types.string),
 				required: array(types.string)
-		})],
+		}), 200],
 		['get', '/log', types.array({
 			component: types.string,
 			level: alternative([
@@ -72,8 +81,8 @@ describe('routes : protocol', () => {
 			value: types.anything,
 			username: types.string,
 			timestamp: types.string
-		})],
-		['post', '/log', null],
+		}), 500],
+		['post', '/log', null, 500],
 		['get', '/properties', types.array({
 			id: types.string,
 			display: optional(match({
@@ -93,13 +102,13 @@ describe('routes : protocol', () => {
 				types.integer,
 				types.boolean
 			])
-		})],
-		['post', '/properties', null],
+		}), 200],
+		['post', '/properties', null, 200],
 		['get', '/user_privileges', array({
 			privilege: types.string,
 			description: types.string,
 			internal: types.boolean
-		})],
+		}), 200],
 		['get', '/users', array({
 			username: types.string,
 			privileges: array(types.string),
@@ -111,8 +120,8 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		})],
-		// TODO types.metadata
+		}), 401],
+		// todo types.metadata
 		['get', '/users/:username', {
 			username: types.string,
 			privileges: array(types.string),
@@ -124,11 +133,11 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}],
-		['post', '/users/:username', null],
+		}, 401],
+		['post', '/users/:username', null, 401],
 		['get', '/users/:username/properties', {
 			data: optional(types.anything)
-		}],
+		}, 401],
 		['get', '/current_user', {
 			username: types.string,
 			privileges: array(types.string),
@@ -140,13 +149,13 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}],
-		['post', '/current_user', null],
+		}, 200],
+		['post', '/current_user', null, 200],
 		['get', '/project_roles', array({
 			role: types.string,
 			description: types.string,
 			internal: types.boolean
-		})],
+		}), 200],
 		['get', '/projects', array({
 			project_name: types.string,
 			users: array({
@@ -156,7 +165,7 @@ describe('routes : protocol', () => {
 			public_metadata: types.anything,
 			private_metadata: optional(types.anything),
 			admin_metadata: optional(types.anything)
-		})],
+		}), 200],
 		['get', '/projects/:project_name', {
 			project_name: types.string,
 			users: array({
@@ -166,20 +175,20 @@ describe('routes : protocol', () => {
 			public_metadata: types.anything,
 			private_metadata: types.anything,
 			admin_metadata: optional(types.anything)
-		}],
-		['post', '/projects/:project_name', null],
+		}, 200],
+		['post', '/projects/:project_name', null, 200],
 		['get', '/projects/:project_name/properties', {
 			data: optional(types.anything)
-		}],
-		['get', '/projects/:project_name/files/:path', null],
-		['post', '/projects/:project_name/files/:id', null],
-		['get', '/projects/:project_name/files_by_id/:id', null]
+		}, 200],
+		['get', '/projects/:project_name/files/:path', null, 200],
+		['post', '/projects/:project_name/files/:id', null, 200],
+		['get', '/projects/:project_name/files_by_id/:id', null, 200]
 	];
 
 	describe('GET/POST all valid routes', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
-			(method: string, path: string, temp: Template) => {
+			(method: string, path: string, temp: Template, res_code: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
@@ -190,20 +199,20 @@ describe('routes : protocol', () => {
 			});;
 		});
 		forEach(completeProtocol).it(
-			'%s %s should have a status 200',
-			(method: string, path: string, temp: Template) => {
+			'%s %s should have a status %d',
+			(method: string, path: string, temp: Template, res_code: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
 			return request.then((res: ChaiHttp.Response) => {
-				expect(res).to.have.status(200);
+				expect(res).to.have.status(res_code);
 			}).catch(function (err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
 			});;
 		});
 		forEach(completeProtocol).it(
 			'%s %s should conform to the standard response protocol',
-			(method: string, path: string, temp: Template) => {
+			(method: string, path: string, temp: Template, res_code: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
@@ -215,7 +224,7 @@ describe('routes : protocol', () => {
 		});
 		forEach(completeProtocol).it(
 			'the response for %s %s should conform to its specific response protocol',
-			(method: string, path: string, temp: Template) => {
+			(method: string, path: string, temp: Template, res_code: number) => {
 			if (method === 'get' && temp != null) {
 				return chai.request(app).get(base + path)
 				.then((res: ChaiHttp.Response) => {
