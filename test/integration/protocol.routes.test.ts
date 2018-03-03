@@ -13,6 +13,16 @@ import { default as types } from '../../src/matcher/types';
 import * as App from '../../src/app';
 let app = App.TestApp();
 
+// The general response template according to protocol 	
+const responseTemplate: Template = {
+	status: types.string,
+	data: optional(types.anything),
+	error: optional(types.string),
+	error_description: optional(types.string),
+	user_message: optional(types.string),
+	error_data: optional(types.anything)
+};
+
 // The error response template according to protocol
 const errorResponseTemplate: Template = {
 	status: 'error',
@@ -36,8 +46,8 @@ before(function(done){
 	authenticatedUser
 		.post('/login')
 		.send(userCredentials)
-		.end(function(err, response){
-			expect(response.statusCode).to.equal(200);
+		.end(function(err, res){
+			expect(res.status).to.equal(200);
 			done();
 		});
 });
@@ -199,7 +209,7 @@ describe('routes : protocol', () => {
 			});;
 		});
 		forEach(completeProtocol).it(
-			'%s %s should have a status %d',
+			'%s %s should have a status %4$d',
 			(method: string, path: string, temp: Template, res_code: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
