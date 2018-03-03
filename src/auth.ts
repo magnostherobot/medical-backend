@@ -51,7 +51,9 @@ export class AuthRouter {
 				if (err) { throw err; }
 
 				if (!user) {
-					next(new RequestError(400, 'invalid_grant', 'Incorrect authentication details'));
+					next(new RequestError(
+						400, 'invalid_grant', 'Incorrect authentication details'
+					));
 				}
 			}
 		);
@@ -73,25 +75,34 @@ export class AuthRouter {
 	}
 
 	// Handle error if user is unauthorised
-	public unauthorisedErr(err: Error, req: Request, res: Response, next: NextFunction): void {
+	public unauthorisedErr(
+		err: Error, req: Request, res: Response, next: NextFunction
+	): void {
 		if (err.name === 'UnauthorizedError') {
-			next(new RequestError(401, 'not_authorised', 'user does not have correct authorisation to complete task'));
+			next(new RequestError(
+				401, 'not_authorised',
+				'user does not have correct authorisation for task'
+			));
 		}
 		next();
 	}
 
-	//middleware to check privileges - admin
-	public isAdmin(req: Request, res: Response, next: NextFunction) {
+	// Middleware to check privileges - admin
+	public isAdmin(req: Request, res: Response, next: NextFunction): void {
 		if (!req.user.admin) {
-			next(new RequestError(401, 'not_authorised', 'user is not authorised to perform task'));
+			next(new RequestError(
+				401, 'not_authorised',
+				'user is not authorised to perform task'
+			));
+			return;
 		}
 		next();
 	}
 
 	// Configure local strategy to use with passport-js.
-	private configStrategy() {
+	private configStrategy(): void {
 		// tslint:disable-next-line:typedef
-		passport.use(new Strategy( async(username, password, done)  => {
+		passport.use(new Strategy( async(username, password, done) => {
 			const user: User | null = await User.findOne({
 				where: {
 					username

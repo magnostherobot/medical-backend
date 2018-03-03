@@ -13,21 +13,10 @@ export default class User extends Model<User> {
 	public username!: string;
 
 	@Column
-<<<<<<< HEAD
-	public password!: string;
-
-	@ForeignKey(() => UserGroup)
-	@Column
-	public userGroupId!: number;
-
-	@BelongsTo(() => UserGroup)
-	public userGroup: UserGroup = new UserGroup();
-=======
 	private readonly passwordInternal!: string;
 
 	@BelongsToMany(() => UserGroup, () => UserHasPrivilege)
 	public userGroups?: UserGroup[];
->>>>>>> trh/gets
 
 	@BelongsToMany(() => Project, () => UserJoinsProject)
 	public projects?: Project[];
@@ -200,9 +189,9 @@ export interface UserFullInfo {
 	privileges: string[];
 	projects: ProjectInfo[];
 	public_user_metadata: Metadata;
-	private_user_metadata?: Metadata;
+	private_user_metadata: Metadata;
 	public_admin_metadata: Metadata;
-	private_admin_metadata?: Metadata;
+	private_admin_metadata: Metadata;
 }
 
 export interface UserProperty {}

@@ -36,7 +36,12 @@ class App {
 
 	// Configure Express middleware.
 	private middleware(): void {
-		this.express.use(expressJwt({secret: 'Mr Secret'}).unless({path: ['/cs3099group-be-4/login', '/cs3099group-be-4/_supported_protocols_'] }));
+		this.express.use(expressJwt({secret: 'Mr Secret'})
+			.unless({path: [
+				'/cs3099group-be-4/login',
+				'/cs3099group-be-4/_supported_protocols_'
+			] })
+		);
 		this.express.use(passport.initialize());
 		if (this.logEnabled) {
 			this.express.use(logger('combined'));
@@ -51,7 +56,7 @@ class App {
 		defRouter.get('/', (req: ex.Request, res: ex.Response): void => {
 			res.json({
 				message: 'Welcome to the CS3099 BE4 server!',
-				important : 'Endpoints start from /cs3099group-be-4/'
+				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
 		this.express.use('/', defRouter);
@@ -60,7 +65,7 @@ class App {
 	}
 
 	private errorware(): void {
-		//this.express.use(authRouter.unauthorisedErr);
+		// TODO: this.express.use(authRouter.unauthorisedErr);
 		this.express.use(errorHandler);
 	}
 

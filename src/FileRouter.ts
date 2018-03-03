@@ -229,8 +229,8 @@ const getUsers: Middleware =
 		(u: User) => {
 			const info: UserFullInfo = u.fullInfo;
 			if (!req.user.hasPrivilege('admin')) {
-				info.private_user_metadata = undefined;
-				info.private_admin_metadata = undefined;
+				delete info.private_user_metadata;
+				delete info.private_admin_metadata;
 			}
 			return info;
 		}
@@ -567,5 +567,4 @@ export class FileRouter {
 const fileRoutes: FileRouter = new FileRouter();
 fileRoutes.init();
 
-const ex: Router = fileRoutes.router;
-export default ex;
+export default fileRoutes.router;
