@@ -10,6 +10,13 @@ export interface ErrorResponseBlock {
 }
 
 export class RequestError extends Error {
+	public static is(test: Object): test is RequestError {
+		const err: RequestError = test as RequestError;
+		return err.code !== undefined
+			&& err.name !== undefined
+			&& err.responseBlock !== undefined;
+	}
+
 	public code: number;
 	public userMessage?: string;
 	// tslint:disable-next-line:no-any
@@ -41,16 +48,17 @@ export class RequestError extends Error {
 	}
 }
 
-type Errorware =
+export type Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction) => void;
 
 export const errorHandler: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
-	if ((err as RequestError).responseBlock) {
-		const rerr: RequestError = err as RequestError;
-		res.status(rerr.code)
-			.json(rerr.responseBlock());
-		} else {
-			res.send(err);
-		}
+	console.log(err);
+	if (RequestError.is(err)) {
+		console.log('fewkuihfklsfv');
+		res.status(err.code)
+			.json(err.responseBlock());
+	} else {
+		res.send(err);
+	}
 };
