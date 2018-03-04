@@ -1,5 +1,5 @@
-import * as mocha from 'mocha';
 import * as chai from 'chai';
+import * as mocha from 'mocha';
 const expect: Chai.ExpectStatic = chai.expect;
 
 chai.use(require('chai-http'));
@@ -7,13 +7,16 @@ import 'mocha';
 import forEach = require('mocha-each');
 import request = require('supertest');
 
+import * as App from '../../src/app';
+import * as ex from 'express';
 import { Template, alternative, array, exact, match, optional
 	} from '../../src/matcher/options';
+import { default as seq } from '../../src/db/orm';
 import { default as types } from '../../src/matcher/types';
-import * as App from '../../src/app';
-let app = App.TestApp();
+import { default as User } from '../../src/db/model/User';
+const app = App.TestApp();
 
-// The general response template according to protocol 	
+// The general response template according to protocol
 const responseTemplate: Template = {
 	status: types.string,
 	data: optional(types.anything),
@@ -34,38 +37,51 @@ const errorResponseTemplate: Template = {
 
 type MochaForEachInput = [ string, string, Template, number ];
 
-const userCredentials = {
-	email: 'sponge@bob.com', 
-	password: 'garyTheSnail'
+const userCredentials: Object = {
+	username: 'bobby',
+	password: 'pass',
+	grant_type: 'password'
+};
+
+const authenticatedUser = request.agent(app);
+let token: string;
+
+async function addUser(done: any) {
+	await seq.authenticate();
+	await seq.sync({
+		force: true
+	});
+
+	const newUser: User = new User({
+		username: 'bobby',
+		password: 'pass',
+		userGroups: []
+	});
+	await newUser.save();
+	done();
 }
-  
-//now let's login the user before we run any tests
-let authenticatedUser = request.agent(app);
-  
-before(function(done){
-	authenticatedUser
-		.post('/login')
-		.send(userCredentials)
-		.end(function(err, res){
-			expect(res.status).to.equal(200);
-			done();
-		});
+
+// Add user
+before(function(done: any) {
+	addUser(done);
 });
 
 describe('routes : errors', () => {
-	describe('GET invalid routes', function(){
+	describe('GET invalid routes', function() {
 		it('should have response code 404', () => {
 			return chai.request(app).get('/invalid/route')
-			.catch(function (err: any) {
+			.set('Authorization', 'Bearer ' + token)
+			.catch(function(err: any) {
 				expect(err.status).to.equal(404);
 			});
 		});
-		it('should conform to the error protocol', function(){
+		it('should conform to the error protocol', function() {
 			return chai.request(app).get('/invalid/route')
-			.catch(function (err: any) {
+			.set('Authorization', 'Bearer ' + token)
+			.catch(function(err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
 			});
-		})
+		});
 	});
 
 });
@@ -202,11 +218,12 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
+			request.set('Authorization', 'Bearer ' + token);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res.type).to.equal('application/json');
-			}).catch(function (err: any) {
+			}).catch(function(err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
-			});;
+			});
 		});
 		forEach(completeProtocol).it(
 			'%s %s should have a status %4$d',
@@ -214,11 +231,12 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
+			request.set('Authorization', 'Bearer ' + token);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res).to.have.status(res_code);
-			}).catch(function (err: any) {
+			}).catch(function(err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
-			});;
+			});
 		});
 		forEach(completeProtocol).it(
 			'%s %s should conform to the general response protocol',
@@ -226,23 +244,24 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
+			request.set('Authorization', 'Bearer ' + token);
 			return request.then((res: ChaiHttp.Response) => {
 				match(responseTemplate, JSON.parse(res.body)).shoul.be.true;
-			}).catch(function (err: any) {
+			}).catch(function(err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
-			});;
+			});
 		});
 		forEach(completeProtocol).it(
 			'the response for %s %s should conform to its specific response protocol',
 			(method: string, path: string, temp: Template, res_code: number) => {
 			if (method === 'get' && temp != null) {
-				return chai.request(app).get(base + path)
+				return chai.request(app).get(base + path).set('Authorization', 'Bearer ' + token)
 				.then((res: ChaiHttp.Response) => {
 					match(temp)(JSON.parse(res.body)).should.be.true;
-				}).catch(function (err: any) {
+				}).catch(function(err: any) {
 					match(errorResponseTemplate)(err.response.body).should.be.true;
 				});
-			}else{
+			} else {
 				return true;
 			}
 		});

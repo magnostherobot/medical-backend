@@ -15,7 +15,7 @@ chai.use(require('chai-http'));
 import 'mocha';
 
 import * as App from '../../src/app';
-let app = App.TestApp();
+const app = App.TestApp();
 
 describe('authentication', () => {
 	it('should be json', () => {
