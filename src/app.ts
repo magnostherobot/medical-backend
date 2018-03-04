@@ -4,7 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
 import * as passport from 'passport';
 
-import { unauthorisedErr, default as authRouter } from './auth';
+import { default as authRouter, unauthorisedErr } from './auth';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -15,7 +15,7 @@ import { default as User } from './db/model/User';
 
 class App {
 	public express: ex.Express;
-	private logEnabled: boolean = true;
+	private readonly logEnabled: boolean = true;
 
 	public constructor(enableLog: boolean) {
 		this.logEnabled = enableLog;
@@ -66,17 +66,16 @@ class App {
 				status: 'error',
 				error : 'invalid_route',
 				error_description: 'Endpoints start from /cs3099group-be-4/\n'
-						+' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
+						+ ' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
 						+ ' for further details.'
 			});
-		})
+		});
 		this.express.use('/cs3099group-be-4', FileRouter);
 		this.express.use('/cs3099group-be-4', authRouter);
 		this.express.use('/', defRouter);
 	}
 
 	private errorware(): void {
-		// TODO: this.express.use(authRouter.unauthorisedErr);
 		this.express.use(unauthorisedErr);
 		this.express.use(errorHandler);
 	}
@@ -198,6 +197,6 @@ class App {
 }
 
 export default new App(true).express;
-export function TestApp(){
+export function TestApp() {
 	return new App(false).express;
 }

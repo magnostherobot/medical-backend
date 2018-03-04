@@ -7,6 +7,8 @@ import * as passport from 'passport';
 import { Strategy } from 'passport-local';
 import { default as User } from './db/model/User';
 
+import { Errorware } from './errors/errorware';
+
 export class AuthRouter {
 	public router: Router;
 
@@ -74,19 +76,6 @@ export class AuthRouter {
 		next();
 	}
 
-	// Handle error if user is unauthorised
-	public unauthorisedErr(
-		err: Error, req: Request, res: Response, next: NextFunction
-	): void {
-		if (err.name === 'UnauthorizedError') {
-			next(new RequestError(
-				401, 'not_authorised',
-				'user does not have correct authorisation for task'
-			));
-		}
-		next();
-	}
-
 	// Middleware to check privileges - admin
 	public isAdmin(req: Request, res: Response, next: NextFunction): void {
 		if (!req.user.admin) {
@@ -126,6 +115,20 @@ export class AuthRouter {
 		);
 	}
 }
+
+// Handle error if user is unauthorised
+export const unauthorisedErr: Errorware =
+	(err: Error, req: Request, res: Response, next: NextFunction): void => {
+	console.log('fffff');
+	if (err.name === 'UnauthorizedError') {
+		console.log('efewfwf');
+		return next(new RequestError(
+			401, 'not_authorised',
+			'user does not have correct authorisation for task'
+		));
+	}
+	next(err);
+};
 
 const authRoutes: AuthRouter = new AuthRouter();
 authRoutes.init();
