@@ -195,7 +195,7 @@ describe('routes : protocol', () => {
 		['get', '/projects/:project_name/files_by_id/:id', null, 200]
 	];
 
-	describe('GET/POST all valid routes', () => {
+	describe('Access all valid routes', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template, res_code: number) => {
@@ -221,7 +221,7 @@ describe('routes : protocol', () => {
 			});;
 		});
 		forEach(completeProtocol).it(
-			'%s %s should conform to the standard response protocol',
+			'%s %s should conform to the general response protocol',
 			(method: string, path: string, temp: Template, res_code: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)

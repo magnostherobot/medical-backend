@@ -4,7 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
 import * as passport from 'passport';
 
-import { default as authRouter } from './auth';
+import { unauthorisedErr, default as authRouter } from './auth';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -77,6 +77,7 @@ class App {
 
 	private errorware(): void {
 		// TODO: this.express.use(authRouter.unauthorisedErr);
+		this.express.use(unauthorisedErr);
 		this.express.use(errorHandler);
 	}
 
