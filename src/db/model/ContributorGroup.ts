@@ -6,39 +6,39 @@ import { default as UserJoinsProject } from './UserJoinsProject';
 export default class ContributorGroup extends Model<ContributorGroup> {
 	@AllowNull
 	@Column(DataType.TEXT)
-	public name: string | null = null;
+	public name!: string | null;
 
 	/* "Error: Foreign key for "ContributorGroup"
 	 * is missing on "UserJoinsProject"." */
 	@HasMany(() => UserJoinsProject, 'contributorGroupId')
-	public uses: UserJoinsProject[] = [];
+	public uses?: UserJoinsProject[];
 
 	@Column
-	public canCreateFiles: boolean = false;
+	public canCreateFiles!: boolean;
 
 	@Column
-	public canDeleteFiles: boolean = false;
+	public canDeleteFiles!: boolean;
 
 	@Column
-	public canViewFiles: boolean = false;
+	public canViewFiles!: boolean;
 
 	@Column
-	public canAddUsers: boolean = false;
+	public canAddUsers!: boolean;
 
 	@Column
-	public canRemoveUsers: boolean = false;
+	public canRemoveUsers!: boolean;
 
 	@Column
-	public canEditUserPermissions: boolean = false;
+	public canEditUserPermissions!: boolean;
 
 	@AllowNull
 	@Column(DataType.TEXT)
-	public description: string | null = null;
+	public description!: string | null;
 
 	@Column
-	public isInternal: boolean = true;
+	public isInternal!: boolean;
 
-	public getContributorGroupFullInfo(): ContributorGroupFullInfo {
+	public get fullInfo(): ContributorGroupFullInfo {
 		return {
 			role: `${this.name}`,
 			description: `${this.description}`,

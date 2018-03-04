@@ -1,64 +1,54 @@
+import { default as types } from './matcher/types';
+
+type Value = string | number | boolean;
+type ValueString = 'string' | 'number' | 'integer' | 'boolean';
+
 const serverConfig: Property[] = [];
 
 /**
  * A way to display user-configurable properties.
  */
-class PropertyDisplay {
+interface PropertyDisplay {
 	/**
 	 * The category the property belongs to.
 	 */
-	public category: string;
+	category: string;
 
 	/**
 	 * The group the property belongs to.
 	 */
-	public group: string;
+	group: string;
 
 	/**
 	 * The name for the property to display to a user.
 	 */
-	public displayName: string;
+	displayName: string;
 
 	/**
 	 * The description of the property.
 	 */
-	public description: string;
-
-	/**
-	 * Constructs a [[PropertyDisplay]] using its properties.
-	 *
-	 * @param cat	The property's category.
-	 * @param grp	The property's group.
-	 * @param dn	 The property's displayable name.
-	 * @param desc A description of the property.
-	 */
-	public constructor(cat: string, grp: string, dn: string, desc: string) {
-		this.category = cat;
-		this.group = grp;
-		this.displayName = dn;
-		this.description = desc;
-	}
+	description: string;
 }
 
 /**
  * A server property that infuences the running of the server.
  * Loaded from configs at launch, and possibly editable during run-time.
  */
-export interface Property {
+export class Property {
 	/**
 	 * The property's unique ID.
 	 */
-	id: string;
+	public id: string;
 
 	/**
 	 * How to display the property to the user.
 	 */
-	display?: PropertyDisplay;
+	public display?: PropertyDisplay;
 
 	/**
 	 * Is the property read-only, or can it be edited at run-time?
 	 */
-	readOnly: boolean;
+	public readOnly: boolean;
 
 	/**
 	 * The variable type of the property.
@@ -66,71 +56,81 @@ export interface Property {
 	 * These strings represent Javascript types directly,
 	 * except `"integer"`, which is a `number` in logic.
 	 */
-	type: 'string' | 'number' | 'integer' | 'boolean';
+	public type: ValueString;
 
 	/**
 	 * The value of the property.
 	 */
-	value: string | number | boolean;
+	private valueInternal!: Value;
+
+	public constructor(
+		id: string,
+		type: ValueString,
+		value: Value,
+		readOnly: boolean = true,
+		display?: PropertyDisplay
+	) {
+		this.id = id;
+		this.display = display;
+		this.readOnly = readOnly;
+		this.type = type;
+		this.valueInternal = value;
+	}
+
+	public get value(): Value {
+		return this.valueInternal;
+	}
+
+	public set value(value: Value) {
+		if (!this.readOnly) {
+			throw new Error('this property is read-only');
+		} else if (!types[this.type](value)) {
+			throw new Error(`value ${value} is not of type ${this.type}`);
+		}
+		this.valueInternal = value;
+	}
 }
 
 // Logging
-let propertyDisplay: PropertyDisplay = new PropertyDisplay(
-	'Logging',
-	'BE4',
-	'Is logging enabled?',
-	'This property defines if logging is currently enabled on this backend server.'
-);
+let propertyDisplay: PropertyDisplay = {
+	category: 'logging',
+	group: 'BE4',
+	displayName: 'Is logging enabled?',
+	description:
+		'This property defines if logging is enabled on this backend server.'
+};
 
-serverConfig.push({
-	id: 'Server_Log',
-	display: propertyDisplay,
-	readOnly: false,
-	type: 'boolean',
-	value: false
-});
+serverConfig.push(new Property(
+	'Server_Log',
+	'boolean',
+	false,
+	false,
+	propertyDisplay
+));
 
 // Caching Settings (global)
-serverConfig.push({
-	id: 'Global_Cache_Limit',
-	readOnly: true,
-	type: 'integer',
-	value: 1
-});
+serverConfig.push(new Property(
+	'Global_Cache_Limit',
+	'integer',
+	1,
+	true
+));
 
 // Caching Settings (project level)
-propertyDisplay = new PropertyDisplay(
-	'Caching',
-	'BE4',
-	'Caching Type',
-	'This property defines the current caching style for this project.'
-);
-
-serverConfig.push({
-	id: 'project_example',
-	display: propertyDisplay,
-	readOnly: false,
-	type: 'integer',
-	value: 1
-});
-
-/**
- * Checks if a property exists in the server's property list.
- *
- * @param propKey The property unique ID to search for.
- * @returns The index of the property in the server's property list,
- * or `-1` if the property is not present.
- */
-export const propertyExists: (propKey: string) => number =
-	(propKey: string): number => {
-	let found: number = -1;
-	for (const prop in serverConfig) {
-		if (serverConfig[prop].id === propKey) {
-			found = parseInt(prop, 10);
-			break;
-		}
-	}
-	return found;
+propertyDisplay = {
+	category: 'Caching',
+	group: 'BE4',
+	displayName: 'Caching Type',
+	description:
+		'This property defines the current caching style for this project.'
 };
+
+serverConfig.push(new Property(
+	'project_example',
+	'integer',
+	1,
+	false,
+	propertyDisplay
+));
 
 export default serverConfig;
