@@ -28,7 +28,6 @@ const userCredentials: Object = {
 	grant_type: 'password'
 };
 
-const authenticatedUser = request.agent(app);
 let token: string;
 
 async function addUser(done: any) {
@@ -62,8 +61,8 @@ describe('routes : index', () => {
 
 		context('with authentication', () => {
 			before(function(done) {
-				authenticatedUser
-					.post('/cs3099group-be-4/login') // cs3099group-be-4/login
+				request.agent(app)
+					.post('/cs3099group-be-4/login')
 					.send(userCredentials)
 					.end(function(err, res) {
 						if (err) { throw err; }

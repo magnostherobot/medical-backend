@@ -4,7 +4,7 @@
 import * as chai from 'chai';
 chai.should();
 
-import { ErrorResponseBlock, RequestError } from './errorware';
+import { ErrorResponseBlock, RequestError } from '../../src/errors/errorware';
 
 describe('RequestError', () => {
 	describe('constructor', () => {
