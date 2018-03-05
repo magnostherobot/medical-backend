@@ -64,7 +64,7 @@ function getOriginalTileBounds(originalTile: Segment): TileBounds | null {
 }
 
 
-function findRelatedTiles(activeSegments: Segment[], desiredX: number, desiredY: number): Segment[] {
+function findRelatedTiles(activeSegments: Segment[], desired: TileBounds): Segment[] {
 	let relatedTiles: Segment[] = [];
 
 
@@ -75,13 +75,6 @@ function findRelatedTiles(activeSegments: Segment[], desiredX: number, desiredY:
 		if ((origCoords = getOriginalTileBounds(origTile)) === null) {
 			throw new Error("There was a Sad Boi error");
 		}
-
-		let desired = new TileBounds(
-			desiredX - tileOverlap,
-			desiredX + tileSize + tileOverlap,
-			desiredY - tileOverlap,
-			desiredY + tileSize + tileOverlap
-		);
 
 			//desired X on left is within current tile
 		if (((desired.left >= origCoords.left) &&
@@ -118,13 +111,13 @@ function findRelatedTiles(activeSegments: Segment[], desiredX: number, desiredY:
 }
 
 
-function getDimension(segment:Segment, name:string): Dimension | null {
+function getDimension(segment:Segment, name:string): Dimension {
 	for (let dimension of segment.Data.DirectoryEntry.DimensionEntries) {
 		if (dimension.Dimension == name) {
 			return dimension;
 		}
 	}
-	return null;
+	throw new Error("Dimension: " + name + " doesn't exist for segment: " + segment);
 }
 
 
@@ -138,17 +131,8 @@ function getDimension(segment:Segment, name:string): Dimension | null {
 
 
 //Get all values of X and Y respectively.
-let filterX: number[] = dataBlocks.map((x: Segment) =>
-					{
-						let y: Dimension | null = getDimension(x, 'X');
-						return y == null ? -1 : y.Start
-					});
-let filterY: number[] = dataBlocks.map((x: Segment) =>
-					{
-						let y: Dimension | null = getDimension(x, 'Y');
-						return y == null ? -1 : y.Start
-					});
-
+let filterX: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'X').Start);
+let filterY: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'Y').Start);
 
 //Filter all values to only keep the unique ones for X and Y coords respectively.
 let uniqueX: number[] = filterX.filter(function(elem: any, pos: any) {
@@ -162,26 +146,18 @@ let uniqueY: number[] = filterY.filter(function(elem: any, pos: any) {
 However for the sake of hacking around, assume that the tiles in memory are
 going from left to right; top to bottom. like a book,   then use this in order
 to count up the total size (in pixels) of the image*/
-let sizeX: number = 0;
-let sizeY: number = 0;
+let sizeX: number = 0, sizeY: number = 0;
 for (let i: number = 0; i < uniqueX.length; i++) {
-	let temp : Dimension | null = getDimension(dataBlocks[i], 'X');
-	if (temp != null) {
-		sizeX += temp.Size;
-	}
+	sizeX += getDimension(dataBlocks[i], 'X').Size;
 };
 for (let i: number = 0; i < uniqueY.length; i++) {
-	let temp : Dimension | null = getDimension(dataBlocks[i * uniqueX.length], 'Y');
-	if (temp != null)
-		sizeY += temp.Size;
+	sizeX += getDimension(dataBlocks[i], 'Y').Size;
 };
-tileOverlap
 
 let uniqueTileSizes: number[][] = [];
 for (let seg of dataBlocks) {
-	let newx = getDimension(seg, 'X'), newy = getDimension(seg, 'Y');
-	if (newx == null || newy == null) {continue;};
-	let x: number = newx.Size, y: number = newy.Size;
+
+	let x: number = getDimension(seg, 'X').Size, y: number = getDimension(seg, 'Y').Size;
 	let found: boolean = false;
 	for (let dimPair of uniqueTileSizes) {
 		if (x == dimPair[0] && y == dimPair[1]) {
@@ -203,16 +179,15 @@ for (let seg of dataBlocks) {
 // `npm bin`/ts-node czi.ts
 console.log("\n\nUnique Tile Sizes:");
 console.log(uniqueTileSizes);
-console.log("\n\nSizeX : " + sizeX);
+console.log("\n\n(tentative) SizeX : " + sizeX);
 console.log("UNIQUE X VALUES:");
 console.log("[" + uniqueX + "]");
-console.log("\n\nSizeY : " + sizeY);
+console.log("\n\n(tentative) SizeY : " + sizeY);
 console.log("UNIQUE Y VALUES:");
-console.log("[" + uniqueY + "]");
-console.log("\n\n\n\n\n\n");
+console.log("[" + uniqueY + "]\n\n");
 
 let x: number = 1500, y: number = 1500, c_val: number = 0;
-var c_filter: Segment[] = [];
+let c_filter: Segment[] = [];
 function filterC(to: number): void {
 	c_filter = dataBlocks.filter((x: Segment) =>
 								{
@@ -222,23 +197,30 @@ function filterC(to: number): void {
 									}
 								});
 }
-filterC(0);
+let desired = new TileBounds (0,0,0,0);
 
-console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
-console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+function runTest(cval: number, tilesize:number, tileoverlap:number, x1:number, y1:number) {
+	desired = new TileBounds (
+		x1 - tileoverlap,
+		x1 + tilesize + tileoverlap,
+		y1 - tileoverlap,
+		y1 + tilesize + tileoverlap
+	);
+	filterC(cval);
+	console.log("\n\nC Value: " + cval + "  TileSize: " + tilesize + "  TileOverlap(px): " + tileoverlap + "   Coords: " + `[X=${x1}, Y=${y1}]\nResults: `);
+	console.log(findRelatedTiles(c_filter, desired).map((x: Segment) => x.Data.Data));
+}
 
-filterC(c_val = 1);
-console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
-console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+runTest(0, 1024, 5, 1500, 1500);
 
-filterC(c_val = 0); x=0;y=0;
-console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
-console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+runTest(1, 5000, 5, 1500, 1500);
 
-filterC(c_val = 0); x=41940;y=59240;
-console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
-console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+runTest(0, 1024, 5, 0, 0);
 
-filterC(c_val = 0); x=41945;y=59245;
-console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
-console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+runTest(0, 1024, 5, 41940, 59240);
+
+runTest(0, 1024, 5, -tileSize - tileOverlap -1, 59240);
+
+runTest(0, 1024, 5, 41945, 59245);
+
+runTest(3, 1024, 5, 41940, 1500);
