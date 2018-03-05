@@ -46,6 +46,7 @@
     "@types/passport-local": "^1.0.32",
     "@types/sequelize": "^4.27.5",
     "@types/uuid": "^3.4.3",
+    "all": "0.0.0",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "express-jwt": "^5.3.0",
