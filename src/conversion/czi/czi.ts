@@ -1,110 +1,114 @@
-var json = require('/cs/scratch/cjd24/0701-extraction/outputjson.json');
+let json: any = require('/cs/scratch/cjd24/0701-extraction/outputjson.json');
 json = json.czi;
-let tileOverlap = 5;
-let tileSize = 1024;
 
-var dataBlocks = json.filter((x: { Id: string, Data: { Data: string }}) => x.Id == 'ZISRAWSUBBLOCK' && x.Data.Data != 'empty');
+let tileOverlap: number = 5;
+let tileSize: number = 1024;
 
-var filterX = dataBlocks.map((x: {Data: {DirectoryEntry: {DimensionEntries: {Start: number}[]}}}) => x.Data.DirectoryEntry.DimensionEntries[0].Start);
-var filterY = dataBlocks.map((x: {Data: {DirectoryEntry: {DimensionEntries: {Start: number}[]}}}) => x.Data.DirectoryEntry.DimensionEntries[1].Start);
-
-var uniqueX = filterX.filter(function(elem: any, pos: any) {
-	return filterX.indexOf(elem) == pos;
-})
-
-var uniqueY = filterY.filter(function(elem: any, pos: any) {
-	return filterY.indexOf(elem) == pos;
-})
-
-
-//These values are normally stored at the big XML metadata under "Information/Image/SizeX or SizeY";
-var sizeX = 0;
-var sizeY = 0;
-for (var i = 0; i < uniqueX.length; i++) {
-	sizeX += dataBlocks[i].Data.DirectoryEntry.DimensionEntries[0].Size;
+interface Dimension {
+	Dimension: string;
+	Start: number;
+	Size: number;
 }
-for (var i = 0; i < uniqueY.length; i++) {
-	sizeY += dataBlocks[i * uniqueX.length].Data.DirectoryEntry.DimensionEntries[1].Size;
+interface DirectoryEntry {
+	DimensionCount: number;
+	DimensionEntries: Dimension[];
+}
+interface SubBlock {
+	DirectoryEntry: DirectoryEntry;
+	Data: string;
+}
+interface Segment {
+	Id: string;
+	UsedSize: number;
+	Data: SubBlock;
+}
+class TileBounds {
+	left: number;
+	right: number;
+	top: number;
+	bottom: number;
+	constructor(left: number, right: number, top: number, bottom: number) {
+		this.left = left;
+		this.right = right;
+		this.top = top;
+		this.bottom = bottom;
+	};
 }
 
 
-console.log("\n\nSizeX : " + sizeX);
-console.log("UNIQUE X VALUES:");
-console.log(uniqueX);
-console.log("\n\nSizeY : " + sizeY);
-console.log("UNIQUE Y VALUES:");
-console.log(uniqueY);
-console.log("\n\n\n\n\n\n");
+//Get all subblocks that have an associated saved tile
+let dataBlocks: Segment[] = json.filter((x: Segment) => x.Id == 'ZISRAWSUBBLOCK' && x.Data.Data != 'empty');
 
 
-console.log(findRelatedTiles(0, 0));
+function getOriginalTileBounds(originalTile: Segment): TileBounds | null {
+	let bounds: TileBounds = new TileBounds (-1, -1, -1, -1);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-function getOriginalTileCoordinates(originalTile: any): number[] | null{
-	let xstart:number | null = null,
-		xsize:number  | null = null,
-		ystart:number | null = null,
-		ysize:number  | null = null;
-
-	for (let dimension of originalTile.Data.DirectoryEntry) {
+	for (let dimension of originalTile.Data.DirectoryEntry.DimensionEntries) {
 		if (dimension.Dimension == 'X') {
-			xstart = dimension.Start;
-			xsize = dimension.Size;
+			bounds.left = dimension.Start;
+			bounds.right = bounds.left + dimension.Size;
 			continue;
 		}
-		if (dimension.Dimension == 'Y') {
-			ystart = dimension.Start;
-			ysize = dimension.Size;
+		else if (dimension.Dimension == 'Y') {
+			bounds.top = dimension.Start;
+			bounds.bottom = bounds.top + dimension.Size;
 			continue;
 		}
 	}
 
-	if (!xstart || !xsize || !ystart || !ysize) {
+	if (bounds.left < 0 || bounds.right < 0 || bounds.top < 0 || bounds.bottom < 0) {
 		return null;
-	} else {
-		return [xstart, xsize, ystart, ysize];
 	}
+
+	return bounds;
 }
 
 
-function findRelatedTiles(desiredX: number, desiredY: number): any[] {
-	let relatedTiles: any[] = [];
+function findRelatedTiles(activeSegments: Segment[], desiredX: number, desiredY: number): Segment[] {
+	let relatedTiles: Segment[] = [];
 
-	for (let origTile in dataBlocks) {
-		let origCoords: number[] | null = getOriginalTileCoordinates(origTile);
-		if (origCoords === null) {
-			return ["There was a sad boi error"];
+
+	for (let origTile of activeSegments) {
+
+		let origCoords: TileBounds | null;
+
+		if ((origCoords = getOriginalTileBounds(origTile)) === null) {
+			throw new Error("There was a Sad Boi error");
 		}
+
+		let desired = new TileBounds(
+			desiredX - tileOverlap,
+			desiredX + tileSize + tileOverlap,
+			desiredY - tileOverlap,
+			desiredY + tileSize + tileOverlap
+		);
 
 			//desired X on left is within current tile
-		if ((((desiredX - tileOverlap) > origCoords[0]) &&
-			((desiredX - tileOverlap) < (origCoords[0] + origCoords[1]))) ||
+		if (((desired.left >= origCoords.left) &&
+			(desired.left <= origCoords.right)) ||
 
 			//desired X on right is within the current tile
-			(((desiredX + tileSize + tileOverlap) > origCoords[0]) &&
-			((desiredX + tileSize + tileOverlap) < (origCoords[0] + origCoords[1])))) {
+			((desired.right >= origCoords.left) &&
+			(desired.right <= origCoords.right)) ||
 
+			//desired tile X overlaps base tile
+			((desired.left < origCoords.left) &&
+			(desired.right > origCoords.right)))
 
-				//desired Y on top is within current tile
-			if ((((desiredY - tileOverlap) > origCoords[2]) &&
-				((desiredY - tileOverlap) < (origCoords[2] + origCoords[3]))) ||
+		{
+			//desired Y on top is within current tile
+			if (((desired.top >= origCoords.top) &&
+				(desired.top <= origCoords.bottom)) ||
 
-				//desired Y on bottom is within the current tile
-				(((desiredY + tileSize + tileOverlap) > origCoords[2]) &&
-				((desiredY + tileSize + tileOverlap) < (origCoords[2] + origCoords[3])))) {
+				//desired Y on right is within the current tile
+				((desired.bottom >= origCoords.top) &&
+				(desired.bottom <= origCoords.bottom)) ||
 
+				//desired tile Y overlaps whole base tile
+				((desired.top < origCoords.top) &&
+				(desired.bottom > origCoords.bottom)))
+
+			{
 				relatedTiles.push(origTile);
 			}
 		}
@@ -112,3 +116,129 @@ function findRelatedTiles(desiredX: number, desiredY: number): any[] {
 
 	return relatedTiles;
 }
+
+
+function getDimension(segment:Segment, name:string): Dimension | null {
+	for (let dimension of segment.Data.DirectoryEntry.DimensionEntries) {
+		if (dimension.Dimension == name) {
+			return dimension;
+		}
+	}
+	return null;
+}
+
+
+
+
+
+
+
+
+
+
+
+//Get all values of X and Y respectively.
+let filterX: number[] = dataBlocks.map((x: Segment) =>
+					{
+						let y: Dimension | null = getDimension(x, 'X');
+						return y == null ? -1 : y.Start
+					});
+let filterY: number[] = dataBlocks.map((x: Segment) =>
+					{
+						let y: Dimension | null = getDimension(x, 'Y');
+						return y == null ? -1 : y.Start
+					});
+
+
+//Filter all values to only keep the unique ones for X and Y coords respectively.
+let uniqueX: number[] = filterX.filter(function(elem: any, pos: any) {
+	return filterX.indexOf(elem) == pos;
+});
+let uniqueY: number[] = filterY.filter(function(elem: any, pos: any) {
+	return filterY.indexOf(elem) == pos;
+});
+
+/*These values are normally stored at the big XML metadata under "Information/Image/SizeX or SizeY";
+However for the sake of hacking around, assume that the tiles in memory are
+going from left to right; top to bottom. like a book,   then use this in order
+to count up the total size (in pixels) of the image*/
+let sizeX: number = 0;
+let sizeY: number = 0;
+for (let i: number = 0; i < uniqueX.length; i++) {
+	let temp : Dimension | null = getDimension(dataBlocks[i], 'X');
+	if (temp != null) {
+		sizeX += temp.Size;
+	}
+};
+for (let i: number = 0; i < uniqueY.length; i++) {
+	let temp : Dimension | null = getDimension(dataBlocks[i * uniqueX.length], 'Y');
+	if (temp != null)
+		sizeY += temp.Size;
+};
+tileOverlap
+
+let uniqueTileSizes: number[][] = [];
+for (let seg of dataBlocks) {
+	let newx = getDimension(seg, 'X'), newy = getDimension(seg, 'Y');
+	if (newx == null || newy == null) {continue;};
+	let x: number = newx.Size, y: number = newy.Size;
+	let found: boolean = false;
+	for (let dimPair of uniqueTileSizes) {
+		if (x == dimPair[0] && y == dimPair[1]) {
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		uniqueTileSizes.push([x, y]);
+	}
+};
+
+
+
+
+
+
+//TESTS TO SEE WHAT VARIOUS THINGS RETURN
+// `npm bin`/ts-node czi.ts
+console.log("\n\nUnique Tile Sizes:");
+console.log(uniqueTileSizes);
+console.log("\n\nSizeX : " + sizeX);
+console.log("UNIQUE X VALUES:");
+console.log("[" + uniqueX + "]");
+console.log("\n\nSizeY : " + sizeY);
+console.log("UNIQUE Y VALUES:");
+console.log("[" + uniqueY + "]");
+console.log("\n\n\n\n\n\n");
+
+let x: number = 1500, y: number = 1500, c_val: number = 0;
+var c_filter: Segment[] = [];
+function filterC(to: number): void {
+	c_filter = dataBlocks.filter((x: Segment) =>
+								{
+									let y: Dimension | null = getDimension(x, 'C');
+									if (y != null && y.Start == to) {
+										return y;
+									}
+								});
+}
+filterC(0);
+
+console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
+console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+
+filterC(c_val = 1);
+console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
+console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+
+filterC(c_val = 0); x=0;y=0;
+console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
+console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+
+filterC(c_val = 0); x=41940;y=59240;
+console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
+console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
+
+filterC(c_val = 0); x=41945;y=59245;
+console.log("\n\nC Value: " + c_val + "  TileSize: " + tileSize + "  TileOverlap: " + tileOverlap + "   Coords: " + `[X=${x}, Y=${y}]\nResults: `);
+console.log(findRelatedTiles(c_filter, x, y).map((x: Segment) => x.Data.Data));
