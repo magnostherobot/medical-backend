@@ -70,7 +70,7 @@ const postLog: Middleware =
 		return;
 	}
 	for (const item of req.body) {
-		logger.log(item.level, item.value, {
+		logger.forward(item.level, item.value, {
 			component: item.component,
 			user: req.user.username,
 			external: true
@@ -567,5 +567,4 @@ export class FileRouter {
 const fileRoutes: FileRouter = new FileRouter();
 fileRoutes.init();
 
-const ex: Router = fileRoutes.router;
-export default ex;
+export default fileRoutes.router;

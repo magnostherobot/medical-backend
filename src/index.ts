@@ -1,10 +1,12 @@
-/* tslint:disable:no-console
- * This only goes here until we have a logging system */
+import { logger } from './logger';
 
-console.log('begin import');
+logger.info('Starting up server');
+
+logger.info('Importing server logic');
 import { default as app } from './app';
+
+logger.info('Importing database ORM');
 import { default as seq } from './db/orm';
-console.log('end import');
 
 import { default as UserGroup } from './db/model/UserGroup';
 
@@ -14,19 +16,27 @@ const DEFAULT_PORT: number = 3000;
 const port: number = process.env.PORT
 	? process.env.PORT
 	: DEFAULT_PORT;
+logger.info(`Port ${port} chosen`);
 
 // tslint:disable:no-floating-promises
 (async(): Promise<void> => {
-	console.log('Booting PSQL database');
+	try {
+		logger.info('Authenticating with database');
+		await seq.authenticate();
+	} catch (err) {
+		return logger.error(`Cannot authenticate with database: ${err}`);
+	}
 
-	await seq.authenticate();
+	try {
+		logger.info('Resetting Database');
+		await seq.sync({
+			force: true
+		});
+	} catch (err) {
+		return logger.error(`Cannot synchronise with database: ${err}`);
+	}
 
-	console.log('Resetting Database');
-
-	await seq.sync({
-		force: true
-	});
-
+	logger.info('Adding admin');
 	const admin: UserGroup = new UserGroup({
 		name: 'admin',
 		canCreateUsers: true,
@@ -39,16 +49,14 @@ const port: number = process.env.PORT
 		description: 'Systems admin'
 	});
 
-	// tslint:disable:no-floating-promises
-	admin.save();
+	await admin.save();
 
-	console.log('Booting ExpressJS server');
-
+	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {
 		if (err) {
-			return console.log(err);
+			return logger.error(`Error on ExpressJS startup: ${err}`);
 		} else {
-			return console.log(`server is listening on port ${port}`);
+			return logger.info(`Server started on port ${port}`);
 		}
 	});
 })();
