@@ -70,7 +70,7 @@ const postLog: Middleware =
 		return;
 	}
 	for (const item of req.body) {
-		logger.log(item.level, item.value, {
+		logger.forward(item.level, item.value, {
 			component: item.component,
 			user: req.user.username,
 			external: true
