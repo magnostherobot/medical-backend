@@ -4,5 +4,6 @@
 npm i -g yarn
 yarn
 ./getmepostgres.sh
-./getmeall.sh
+./getmecziconversion.sh
 
+echo "COMPLETE! Ready to use.";

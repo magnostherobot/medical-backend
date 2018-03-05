@@ -106,12 +106,6 @@
   version "9.12.2"
   resolved "https://registry.yarnpkg.com/@types/highlight.js/-/highlight.js-9.12.2.tgz#6ee7cd395effe5ec80b515d3ff1699068cd0cd1d"
 
-"@types/imagemagick-native@^1.7.29":
-  version "1.7.29"
-  resolved "https://registry.yarnpkg.com/@types/imagemagick-native/-/imagemagick-native-1.7.29.tgz#a3c0c56aa86b3ea79032d0784ba3478c58c7cc67"
-  dependencies:
-    "@types/node" "*"
-
 "@types/jsonwebtoken@^7.2.5":
   version "7.2.5"
   resolved "https://registry.yarnpkg.com/@types/jsonwebtoken/-/jsonwebtoken-7.2.5.tgz#413159d570ec45fc3e7da7ea3f7bca6fb9300e72"
@@ -1381,12 +1375,6 @@ ignore-by-default@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/ignore-by-default/-/ignore-by-default-1.0.1.tgz#48ca6d72f6c6a3af00a9ad4ae6876be3889e2b09"
 
-imagemagick-native@^1.9.3:
-  version "1.9.3"
-  resolved "https://registry.yarnpkg.com/imagemagick-native/-/imagemagick-native-1.9.3.tgz#712f943d30c5daf6dc5d88198f4c9f1e6cb902df"
-  dependencies:
-    nan "2.x"
-
 import-lazy@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/import-lazy/-/import-lazy-2.1.0.tgz#05698e3d45c88e8d7e9d92cb0584e77f096f3e43"
@@ -2005,10 +1993,6 @@ ms@2.0.0:
 ms@^2.0.0, ms@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.1.tgz#30a5864eb3ebb0a66f2ebe6d727af06a09d86e0a"
-
-nan@2.x:
-  version "2.9.2"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.9.2.tgz#f564d75f5f8f36a6d9456cca7a6c4fe488ab7866"
 
 nan@^2.3.0:
   version "2.8.0"

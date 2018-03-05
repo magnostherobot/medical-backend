@@ -224,3 +224,10 @@ runTest(0, 1024, 5, -tileSize - tileOverlap -1, 59240);
 runTest(0, 1024, 5, 41945, 59245);
 
 runTest(3, 1024, 5, 41940, 1500);
+
+
+
+filterC(0);
+console.log("\n\n\n\n\n\n\n");
+
+//begin work on getting the new tiles all nice
