@@ -1,3 +1,4 @@
+
 import { logger } from './logger';
 
 logger.info('Starting up server');
@@ -25,7 +26,8 @@ logger.info(`Port ${port} chosen`);
 		logger.info('Authenticating with database');
 		await seq.authenticate();
 	} catch (err) {
-		return logger.error(`Cannot authenticate with database: ${err}`);
+		logger.error(`Cannot authenticate with database: ${err}`);
+		process.exit(1);
 	}
 
 	try {
@@ -34,7 +36,8 @@ logger.info(`Port ${port} chosen`);
 			force: true
 		});
 	} catch (err) {
-		return logger.error(`Cannot synchronise with database: ${err}`);
+		logger.error(`Cannot synchronise with database: ${err}`);
+		process.exit(1);
 	}
 
 	logger.info('Adding admin privileges');
@@ -59,7 +62,7 @@ logger.info(`Port ${port} chosen`);
 		userGroup: admin
 	});
 
-	root.save();
+	await root.save();
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {
@@ -69,4 +72,7 @@ logger.info(`Port ${port} chosen`);
 			return logger.info(`Server started on port ${port}`);
 		}
 	});
+
+	// tslint:disable-next-line:no-unused-expression
+	process.send && process.send('ready');
 })();

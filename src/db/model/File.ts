@@ -39,11 +39,11 @@ export default class File extends Model<File> {
 	public rootFolderOf?: Project;
 
 	@CreatedAt
-	@Column
+	@Column(DataType.DATE)
 	public uploadDate!: Date;
 
 	@UpdatedAt
-	@Column
+	@Column(DataType.DATE)
 	public modifyDate!: Date;
 
 	public get containedFiles(): File[] {

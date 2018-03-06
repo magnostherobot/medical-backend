@@ -1,5 +1,5 @@
 import { default as Project } from './Project';
-import { BelongsTo, Column, CreatedAt, ForeignKey, Model, Table
+import { BelongsTo, Column, CreatedAt, DataType, ForeignKey, Model, Table
 	} from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as ContributorGroup } from './UserGroup';
@@ -15,7 +15,7 @@ export default class UserJoinsProject extends Model<UserJoinsProject> {
 	public projectName!: string;
 
 	@CreatedAt
-	@Column
+	@Column(DataType.DATE)
 	public joinDate!: Date;
 
 	@ForeignKey(() => ContributorGroup)
