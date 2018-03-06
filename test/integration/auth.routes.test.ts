@@ -28,15 +28,12 @@ const bobbyCredentials = {
 
 let bobbyToken: string;
 
-async function addUser(credentials: any, done: any) {
-	await seq.authenticate();
+async function resetDatabase(done: any){
 	await seq.sync({
 		force: true
 	});
-
-	const u: string = credentials.username
-	const p: string = credentials.password
-	console.log(u + " " + p)
+	const u: string = bobbyCredentials.username
+	const p: string = bobbyCredentials.password
 
 	const newUser: User = new User({
 		username: u,
@@ -47,18 +44,26 @@ async function addUser(credentials: any, done: any) {
 	done();
 }
 
+async function setupDatabase(done: any) {
+	await seq.authenticate();
+	await seq.sync({
+		force: true
+	});
+	done();
+}
+
 // Add user
-before(function(done: any) {
-	addUser(bobbyCredentials, done);
+before((done: any) => {
+	setupDatabase(done);
 });
 
 describe('authentication', () => {
-	context('invalid authentication', () => {
+	context('invalid password authentication', () => {
 		it('should reject invalid usernames', () => {
 			request.agent(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, username: 'invalid'})
-			.end(function(err, res) {
+			.end((err, res) => {
 				expect(err).to.not.be.undefined;
 				expect(res).to.have.status(401);
 			});
@@ -66,8 +71,8 @@ describe('authentication', () => {
 		it('should reject invalid passwords', () => {
 			request.agent(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, password: 'invalid'})
-			.end(function(err, res) {
+			.send({...bobbyCredentials, password: 'asasasas'})
+			.end((err, res) => {
 				expect(err).to.not.be.undefined;
 				expect(res).to.have.status(401);
 			});
@@ -76,21 +81,80 @@ describe('authentication', () => {
 			request.agent(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, grant_type: 'invalid'})
-			.end(function(err, res) {
-				expect(err).to.not.be.undefined;
-				expect(res).to.have.status(400);
+			.catch((reason) => {
+				expect(reason).to.eql('unsupported_grant_type: invalid grant type');
 			});
 		});
-	})
-	context('valid authentication', () => {
+		it('should reject empty usernames', () => {
+			request.agent(app)
+			.post('/cs3099group-be-4/login')
+			.send({...bobbyCredentials, username: ''})
+			.end((err, res) => {
+				expect(err).to.not.be.undefined;
+				expect(res).to.have.status(401);
+			});
+		});
+		it('should reject empty passwords', () => {
+			request.agent(app)
+			.post('/cs3099group-be-4/login')
+			.send({...bobbyCredentials, password: ''})
+			.end((err, res) => {
+				expect(err).to.not.be.undefined;
+				expect(res).to.have.status(401);
+			});
+		});
+		it('should reject empty grant_type', () => {
+			request.agent(app)
+			.post('/cs3099group-be-4/login')
+			.send({...bobbyCredentials, grant_type: ''})
+			.catch((reason) => {
+				expect(reason).to.eql('unsupported_grant_type: invalid grant type');
+			});
+		});
+	});
+	context('valid password authentication', () => {
+		before((done: any) => {
+			resetDatabase(done);
+		});
 		it('should accept correct credentials', () => {
 			request.agent(app)
 			.post('/cs3099group-be-4/login')
 			.send(bobbyCredentials)
-			.end(function(err, res) {
-				expect(err).to.be.undefined;
+			.end((err, res) => {
+				expect(err).to.be.null;
 				expect(res).to.have.status(200);
 			});
 		});
-	})
+	});
+	context('token authentication', () => {
+		let bobbyToken: string;
+		before((done: any) => {
+			resetDatabase(() => {
+				request.agent(app)
+				.post('/cs3099group-be-4/login')
+				.send(bobbyCredentials)
+				.end((err, res) => {
+					if (err) { throw err; }
+					bobbyToken = res.body.access_token;
+					done();
+				});
+			});
+		});
+		it('should reject invalid tokens', () => {
+			return chai.request(app).get('/')
+			.set('Authorization', 'Bearer ' + 'invalid')
+			.end((err, res) => {
+				expect(err).to.not.be.undefined;
+				expect(res).to.have.status(401);
+			});
+		});
+		it('should accept valid tokens', () => {
+			return chai.request(app).get('/')
+			.set('Authorization', 'Bearer ' + bobbyToken)
+			.end((err, res) => {
+				expect(err).to.be.null;
+				expect(res).to.have.status(200);
+			});
+		});
+	});
 });

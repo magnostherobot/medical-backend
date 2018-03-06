@@ -30,7 +30,7 @@ const userCredentials: Object = {
 
 let token: string;
 
-async function addUser(done: any) {
+async function startDatabase(done: any) {
 	await seq.authenticate();
 	await seq.sync({
 		force: true
@@ -47,7 +47,7 @@ async function addUser(done: any) {
 
 // Add user
 before(function(done: any) {
-	addUser(done);
+	startDatabase(done);
 });
 
 describe('routes : index', () => {

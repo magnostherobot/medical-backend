@@ -112,9 +112,7 @@ export class AuthRouter {
 // Handle error if user is unauthorised
 export const unauthorisedErr: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
-	console.log('fffff');
 	if (err.name === 'UnauthorizedError') {
-		console.log('efewfwf');
 		return next(new RequestError(
 			401, 'not_authorised',
 			'user does not have correct authorisation for task'
