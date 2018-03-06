@@ -15,9 +15,10 @@ import { default as User } from './db/model/User';
 
 class App {
 	public express: ex.Express;
-	public logEnabled: boolean = true;
+	private readonly logEnabled: boolean = true;
 
-	public constructor() {
+	public constructor(enableLog: boolean) {
+		this.logEnabled = enableLog;
 		this.express = ex();
 		this.precondition();
 		this.middleware();
@@ -59,9 +60,19 @@ class App {
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		this.express.use('/', defRouter);
+		defRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
+			res.status(404)
+			.json({
+				status: 'error',
+				error : 'invalid_route',
+				error_description: 'Endpoints start from /cs3099group-be-4/\n'
+						+ ' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
+						+ ' for further details.'
+			});
+		});
 		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);		
+		this.express.use('/cs3099group-be-4', authRouter);
+		this.express.use('/', defRouter);
 	}
 
 	private errorware(): void {
@@ -185,4 +196,7 @@ class App {
 	}
 }
 
-export default new App().express;
+export default new App(true).express;
+export function TestApp() {
+	return new App(false).express;
+}
