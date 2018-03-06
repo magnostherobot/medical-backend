@@ -4,7 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
 import * as passport from 'passport';
 
-import { unauthorisedErr, default as authRouter } from './auth';
+import { unauthorisedErr, isAdmin, default as authRouter } from './auth';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -61,7 +61,7 @@ class App {
 		});
 		this.express.use('/', defRouter);
 		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);
+		this.express.use('/cs3099group-be-4', authRouter);		
 	}
 
 	private errorware(): void {

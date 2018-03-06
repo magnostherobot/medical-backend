@@ -6,6 +6,8 @@ import * as jwt from 'jsonwebtoken';
 import * as passport from 'passport';
 import { Strategy } from 'passport-local';
 import { default as User } from './db/model/User';
+import { default as UserGroup } from './db/model/UserGroup';
+import { default as Project } from './db/model/Project';
 
 import { Errorware } from './errors/errorware';
 
@@ -22,8 +24,9 @@ export class AuthRouter {
 		const user: User | null = await User.findOne({
 			where: {
 				username: req.body.username
-			}
-		});
+			},
+			include: [ UserGroup, Project]
+		});		
 
 		if (user === null) {
 			// Whoa, what an error!
@@ -31,7 +34,7 @@ export class AuthRouter {
 		}
 
 		const token: string = jwt.sign(
-			{ id: user.username },
+			{ object: user },
 			'Mr Secret',
 			{ expiresIn: 21600 }
 		);
@@ -76,18 +79,7 @@ export class AuthRouter {
 		next();
 	}
 
-	// Middleware to check privileges - admin
-	public isAdmin(req: Request, res: Response, next: NextFunction): void {
-		if (!req.user.admin) {
-			next(new RequestError(
-				401, 'not_authorised',
-				'user is not authorised to perform task'
-			));
-			return;
-		}
-		next();
-	}
-
+	
 	// Configure local strategy to use with passport-js.
 	private configStrategy(): void {
 		// tslint:disable-next-line:typedef
@@ -95,12 +87,13 @@ export class AuthRouter {
 			const user: User | null = await User.findOne({
 				where: {
 					username
-				}
+				},
+				include: [UserGroup, Project]
 			});
 
 			if (!user || user.password !== password) {
 				return done(null, false);
-			}
+			}			
 			return done(null, user);
 		}));
 	}
@@ -129,6 +122,21 @@ export const unauthorisedErr: Errorware =
 	}
 	next(err);
 };
+
+// Middleware to check privileges - admin
+export const isAdmin: any = 
+(req: Request, res: Response, next: NextFunction): void => {	
+	var isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
+	
+	if (!isAdmin) {
+		next(new RequestError(
+			401, 'not_authorised',
+			'user is not authorised to perform task'
+		));
+		return;
+	}
+	next();
+}
 
 const authRoutes: AuthRouter = new AuthRouter();
 authRoutes.init();
