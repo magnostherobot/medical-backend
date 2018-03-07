@@ -5,7 +5,6 @@ const expect: Chai.ExpectStatic = chai.expect;
 chai.use(require('chai-http'));
 import 'mocha';
 import forEach = require('mocha-each');
-import request = require('supertest');
 
 import * as App from '../../src/app';
 import * as ex from 'express';
@@ -37,47 +36,67 @@ const errorResponseTemplate: Template = {
 
 type MochaForEachInput = [ string, string, Template, number ];
 
-const userCredentials: Object = {
+const bobbyCredentials = {
 	username: 'bobby',
-	password: 'pass',
+	password: 'tables',
 	grant_type: 'password'
 };
 
-const authenticatedUser = request.agent(app);
-let token: string;
+let bobbyToken: string;
 
-async function addUser(done: any) {
-	await seq.authenticate();
+async function resetDatabase(done: any){
 	await seq.sync({
 		force: true
 	});
+	const u: string = bobbyCredentials.username
+	const p: string = bobbyCredentials.password
 
 	const newUser: User = new User({
-		username: 'bobby',
-		password: 'pass',
+		username: u,
+		password: p,
 		userGroups: []
 	});
 	await newUser.save();
 	done();
 }
 
+async function setupDatabase(done: any) {
+	await seq.authenticate();
+	await seq.sync({
+		force: true
+	});
+	done();
+}
+
 // Add user
-before(function(done: any) {
-	addUser(done);
+before((done: any) => {
+	setupDatabase(() => {
+		resetDatabase(() => {
+			chai.request(app)
+			.post('/cs3099group-be-4/login')
+			.send(bobbyCredentials)
+			.end((err, res) => {
+				if (err) { throw err; }
+				bobbyToken = res.body.access_token;
+				done();
+			});
+		});
+	});
+	
 });
 
 describe('routes : errors', () => {
 	describe('GET invalid routes', function() {
 		it('should have response code 404', () => {
 			return chai.request(app).get('/invalid/route')
-			.set('Authorization', 'Bearer ' + token)
+			.set('Authorization', 'Bearer ' + bobbyToken)
 			.catch(function(err: any) {
 				expect(err.status).to.equal(404);
 			});
 		});
 		it('should conform to the error protocol', function() {
 			return chai.request(app).get('/invalid/route')
-			.set('Authorization', 'Bearer ' + token)
+			.set('Authorization', 'Bearer ' + bobbyToken)
 			.catch(function(err: any) {
 				match(errorResponseTemplate)(err.response.body).should.be.true;
 			});
@@ -218,7 +237,7 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + token);
+			request.set('Authorization', 'Bearer ' + bobbyToken);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res.type).to.equal('application/json');
 			}).catch(function(err: any) {
@@ -231,7 +250,7 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + token);
+			request.set('Authorization', 'Bearer ' + bobbyToken);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res).to.have.status(res_code);
 			}).catch(function(err: any) {
@@ -244,7 +263,7 @@ describe('routes : protocol', () => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + token);
+			request.set('Authorization', 'Bearer ' + bobbyToken);
 			return request.then((res: ChaiHttp.Response) => {
 				match(responseTemplate, JSON.parse(res.body)).shoul.be.true;
 			}).catch(function(err: any) {
@@ -255,7 +274,7 @@ describe('routes : protocol', () => {
 			'the response for %s %s should conform to its specific response protocol',
 			(method: string, path: string, temp: Template, res_code: number) => {
 			if (method === 'get' && temp != null) {
-				return chai.request(app).get(base + path).set('Authorization', 'Bearer ' + token)
+				return chai.request(app).get(base + path).set('Authorization', 'Bearer ' + bobbyToken)
 				.then((res: ChaiHttp.Response) => {
 					match(temp)(JSON.parse(res.body)).should.be.true;
 				}).catch(function(err: any) {

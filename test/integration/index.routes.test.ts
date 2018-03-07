@@ -8,7 +8,6 @@ const expect: Chai.ExpectStatic = chai.expect;
 const should = chai.should();
 import * as ex from 'express';
 import { default as seq } from '../../src/db/orm';
-import request = require('supertest');
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -61,7 +60,7 @@ describe('routes : index', () => {
 
 		context('with authentication', () => {
 			before(function(done) {
-				request.agent(app)
+				chai.request(app)
 					.post('/cs3099group-be-4/login')
 					.send(userCredentials)
 					.end(function(err, res) {

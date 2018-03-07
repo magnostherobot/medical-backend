@@ -6,7 +6,6 @@
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
 import { default as seq } from '../../src/db/orm';
-import request = require('supertest');
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -19,6 +18,20 @@ import 'mocha';
 
 import * as App from '../../src/app';
 const app = App.TestApp();
+
+const badRequestErr = 
+	{ status: 'error',
+	  error: 'invalid_request',
+	  error_description: 'Missing parameters' };
+const unsupportedGrantTypeErr = 
+	{ status: 'error',
+	  error: 'unsupported_grant_type',
+	  error_description: 'invalid grant type' }
+const authorisationErr = 
+	{ status: 'error',
+	  error: 'not_authorised',
+	  error_description: 'user does not have correct authorisation for task' }
+		
 
 const bobbyCredentials = {
 	username: 'bobby',
@@ -60,55 +73,51 @@ before((done: any) => {
 describe('authentication', () => {
 	context('invalid password authentication', () => {
 		it('should reject invalid usernames', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, username: 'invalid'})
-			.end((err, res) => {
-				expect(err).to.not.be.undefined;
+			.then((res) => {
 				expect(res).to.have.status(401);
 			});
 		});
 		it('should reject invalid passwords', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, password: 'asasasas'})
-			.end((err, res) => {
-				expect(err).to.not.be.undefined;
+			.then((res) => {
 				expect(res).to.have.status(401);
 			});
 		});
 		it('should reject invalid grant_type', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, grant_type: 'invalid'})
 			.catch((reason) => {
-				expect(reason).to.eql('unsupported_grant_type: invalid grant type');
+				expect(reason.response.body).to.eql(unsupportedGrantTypeErr);
 			});
 		});
 		it('should reject empty usernames', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, username: ''})
-			.end((err, res) => {
-				expect(err).to.not.be.undefined;
-				expect(res).to.have.status(401);
+			.catch((reason) => {
+				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty passwords', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, password: ''})
-			.end((err, res) => {
-				expect(err).to.not.be.undefined;
-				expect(res).to.have.status(401);
+			.catch((reason) => {
+				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty grant_type', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send({...bobbyCredentials, grant_type: ''})
 			.catch((reason) => {
-				expect(reason).to.eql('unsupported_grant_type: invalid grant type');
+				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 	});
@@ -117,11 +126,10 @@ describe('authentication', () => {
 			resetDatabase(done);
 		});
 		it('should accept correct credentials', () => {
-			request.agent(app)
+			chai.request(app)
 			.post('/cs3099group-be-4/login')
 			.send(bobbyCredentials)
-			.end((err, res) => {
-				expect(err).to.be.null;
+			.then((res) => {
 				expect(res).to.have.status(200);
 			});
 		});
@@ -130,7 +138,7 @@ describe('authentication', () => {
 		let bobbyToken: string;
 		before((done: any) => {
 			resetDatabase(() => {
-				request.agent(app)
+				chai.request(app)
 				.post('/cs3099group-be-4/login')
 				.send(bobbyCredentials)
 				.end((err, res) => {
@@ -143,16 +151,16 @@ describe('authentication', () => {
 		it('should reject invalid tokens', () => {
 			return chai.request(app).get('/')
 			.set('Authorization', 'Bearer ' + 'invalid')
-			.end((err, res) => {
-				expect(err).to.not.be.undefined;
+			.then((res) => {
 				expect(res).to.have.status(401);
+			}).catch((reason) => {
+				expect(reason.response.body).to.eql(authorisationErr);
 			});
 		});
 		it('should accept valid tokens', () => {
 			return chai.request(app).get('/')
 			.set('Authorization', 'Bearer ' + bobbyToken)
-			.end((err, res) => {
-				expect(err).to.be.null;
+			.then((res) => {
 				expect(res).to.have.status(200);
 			});
 		});
