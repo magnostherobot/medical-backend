@@ -38,7 +38,7 @@ class App {
 	private middleware(): void {
 		this.express.use(expressJwt({secret: 'Mr Secret'})
 			.unless({path: [
-				'/cs3099group-be-4/login',
+				'/cs3099group-be-4/oauth/token',
 				'/cs3099group-be-4/_supported_protocols_'
 			] })
 		);
@@ -61,7 +61,7 @@ class App {
 		});
 		this.express.use('/', defRouter);
 		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);		
+		this.express.use('/cs3099group-be-4', authRouter);
 	}
 
 	private errorware(): void {

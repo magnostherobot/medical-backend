@@ -55,7 +55,6 @@ export const errorHandler: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
 	console.log(err);
 	if (RequestError.is(err)) {
-		console.log('fewkuihfklsfv');
 		res.status(err.code)
 			.json(err.responseBlock());
 	} else {

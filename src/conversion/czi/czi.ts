@@ -1,6 +1,12 @@
 
+import * as fs from 'fs';
 import { logger } from '../../logger';
 import * as sharp from 'sharp';
+import * as parsexml from 'xml-parser';
+
+const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
+const tileOverlap: number = 0;
+const tileSize: number = 1024;
 
 interface Dimension {
 	Dimension: string;
@@ -33,12 +39,7 @@ class TileBounds {
 	}
 }
 
-const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
-const json: Segment[] = require(`${extractionDirectory}outputjson.json`).czi;
-const tileOverlap: number = 0;
-const tileSize: number = 1024;
-
-const getOriginalTileBounds = function(originalTile: Segment): (TileBounds | null) {
+const getOriginalTileBounds: Function = function(originalTile: Segment): (TileBounds | null) {
 	const bounds: TileBounds = new TileBounds(-1, -1, -1, -1);
 
 	for (const dimension of originalTile.Data.DirectoryEntry.DimensionEntries) {
@@ -61,9 +62,9 @@ const getOriginalTileBounds = function(originalTile: Segment): (TileBounds | nul
 	}
 
 	return bounds;
-}
+};
 
-const findRelatedTiles = function(activeSegments: Segment[], desired: TileBounds): Segment[] {
+const findRelatedTiles: Function = function(activeSegments: Segment[], desired: TileBounds): Segment[] {
 	const relatedTiles: Segment[] = [];
 
 	for (const baseTile of activeSegments) {
@@ -104,18 +105,18 @@ const findRelatedTiles = function(activeSegments: Segment[], desired: TileBounds
 	}
 
 	return relatedTiles;
-}
+};
 
-const getDimension = function(segment: Segment, name: string): Dimension {
+const getDimension: Function = function(segment: Segment, name: string): Dimension {
 	for (const dimension of segment.Data.DirectoryEntry.DimensionEntries) {
-		if (dimension.Dimension == name) {
+		if (dimension.Dimension === name) {
 			return dimension;
 		}
 	}
 	throw new Error('Dimension: ' + name + " doesn't exist for segment: " + segment);
-}
+};
 
-const orderSegments = function(segments: Segment[]): Segment[][] {
+const orderSegments: Function = function(segments: Segment[]): Segment[][] {
 
 	const output: Segment[][] = [];
 
@@ -133,8 +134,10 @@ const orderSegments = function(segments: Segment[]): Segment[][] {
 			yCoords.push(getDimension(seg, 'Y').Start);
 		}
 		// Filter to get Uniaue Values
-		xCoords = xCoords.filter((item: number, index: number, array: number[]) => array.indexOf(item) === index);
-		yCoords = yCoords.filter((item: number, index: number, array: number[]) => array.indexOf(item) === index);
+		xCoords = xCoords.filter(
+			(item: number, index: number, array: number[]) => array.indexOf(item) === index);
+		yCoords = yCoords.filter(
+			(item: number, index: number, array: number[]) => array.indexOf(item) === index);
 
 		// Use the filtered list to order the segments into rows
 		for (const yVal of yCoords) {
@@ -164,59 +167,64 @@ const orderSegments = function(segments: Segment[]): Segment[][] {
 
 		// Return the result
 		return output;
-	}
-	else {
+	} else {
 		output.push(segments);
 		return output;
 	}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const dataBlocks: Segment[] = require(`${extractionDirectory}outputjson.json`).czi.filter(
+	(s: Segment) => s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty');
+const inspect: object = require('util').inspect;
+const metaXML: parsexml.Node[] = parsexml(fs.readFileSync(`${extractionDirectory}FILE-META-1.xml`, 'utf8')).root.children;
+
+let totalSizeX: number = -1;
+let totalSizeY: number = -1;
+
+// THE FOLLOWING FOR LOOP IS DISGUSTING AND I HATE IT, AND I WISH I DIDNT WRITE IT BUT DON'T SEE ANY OTHER WAY TO DO IT LOL :'(
+for (const child of metaXML) {
+	if (child.name === 'Metadata') {
+		for (const entry of child.children) {
+			if (entry.name === 'Information') {
+				for (const properties of entry.children) {
+					if (properties.name === 'Image') {
+						for (const property of properties.children) {
+							if (property.name === 'SizeX' && property.content) {
+								totalSizeX = Number.parseInt(property.content, 10);
+							} else if (property.name === 'SizeY' && property.content) {
+								totalSizeY = Number.parseInt(property.content, 10);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Get all subblocks that have an associated saved tile
-const dataBlocks: Segment[] = json.filter((s: Segment) => s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty');
 
 // Get all values of X and Y respectively.
-const filterX: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'X').Start);
-const filterY: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'Y').Start);
-
-// Filter all values to only keep the unique ones for X and Y coords respectively.
-const uniqueX: number[] = filterX.filter(function(elem: any, pos: any) {
-	return filterX.indexOf(elem) === pos;
-});
-const uniqueY: number[] = filterY.filter(function(elem: any, pos: any) {
-	return filterY.indexOf(elem) === pos;
-});
-
-/*These values are normally stored at the big XML metadata under "Information/Image/SizeX or SizeY";
-However for the sake of hacking around, assume that the tiles in memory are
-going from left to right; top to bottom. like a book,   then use this in order
-to count up the total size (in pixels) of the image*/
-let sizeX: number = 0;
-let sizeY: number = 0;
-for (let i: number = 0; i < uniqueX.length; i++) {
-	sizeX += getDimension(dataBlocks[i], 'X').Size;
-}
-for (let i: number = 0; i < uniqueY.length; i++) {
-	sizeY += getDimension(dataBlocks[i], 'Y').Size;
-}
+const uniqueX: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'X').Start).filter(
+	(item: number, index: number, array: number[]) => array.indexOf(item) === index);
+const uniqueY: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'Y').Start).filter(
+	(item: number, index: number, array: number[]) => array.indexOf(item) === index);
 
 const uniqueTileSizes: number[][] = [];
 for (const seg of dataBlocks) {
@@ -239,23 +247,23 @@ for (const seg of dataBlocks) {
 // // `npm bin`/ts-node czi.ts
 console.log('\n\nUnique Tile Sizes:');
 console.log(uniqueTileSizes);
-console.log('\n\n(tentative) SizeX : ' + sizeX);
+console.log('\n\nSizeX : ' + totalSizeX);
 console.log('UNIQUE X VALUES:');
-console.log('[' + uniqueX + ']');
-console.log('\n\n(tentative) SizeY : ' + sizeY);
+console.log(uniqueX);
+console.log('\n\n(tentative) SizeY : ' + totalSizeY);
 console.log('UNIQUE Y VALUES:');
-console.log('[' + uniqueY + ']\n\n');
+console.log(uniqueY);
 
-let x: number = 1500, y: number = 1500, c_val: number = 0;
+let x: number = 1500, y: number = 1500;
 let c_filter: Segment[] = [];
-function filterC(to: number): void {
+const filterC: Function = function(to: number): void {
 	c_filter = dataBlocks.filter((x: Segment) => {
 									const y: Dimension | null = getDimension(x, 'C');
-									if (y != null && y.Start == to) {
+									if (y != null && y.Start === to) {
 										return y;
 									}
 								});
-}
+};
 
 let desired = new TileBounds (0, 0, 0, 0);
 function findRelatedTest(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number) {
@@ -300,15 +308,10 @@ console.log('\n\n\n\n\n\n\n');
 
 
 
-
-
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Begin work on getting the new tiles all nice
-function sortSegmentsTest(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number) {
+const sortSegmentsTest: Function = function(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number): Segment[][] {
 	desired = new TileBounds (
 		x1 - tileoverlap,
 		x1 + tilesize + tileoverlap,
@@ -317,21 +320,23 @@ function sortSegmentsTest(cval: number, tilesize: number, tileoverlap: number, x
 	);
 	filterC(cval);
 	console.log('\nC Value: ' + cval + '  TileSize: ' + tilesize + '  TileOverlap(px): ' + tileoverlap + '   Coords: ' + `[X=${x1}, Y=${y1}]`);
-	let outputGrid: Segment[][] = orderSegments(findRelatedTiles(c_filter, desired));
+	const outputGrid: Segment[][] = orderSegments(findRelatedTiles(c_filter, desired));
 
 	for (const row of outputGrid) {
-		let rowOutput: string = "[ ";
+		let rowOutput: string = '[ ';
 		for (const col of row) {
 			rowOutput += ` '${col.Data.Data}', `;
 		}
 		rowOutput += ']';
 		console.log(rowOutput);
 	}
-}
+	return outputGrid;
+};
 
+// Print out all of the related tiles to every new tile to be created.
+for (let ys: number = 0; ys < totalSizeY; ys += tileSize) {
+	for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
+		const sortedSegments: Segment[][] = sortSegmentsTest(0, tileSize, tileOverlap, xs, ys);
 
-for (let ys: number = 0; ys < sizeY; ys += tileSize) {
-	for (let xs: number = 0; xs < sizeX; xs += tileSize) {
-		sortSegmentsTest(0, tileSize, tileOverlap, xs, ys);
 	}
 }
