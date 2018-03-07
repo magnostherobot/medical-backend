@@ -1,6 +1,6 @@
 import { default as File } from './File';
 import { default as Project } from './Project';
-import { BelongsToMany, Column, CreatedAt, HasMany,
+import { BelongsToMany, Column, CreatedAt, DataType, HasMany,
 		Model, PrimaryKey, Table } from 'sequelize-typescript';
 import { default as UserGroup } from './UserGroup';
 import { default as UserHasPrivilege } from './UserHasPrivilege';
@@ -25,7 +25,7 @@ export default class User extends Model<User> {
 	public createdFiles?: File[];
 
 	@CreatedAt
-	@Column
+	@Column(DataType.DATE)
 	public creationDate!: Date;
 
 	// TODO: Implement

@@ -1,6 +1,6 @@
 import { default as ContributorGroup } from './ContributorGroup';
 import { default as File } from './File';
-import { BelongsTo, BelongsToMany, Column, CreatedAt, ForeignKey,
+import { BelongsTo, BelongsToMany, Column, CreatedAt, DataType, ForeignKey,
 		Model, PrimaryKey, Table, UpdatedAt } from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as UserJoinsProject } from './UserJoinsProject';
@@ -22,11 +22,11 @@ export default class Project extends Model<Project> {
 	private readonly rootFolderInternal?: File;
 
 	@CreatedAt
-	@Column
+	@Column(DataType.DATE)
 	public creationDate!: Date;
 
 	@UpdatedAt
-	@Column
+	@Column(DataType.DATE)
 	public lastActivity!: Date;
 
 	public get rootFolder(): File {
