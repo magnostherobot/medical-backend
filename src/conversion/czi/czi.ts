@@ -1,8 +1,6 @@
-// tslint:disable-next-line
-let json: Segment[] = require('/cs/scratch/cjd24/0701-extraction/outputjson.json').czi;
 
-let tileOverlap: number = 5;
-let tileSize: number = 1024;
+import { logger } from '../../logger';
+import * as sharp from 'sharp';
 
 interface Dimension {
 	Dimension: string;
@@ -23,23 +21,25 @@ interface Segment {
 	Data: SubBlock;
 }
 class TileBounds {
-	public left: number;
-	public right: number;
-	public top: number;
-	public bottom: number;
-	public constructor(left: number, right: number, top: number, bottom: number) {
-		this.left = left;
-		this.right = right;
-		this.top = top;
-		this.bottom = bottom;
+	public left!: number;
+	public right!: number;
+	public top!: number;
+	public bottom!: number;
+	public constructor(leftBound: number, rightBound: number, topBound: number, bottomBound: number) {
+		this.left = leftBound;
+		this.right = rightBound;
+		this.top = topBound;
+		this.bottom = bottomBound;
 	}
 }
 
-// Get all subblocks that have an associated saved tile
-let dataBlocks: Segment[] = json.filter((s: Segment) => s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty');
+const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
+const json: Segment[] = require(`${extractionDirectory}outputjson.json`).czi;
+const tileOverlap: number = 0;
+const tileSize: number = 1024;
 
-function getOriginalTileBounds(originalTile: Segment): TileBounds | null {
-	const bounds: TileBounds = new TileBounds (-1, -1, -1, -1);
+const getOriginalTileBounds = function(originalTile: Segment): (TileBounds | null) {
+	const bounds: TileBounds = new TileBounds(-1, -1, -1, -1);
 
 	for (const dimension of originalTile.Data.DirectoryEntry.DimensionEntries) {
 		switch (dimension.Dimension) {
@@ -63,40 +63,42 @@ function getOriginalTileBounds(originalTile: Segment): TileBounds | null {
 	return bounds;
 }
 
-function findRelatedTiles(activeSegments: Segment[], desired: TileBounds): Segment[] {
+const findRelatedTiles = function(activeSegments: Segment[], desired: TileBounds): Segment[] {
 	const relatedTiles: Segment[] = [];
 
-	for (const origTile of activeSegments) {
+	for (const baseTile of activeSegments) {
 
 		let origCoords: TileBounds | null;
 
-		if ((origCoords = getOriginalTileBounds(origTile)) === null) {
+		if ((origCoords = getOriginalTileBounds(baseTile)) === null) {
 			throw new Error('There was a Sad Boi error');
 		}
 
-			// Desired X on left is within current tile
+		// Desired X on left is within current tile
 		if (((desired.left >= origCoords.left) &&
 			(desired.left <= origCoords.right)) ||
 
 			// Desired X on right is within the current tile
 			((desired.right >= origCoords.left) &&
-			(desired.right <= origCoords.right)) ||
+				(desired.right <= origCoords.right)) ||
 
 			// Desired tile X overlaps base tile
 			((desired.left < origCoords.left) &&
-			(desired.right > origCoords.right))) {
+				(desired.right > origCoords.right))) {
+
 			// Desired Y on top is within current tile
 			if (((desired.top >= origCoords.top) &&
 				(desired.top <= origCoords.bottom)) ||
 
 				// Desired Y on right is within the current tile
 				((desired.bottom >= origCoords.top) &&
-				(desired.bottom <= origCoords.bottom)) ||
+					(desired.bottom <= origCoords.bottom)) ||
 
 				// Desired tile Y overlaps whole base tile
 				((desired.top < origCoords.top) &&
-				(desired.bottom > origCoords.bottom))) {
-				relatedTiles.push(origTile);
+					(desired.bottom > origCoords.bottom))) {
+
+				relatedTiles.push(baseTile);
 			}
 		}
 	}
@@ -104,7 +106,7 @@ function findRelatedTiles(activeSegments: Segment[], desired: TileBounds): Segme
 	return relatedTiles;
 }
 
-function getDimension(segment: Segment, name: string): Dimension {
+const getDimension = function(segment: Segment, name: string): Dimension {
 	for (const dimension of segment.Data.DirectoryEntry.DimensionEntries) {
 		if (dimension.Dimension == name) {
 			return dimension;
@@ -113,15 +115,93 @@ function getDimension(segment: Segment, name: string): Dimension {
 	throw new Error('Dimension: ' + name + " doesn't exist for segment: " + segment);
 }
 
+const orderSegments = function(segments: Segment[]): Segment[][] {
+
+	const output: Segment[][] = [];
+
+	if (segments.length > 1) {
+		let xCoords: number[] = [];
+		let yCoords: number[] = [];
+
+		// Get all x/y's;
+		const initC: number = getDimension(segments[0], 'C').Start;
+		for (const seg of segments) {
+			if (getDimension(seg, 'C').Start !== initC) {
+				throw new Error("Segment array contains multiple values of C - this overlay is currently unsupported within this method");
+			}
+			xCoords.push(getDimension(seg, 'X').Start);
+			yCoords.push(getDimension(seg, 'Y').Start);
+		}
+		// Filter to get Uniaue Values
+		xCoords = xCoords.filter((item: number, index: number, array: number[]) => array.indexOf(item) === index);
+		yCoords = yCoords.filter((item: number, index: number, array: number[]) => array.indexOf(item) === index);
+
+		// Use the filtered list to order the segments into rows
+		for (const yVal of yCoords) {
+
+			// Get all segments with the same y value
+			const row: Segment[] = [];
+			for (const seg of segments) {
+				if (getDimension(seg, 'Y').Start === yVal) {
+					row.push(seg);
+				}
+			}
+
+			// Sort the row of y values by x value
+			const sortedRow: Segment[] = [];
+			for (const xVal of xCoords) {
+				for (const seg of row) {
+					if (getDimension(seg, 'X').Start === xVal) {
+						sortedRow.push(seg);
+						break;
+					}
+				}
+			}
+
+			// Push this to the finalised grid
+			output.push(sortedRow);
+		}
+
+		// Return the result
+		return output;
+	}
+	else {
+		output.push(segments);
+		return output;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Get all subblocks that have an associated saved tile
+const dataBlocks: Segment[] = json.filter((s: Segment) => s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty');
+
 // Get all values of X and Y respectively.
-let filterX: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'X').Start);
-let filterY: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'Y').Start);
+const filterX: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'X').Start);
+const filterY: number[] = dataBlocks.map((x: Segment) => getDimension(x, 'Y').Start);
 
 // Filter all values to only keep the unique ones for X and Y coords respectively.
-let uniqueX: number[] = filterX.filter(function(elem: any, pos: any) {
+const uniqueX: number[] = filterX.filter(function(elem: any, pos: any) {
 	return filterX.indexOf(elem) === pos;
 });
-let uniqueY: number[] = filterY.filter(function(elem: any, pos: any) {
+const uniqueY: number[] = filterY.filter(function(elem: any, pos: any) {
 	return filterY.indexOf(elem) === pos;
 });
 
@@ -135,10 +215,10 @@ for (let i: number = 0; i < uniqueX.length; i++) {
 	sizeX += getDimension(dataBlocks[i], 'X').Size;
 }
 for (let i: number = 0; i < uniqueY.length; i++) {
-	sizeX += getDimension(dataBlocks[i], 'Y').Size;
+	sizeY += getDimension(dataBlocks[i], 'Y').Size;
 }
 
-let uniqueTileSizes: number[][] = [];
+const uniqueTileSizes: number[][] = [];
 for (const seg of dataBlocks) {
 
 	const x: number = getDimension(seg, 'X').Size;
@@ -155,8 +235,8 @@ for (const seg of dataBlocks) {
 	}
 }
 
-// TESTS TO SEE WHAT VARIOUS THINGS RETURN
-// `npm bin`/ts-node czi.ts
+// // TESTS TO SEE WHAT VARIOUS THINGS RETURN
+// // `npm bin`/ts-node czi.ts
 console.log('\n\nUnique Tile Sizes:');
 console.log(uniqueTileSizes);
 console.log('\n\n(tentative) SizeX : ' + sizeX);
@@ -176,9 +256,9 @@ function filterC(to: number): void {
 									}
 								});
 }
-let desired = new TileBounds (0, 0, 0, 0);
 
-function runTest(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number) {
+let desired = new TileBounds (0, 0, 0, 0);
+function findRelatedTest(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number) {
 	desired = new TileBounds (
 		x1 - tileoverlap,
 		x1 + tilesize + tileoverlap,
@@ -190,21 +270,68 @@ function runTest(cval: number, tilesize: number, tileoverlap: number, x1: number
 	console.log(findRelatedTiles(c_filter, desired).map((x: Segment) => x.Data.Data));
 }
 
-runTest(0, 1024, 5, 1500, 1500);
+findRelatedTest(0, 1024, 5, 1500, 1500);
 
-runTest(1, 5000, 5, 1500, 1500);
+findRelatedTest(1, 5000, 5, 1500, 1500);
 
-runTest(0, 1024, 5, 0, 0);
+findRelatedTest(0, 1024, 5, 0, 0);
 
-runTest(0, 1024, 5, 41940, 59240);
+findRelatedTest(0, 1024, 5, 41940, 59240);
 
-runTest(0, 1024, 5, -tileSize - tileOverlap - 1, 59240);
+findRelatedTest(0, 1024, 5, -tileSize - tileOverlap - 1, 59240);
 
-runTest(0, 1024, 5, 41945, 59245);
+findRelatedTest(0, 1024, 5, 41945, 59245);
 
-runTest(3, 1024, 5, 41940, 1500);
+findRelatedTest(3, 1024, 5, 41940, 1500);
 
 filterC(0);
 console.log('\n\n\n\n\n\n\n');
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Begin work on getting the new tiles all nice
+function sortSegmentsTest(cval: number, tilesize: number, tileoverlap: number, x1: number, y1: number) {
+	desired = new TileBounds (
+		x1 - tileoverlap,
+		x1 + tilesize + tileoverlap,
+		y1 - tileoverlap,
+		y1 + tilesize + tileoverlap
+	);
+	filterC(cval);
+	console.log('\nC Value: ' + cval + '  TileSize: ' + tilesize + '  TileOverlap(px): ' + tileoverlap + '   Coords: ' + `[X=${x1}, Y=${y1}]`);
+	let outputGrid: Segment[][] = orderSegments(findRelatedTiles(c_filter, desired));
+
+	for (const row of outputGrid) {
+		let rowOutput: string = "[ ";
+		for (const col of row) {
+			rowOutput += ` '${col.Data.Data}', `;
+		}
+		rowOutput += ']';
+		console.log(rowOutput);
+	}
+}
+
+
+for (let ys: number = 0; ys < sizeY; ys += tileSize) {
+	for (let xs: number = 0; xs < sizeX; xs += tileSize) {
+		sortSegmentsTest(0, tileSize, tileOverlap, xs, ys);
+	}
+}

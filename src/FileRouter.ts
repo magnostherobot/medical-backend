@@ -447,7 +447,6 @@ const postProjectName: Middleware =
 		});
 		promise = file.save();
 		project = new Project({
-			uuid: uuid.generate(),
 			name: req.params.project_name,
 			rootFolder: file
 		});
