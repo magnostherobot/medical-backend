@@ -3,9 +3,9 @@ import { NextFunction, Request, Response, Router } from 'express';
 import * as jwt from 'jsonwebtoken';
 import * as passport from 'passport';
 import { Strategy } from 'passport-local';
+import { default as Project } from './db/model/Project';
 import { default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
-import { default as Project } from './db/model/Project';
 
 import { Errorware } from './errors/errorware';
 
@@ -109,7 +109,6 @@ export class AuthRouter {
 		next();
 	}
 
-
 	/**
 	 * Used to configure Passport to use the custom authentication strategy.
 	 */
@@ -157,9 +156,7 @@ export class AuthRouter {
  */
 export const unauthorisedErr: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
-	console.log('fffff');
 	if (err.name === 'UnauthorizedError') {
-		console.log('efewfwf');
 		return next(new RequestError(
 			401, 'not_authorised',
 			'user does not have correct authorisation for task'
@@ -178,7 +175,7 @@ export const unauthorisedErr: Errorware =
  */
 export const isAdmin: any =
 (req: Request, res: Response, next: NextFunction): void => {
-	var isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
+	let isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
 
 	if (!isAdmin) {
 		next(new RequestError(
@@ -188,7 +185,7 @@ export const isAdmin: any =
 		return;
 	}
 	next();
-}
+};
 
 export default new AuthRouter().router;
 ///////////////////////////////////////////////////

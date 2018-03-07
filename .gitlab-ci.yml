@@ -1,8 +1,16 @@
 image: node:9.1.0
 services:
     - postgres:10.0
+
 cache:
     untracked: true
+
+variables:
+  POSTGRES_DB: nice_marmot
+  POSTGRES_USER: admin
+  POSTGRES_PASSWORD: ""
+  POSTGRES_HOST: postgres
+
 
 stages:
     - build
@@ -17,7 +25,7 @@ install:
 mocha:
     stage: test
     script:
-        - yarn test
+        - yarn test:routes:index
 
 lint:
     stage: test
