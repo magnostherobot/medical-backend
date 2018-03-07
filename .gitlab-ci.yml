@@ -21,12 +21,11 @@ install:
     script:
         - npm install --global yarn
         - yarn
-        - echo "bamboozled"
 
 mocha:
     stage: test
     script:
-        - yarn test:routes:init
+        - yarn test:routes:index
 
 lint:
     stage: test
