@@ -1,5 +1,3 @@
-/* tslint:disable:prefer-function-over-method */
-
 import { RequestError } from './errors/errorware';
 import { NextFunction, Request, Response, Router } from 'express';
 import * as jwt from 'jsonwebtoken';
@@ -11,22 +9,41 @@ import { default as Project } from './db/model/Project';
 
 import { Errorware } from './errors/errorware';
 
+/**
+ * The module for system authentication.
+ */
+
+/**
+ * A class used to configure the authentication of the server.
+ */
 export class AuthRouter {
+	/**
+	 * The Express Router this authenticator is built on.
+	 */
 	public router: Router;
 
+	/**
+	 * A simple constructor that initialises the authenticator.
+	 */
 	public constructor() {
 		this.router = Router();
 		this.init();
 	}
 
-	// Middleware which generates token and sends it as response
+	/**
+	 * A middleware function that generates an OAuth-like token, used for
+	 * authentication in future interactions with the client.
+	 *
+	 * @param req The Express http request.
+	 * @param res The Express http response.
+	 */
 	public async genToken(req: Request, res: Response): Promise<void> {
 		const user: User | null = await User.findOne({
 			where: {
 				username: req.body.username
 			},
 			include: [ UserGroup, Project]
-		});		
+		});
 
 		if (user === null) {
 			// Whoa, what an error!
@@ -47,6 +64,13 @@ export class AuthRouter {
 		});
 	}
 
+	/**
+	 * Middleware used to authenticate the user, using previously-obtained
+	 * OAuth-like tokens.
+	 *
+	 * @param req The Express http request.
+	 * @param res The Express http response.
+	 */
 	private authenticate(req: Request, res: Response, next: NextFunction): void {
 		passport.authenticate(
 			'local',
@@ -65,7 +89,13 @@ export class AuthRouter {
 		next();
 	}
 
-	// Checks for errors within request before authentication
+	/**
+	 * Middleware that checks the incoming request for missing or
+	 * inaccurate properties, before the authentication process.
+	 *
+	 * @param req The Express http request.
+	 * @param res The Express http response.
+	 */
 	public checkErr(req: Request, res: Response, next: NextFunction): void {
 		if (!req.body.grant_type || !req.body.username || !req.body.password) {
 			next(new RequestError(400, 'invalid_request', 'Missing parameters'));
@@ -79,8 +109,10 @@ export class AuthRouter {
 		next();
 	}
 
-	
-	// Configure local strategy to use with passport-js.
+
+	/**
+	 * Used to configure Passport to use the custom authentication strategy.
+	 */
 	private configStrategy(): void {
 		// tslint:disable-next-line:typedef
 		passport.use(new Strategy( async(username, password, done) => {
@@ -93,11 +125,14 @@ export class AuthRouter {
 
 			if (!user || user.password !== password) {
 				return done(null, false);
-			}			
+			}
 			return done(null, user);
 		}));
 	}
 
+	/**
+	 * Function used by the constructor to initialise the authenticator.
+	 */
 	public init(): void {
 		this.configStrategy();
 
@@ -109,7 +144,17 @@ export class AuthRouter {
 	}
 }
 
-// Handle error if user is unauthorised
+/**
+ * Error-handling middleware used to handle authentication errors.
+ *
+ * The error is transformed into one that can be handled by later
+ * error-handling middleware functions.
+ *
+ * @param err The Error to handle/transform.
+ * @param req The Express http request.
+ * @param res The Express http response.
+ * @param next The next Express middleware function.
+ */
 export const unauthorisedErr: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
 	console.log('fffff');
@@ -123,11 +168,18 @@ export const unauthorisedErr: Errorware =
 	next(err);
 };
 
-// Middleware to check privileges - admin
-export const isAdmin: any = 
-(req: Request, res: Response, next: NextFunction): void => {	
+/**
+ * A middleware to check whether or not the currently-authenticated User is
+ * an admin.
+ *
+ * @param req The Express http request.
+ * @param res The Express http response.
+ * @param next The next Express middleware function.
+ */
+export const isAdmin: any =
+(req: Request, res: Response, next: NextFunction): void => {
 	var isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
-	
+
 	if (!isAdmin) {
 		next(new RequestError(
 			401, 'not_authorised',
@@ -138,10 +190,7 @@ export const isAdmin: any =
 	next();
 }
 
-const authRoutes: AuthRouter = new AuthRouter();
-authRoutes.init();
-
-export default authRoutes.router;
+export default new AuthRouter().router;
 ///////////////////////////////////////////////////
 
 /*
