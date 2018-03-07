@@ -3,8 +3,10 @@ import * as fs from 'fs';
 import { logger } from '../../logger';
 import * as sharp from 'sharp';
 import * as parsexml from 'xml-parser';
+import { SharpInstance } from 'sharp';
 
 const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
+const outputImageDirectory: string = '/cs/scratch/cjd24/0701-extraction-processed/'
 const tileOverlap: number = 0;
 const tileSize: number = 1024;
 
@@ -77,27 +79,27 @@ const findRelatedTiles: Function = function(activeSegments: Segment[], desired: 
 
 		// Desired X on left is within current tile
 		if (((desired.left >= origCoords.left) &&
-			(desired.left <= origCoords.right)) ||
+			(desired.left < origCoords.right)) ||
 
 			// Desired X on right is within the current tile
-			((desired.right >= origCoords.left) &&
-				(desired.right <= origCoords.right)) ||
+			((desired.right > origCoords.left) &&
+			(desired.right <= origCoords.right)) ||
 
 			// Desired tile X overlaps base tile
 			((desired.left < origCoords.left) &&
-				(desired.right > origCoords.right))) {
+			(desired.right > origCoords.right))) {
 
 			// Desired Y on top is within current tile
 			if (((desired.top >= origCoords.top) &&
-				(desired.top <= origCoords.bottom)) ||
+				(desired.top < origCoords.bottom)) ||
 
 				// Desired Y on right is within the current tile
-				((desired.bottom >= origCoords.top) &&
-					(desired.bottom <= origCoords.bottom)) ||
+				((desired.bottom > origCoords.top) &&
+				(desired.bottom <= origCoords.bottom)) ||
 
 				// Desired tile Y overlaps whole base tile
 				((desired.top < origCoords.top) &&
-					(desired.bottom > origCoords.bottom))) {
+				(desired.bottom > origCoords.bottom))) {
 
 				relatedTiles.push(baseTile);
 			}
@@ -171,6 +173,89 @@ const orderSegments: Function = function(segments: Segment[]): Segment[][] {
 		output.push(segments);
 		return output;
 	}
+};
+
+const findRegionToExtract: Function = function(segment: Segment, desired: TileBounds): TileBounds {
+	const baseBounds: TileBounds = getOriginalTileBounds(segment);
+	let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
+
+	if (desired.left <= baseBounds.left) {
+		chunkToExtract.left = 0;
+	} else {
+		chunkToExtract.left = desired.left - baseBounds.left;
+	}
+
+	if (desired.right >= baseBounds.right) {
+		chunkToExtract.right = baseBounds.right - baseBounds.left;
+	} else {
+		chunkToExtract.right = desired.right - baseBounds.left;
+	}
+
+	if (desired.top <= baseBounds.top) {
+		chunkToExtract.top = 0;
+	} else {
+		chunkToExtract.top = desired.top - baseBounds.top;
+	}
+
+	if (desired.bottom >= baseBounds.bottom) {
+		chunkToExtract.bottom = baseBounds.bottom - baseBounds.top;
+	} else {
+		chunkToExtract.bottom = desired.bottom - baseBounds.top;
+	}
+
+	return chunkToExtract;
+};
+
+const extractAndStitchChunks: Function = async function(segments: Segment[][], desiredRegion: TileBounds): Promise<SharpInstance> {
+
+	let tileVerticalBuffer: Buffer[] = [];
+
+	for (const segRow of segments) {
+		let tileRow: Buffer[] = [];
+		let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
+		for (const segCol of segRow) {
+			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
+			let data: Promise<Buffer> =
+				sharp(`${extractionDirectory}${segCol.Data.Data}`)
+				.extract({
+					left: chunkToExtract.left,
+					top: chunkToExtract.top,
+					width: chunkToExtract.right - chunkToExtract.left,
+					height: chunkToExtract.bottom - chunkToExtract.top
+				})
+				.toBuffer();
+
+			tileRow.push(await data);
+		}
+
+		let imageVerticalSlice: SharpInstance = sharp(tileRow[0]);
+		let bufferBound = findRegionToExtract(segRow[0], desiredRegion);
+		if ((bufferBound.right - bufferBound.left) < (tileSize - tileOverlap)) {
+			imageVerticalSlice = await imageVerticalSlice.extend(
+				{top:0, left:0, bottom:0, right: (tileSize - (bufferBound.right - bufferBound.left))});
+		}
+		for (let index = 1; index < segRow.length; index++) {
+			imageVerticalSlice = imageVerticalSlice
+				.overlayWith(tileRow[index],
+					{top: 0, left: (bufferBound.right - bufferBound.left) + ((index -1) * tileSize)});
+		}
+
+		tileVerticalBuffer.push(await imageVerticalSlice.toBuffer());
+	}
+
+	let finalImage: SharpInstance = sharp(tileVerticalBuffer[0]);
+	let bufferBound = findRegionToExtract(segments[0][0], desiredRegion);
+	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
+		finalImage = await finalImage.extend(
+			{top:0, left:0, bottom: (tileSize - (bufferBound.bottom - bufferBound.top)), right: 0});
+	}
+	for (let index = 1; index < segments.length; index++) {
+		finalImage = finalImage.overlayWith(
+			tileVerticalBuffer[index],
+			{top: getDimension(segments[index -1][0], 'Y').Size, left: 0});
+	}
+
+	return finalImage;
 };
 
 
@@ -334,9 +419,21 @@ const sortSegmentsTest: Function = function(cval: number, tilesize: number, tile
 };
 
 // Print out all of the related tiles to every new tile to be created.
-for (let ys: number = 0; ys < totalSizeY; ys += tileSize) {
-	for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
-		const sortedSegments: Segment[][] = sortSegmentsTest(0, tileSize, tileOverlap, xs, ys);
-
+let filecoutner: number = 0;
+async function main(): Promise<void> {
+	// temper:
+	for (let ys: number = 0; ys < totalSizeY; ys += tileSize) {
+		for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
+			const sortedSegments: Segment[][] = sortSegmentsTest(0, tileSize, tileOverlap, xs, ys);
+			(await extractAndStitchChunks(sortedSegments, desired)).toFile(`${outputImageDirectory}img-${filecoutner++}`);
+		}
+		// break temper;
 	}
 }
+
+main().then(v => {
+	//Write the json hierarchy map to file
+	console.log("complete");
+}, err => {
+	console.log(err);
+});
