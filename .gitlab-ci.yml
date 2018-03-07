@@ -7,7 +7,7 @@ cache:
 
 variables:
   POSTGRES_DB: nice_marmot
-  POSTGRES_USER: runner
+  POSTGRES_USER: admin
   POSTGRES_PASSWORD: ""
   POSTGRES_HOST: postgres
 
@@ -21,17 +21,12 @@ install:
     script:
         - npm install --global yarn
         - yarn
-        - echo "hello world"
-
-configure:
-    stage: build
-    script:
-        - yarn run:postgres
+        - echo "bamboozled"
 
 mocha:
     stage: test
     script:
-        - yarn test
+        - yarn test:routes:init
 
 lint:
     stage: test
