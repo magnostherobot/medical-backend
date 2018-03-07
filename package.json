@@ -12,6 +12,7 @@
     "test:routes:index": "mocha --reporter spec -r ts-node/register './test/**/*index.routes.test.ts'",
     "test:routes:protocol": "mocha --reporter spec -r ts-node/register './test/**/*protocol.routes.test.ts'",
     "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
+    "run:postgres": "pg_ctl start",
     "start": "ts-node src/index.ts",
     "lint": "tslint --fix --force -p './tsconfig.json'",
     "lint:tests": "tslint --fix --force ./test/**/*",
