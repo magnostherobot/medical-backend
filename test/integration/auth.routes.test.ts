@@ -72,6 +72,14 @@ before((done: any) => {
 
 describe('authentication', () => {
 	context('invalid password authentication', () => {
+		it('should reject login to invalid endpoints', () => {
+			chai.request(app)
+			.post('/')
+			.send({...bobbyCredentials})
+			.then((res) => {
+				expect(res).to.have.status(400);
+			});
+		});
 		it('should reject invalid usernames', () => {
 			chai.request(app)
 			.post('/cs3099group-be-4/login')
