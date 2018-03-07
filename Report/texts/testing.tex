@@ -1,0 +1,15 @@
+\section{Testing}
+Tests do not currently run on the gitlab server, as the postgres integration with the docker gilab-ci is still missing. This means any tests run automatically when pushing will fail. \par
+When running integration tests locally, please make sure the postgres server is up and running on localhost. 
+\subsection{Structure}
+Testing files were restructured for a more organised and professional approach. All test files end in "*.\(<\)context\(>\).test.ts" and were moved to the "test" directory. At this moment, "\(<\)context\(>\)" includes "unit" and "routes". Further, they were categorised into \textit{integration} and \textit{unit} tests and moved into corresponding sub-directories.  \par
+Apart from making test files easier to find, this new structure also allowed us to run specific tests independently to isolate failures and quickly rerun individual tests. For example \shellcmd{yarn test:routes:auth} runs all authentication tests. 
+\subsection{Integration Testing}
+\shellcmd{yarn test:routes} 
+This category of tests targeted the interplay of different server components as it tested server endpoints (routes) rather than internal functions. We aimed to test all routes for responses of success, and various degrees of failure. \par
+E.g. \textbf{"auth.routes.test.ts"} tested the authentication middle-ware, checking existing users could log in only with correct usernames, passwords and reauthentication tokens. During our later meetings, we realised that security is a key-component of medical systems, and requires further much more in-depth testing to guarantee safety of patient data. \par
+\textbf{"protocol.routes.test.ts"} aims to cover all endpoints specified in the agreed protocol by using the \textit{mocha-each} npm module. This allowed us to write few mocha testing functions iterating over the long list of endpoints, checking HTTP responses to fit the JSON response templates to conform to the protocol. This form of testing is still incomplete. 
+\subsection{Unit Testing}
+\shellcmd{yarn test:unit} 
+The main motivation for this category of tests was to find bugs early on without having to run the whole server. This saves time and uncovers new code breaking old functionality. We also found that unit tests improved the design process by forcing implementation of code that is testable. Furthermore, unit tests were often used as a form of documentation, as it aided in understanding how code of other team members worked and could be used. \par 
+We decided that each team-member was responsible for creating the unit tests for their code. Unfortunately the number and coverage of unit tests is still quite low. This may be the result of prioritising functionality over bug-resilience and test-driven development. 
