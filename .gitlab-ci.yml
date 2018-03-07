@@ -1,8 +1,16 @@
 image: node:9.1.0
 services:
     - postgres:10.0
+
 cache:
     untracked: true
+
+variables:
+  POSTGRES_DB: nice_marmot
+  POSTGRES_USER: runner
+  POSTGRES_PASSWORD: ""
+  POSTGRES_HOST: postgres
+
 
 stages:
     - build
@@ -13,6 +21,10 @@ install:
     script:
         - npm install --global yarn
         - yarn
+        - echo "hello world"
+configure:
+    stage: build
+        - yarn run:postgres
 
 mocha:
     stage: test
