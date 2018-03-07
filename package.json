@@ -9,7 +9,7 @@
     "test:unit": "mocha --reporter spec -r ts-node/register './test/**/*.unit.test.ts'",
     "test:db": "mocha --reporter spec -r ts-node/register './test/**/*database.unit.test.ts'",
     "test:routes:auth": "mocha --reporter spec -r ts-node/register './test/**/*auth.routes.test.ts'",
-    "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
+    "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES6 --exclude '*.test.ts' --excludeExternals --includeDeclarations --ignoreCompilerErrors --disableOutputCheck 'src'",
     "start": "ts-node src/index.ts",
     "lint": "tslint --fix --force -p './tsconfig.json'",
     "lint:tests": "tslint --fix --force ./test/**/*",
