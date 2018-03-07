@@ -1,3 +1,15 @@
-\title{Report --- Juniour Honours Project Submission 2}
-\author{Hafeez Abdul-Rehaman, Johannes Weck, Josh Lee, Calum Duff, Tom Harley}
+\title{Report \\ Juniour Honours Project \\[0.5ex] Submission 2}
+\author{Hafeez Abdul-Rehaman \\[1ex] Johannes Weck \\[1ex] Josh Lee \\[1ex] Calum Duff \\[2ex] Tom Harley}
 \date{\today}
+
+\makeatletter
+	\def\@maketitle{
+		\begin{center}
+			\includegraphics[width=0.7\linewidth]{title-logo}\\[10ex]
+			{\huge \bfseries \@title{ }}\\[1ex]
+			\rule{0.5\textwidth}{.4pt}\\[1ex]
+			{\LARGE \@author}\\[15ex]
+			{\large \@date}
+		\end{center}
+	}
+\makeatother
