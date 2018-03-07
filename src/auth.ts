@@ -101,7 +101,7 @@ export class AuthRouter {
 	public init(): void {
 		this.configStrategy();
 
-		this.router.post('/login', this.checkErr, this.authenticate, this.genToken);
+		this.router.post('/oauth/token', this.checkErr, this.authenticate, this.genToken);
 		this.router.get(
 			'/logout',
 			(req: Request, res: Response): void => { req.logout(); }
