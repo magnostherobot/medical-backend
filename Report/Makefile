@@ -1,8 +1,8 @@
-.PHONY: default clean
+.PHONY: default clean FORCE
 
 default : main.pdf
 
-%.pdf : %.tex
+%.pdf : %.tex FORCE
 	latexmk -pdf $<
 
 clean :
