@@ -4,6 +4,7 @@ import * as colors from 'colors/safe';
 import * as winston from 'winston';
 
 import { files } from './files';
+import { profiler } from './profiler';
 
 type LogLevel = 'critical' | 'error' | 'warning' | 'security' | 'info';
 
