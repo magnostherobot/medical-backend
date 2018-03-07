@@ -22,8 +22,10 @@ install:
         - npm install --global yarn
         - yarn
         - echo "hello world"
+
 configure:
     stage: build
+    script:
         - yarn run:postgres
 
 mocha:
