@@ -4,7 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
 import * as passport from 'passport';
 
-import { default as authRouter, unauthorisedErr } from './auth';
+import { default as authRouter, isAdmin, unauthorisedErr } from './auth';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -90,9 +90,7 @@ class App {
 			.json({
 				status: 'error',
 				error : 'invalid_route',
-				error_description: 'Endpoints start from /cs3099group-be-4/\n'
-						+ ' Please refer to \'https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md\''
-						+ ' for further details.'
+				error_description: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
 		this.express.use('/cs3099group-be-4', FileRouter);
@@ -237,6 +235,7 @@ export default new App(true).express;
 /**
  * A version of the app used only for testing.
  */
-export function TestApp() {
+// tslint:disable-next-line:variable-name
+export const TestApp: () => ex.Express = (): ex.Express => {
 	return new App(false).express;
-}
+};

@@ -59,7 +59,7 @@ logger.info(`Port ${port} chosen`);
 	const root: User = new User({
 		username: 'hafeez',
 		password: 'pass',
-		userGroup: admin
+		userGroups: [admin]
 	});
 
 	await root.save();

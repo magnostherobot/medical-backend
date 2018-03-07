@@ -447,7 +447,6 @@ const postProjectName: Middleware =
 		});
 		promise = file.save();
 		project = new Project({
-			uuid: uuid.generate(),
 			name: req.params.project_name,
 			rootFolder: file
 		});
@@ -537,7 +536,7 @@ export class FileRouter {
 	 */
 	public init(): void {
 		// General
-		this.router.get ('/_supported_protocols_',                   getProtocols);
+		this.router.get ('/_supported_protocols_',					   getProtocols);
 		this.router.get ('/log',						                     getLog);
 		this.router.post('/log',	       									postLog);
 		this.router.get ('/properties',						          getProperties);
