@@ -31,4 +31,4 @@
 \contentsline {section}{\numberline {8}Conclusion}{9}
 \contentsline {subsection}{\numberline {8.1}Next Tasks}{9}
 \contentsline {section}{\numberline {A}Scrum Board Images}{10}
-\contentsline {section}{\numberline {B}Scrum Meeting Minutes}{12}
+\contentsline {section}{\numberline {B}Meeting Minutes}{12}
