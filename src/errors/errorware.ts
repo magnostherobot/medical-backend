@@ -29,10 +29,9 @@ export class RequestError extends Error {
 	 *   otherwise.
 	 */
 	public static is(test: Object): test is RequestError {
-		const err: RequestError = test as RequestError;
-		return err.code !== undefined
-			&& err.name !== undefined
-			&& err.responseBlock !== undefined;
+		return (test as Partial<RequestError>).code !== undefined
+			&& (test as Partial<RequestError>).name !== undefined
+			&& (test as Partial<RequestError>).responseBlock !== undefined;
 	}
 
 	/**

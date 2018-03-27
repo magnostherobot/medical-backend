@@ -4,7 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as logger from 'morgan';
 import * as passport from 'passport';
 
-import { default as authRouter, isAdmin, unauthorisedErr } from './auth';
+import { default as authRouter, unauthorisedErr } from './auth';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
