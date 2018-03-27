@@ -3,7 +3,7 @@ import { AllowNull, BelongsToMany, Column, DataType, Model, Table,
 import { default as User } from './User';
 import { default as UserHasPrivilege } from './UserHasPrivilege';
 
-interface UserPrivilege {
+export interface UserPrivilege {
 	privilege: string;
 	description: string;
 	internal: boolean;
