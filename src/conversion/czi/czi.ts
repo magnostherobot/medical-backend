@@ -602,7 +602,7 @@ const zoomTier: Function = async function(previousHeightMap:CZIHeightMap): Promi
         console.log(
             `         Task(1/1):     ` +
             `Stage 100% complete. ` +
-            `(0 sec/iter)  Stage was skipped as maximum sensible zoom level was reached. <<`
+            `(0 sec/iter)  Stage was skipped as maximum sensible zoom level was reached.`
         );
         return previousHeightMap;
 	}
@@ -671,11 +671,12 @@ const zoomTier: Function = async function(previousHeightMap:CZIHeightMap): Promi
 		newZoomTier.plane.push(cziRow);
 		timing = process.hrtime(timing);
 		iterTimes.push(timing[0]);
+        if (iterTimes.length > 5) iterTimes.shift();
 		avgItrTime = iterTimes.reduce((p, c, i) => {return p+(c-p)/(i+1)}, 0);
 		console.log(
-			`         Task(${ys/2}/${Math.floor(previousHeightMap.plane.length/2)}):     ` +
+			`         Task(${ys/2 + 1}/${Math.floor(previousHeightMap.plane.length/2) + 1}):     ` +
 			`Stage ${Math.ceil(((ys/previousHeightMap.plane.length)*100) *100)/100}% complete. ` +
-			`(${timing[0]} sec/iter,  est: ${((avgItrTime * (Math.floor(previousHeightMap.plane.length/2) - (ys/2 + 1)))/60).toFixed(2)} mins remain.)`
+			`(${timing[0]} sec/iter,  est: ${((avgItrTime * ((Math.floor(previousHeightMap.plane.length/2) + 1) - (ys/2 + 1)))/60).toFixed(2)} mins remain.)`
 		);
 	}
 	newZoomTier.tile_height_count = newZoomTier.plane.length;
@@ -690,7 +691,8 @@ const zoomTier: Function = async function(previousHeightMap:CZIHeightMap): Promi
  */
 const extrapolateDimension:Function = async function(cVal: number, totalCs: number, maxZoom:number): Promise<CZIHeightMap[]> {
 
-    let ys:number = 0, timing = process.hrtime(), iterTimes: number[] = [100], avgItrTime: number;;
+    let ys:number = 0, timing = process.hrtime(), iterTimes: number[] = [100], avgItrTime: number;
+	filterC(cVal);
     //begin output for the base tier
     console.log('=========================================================');
     console.log(`>>    Beginning Dimension Extrapolation for \'C\' : ${cVal}`);
@@ -711,7 +713,6 @@ const extrapolateDimension:Function = async function(cVal: number, totalCs: numb
 				ys - tileOverlap,
 				ys + tileSize + tileOverlap
 			);
-			filterC(cVal);
 
 			cziRow.push({
 				x_offset: xs,
@@ -729,6 +730,7 @@ const extrapolateDimension:Function = async function(cVal: number, totalCs: numb
 		ys += tileSize;
 		timing = process.hrtime(timing);
 		iterTimes.push(timing[0]);
+        if (iterTimes.length > 5) iterTimes.shift();
 		avgItrTime = iterTimes.reduce((p, c, i) => {return p+(c-p)/(i+1)}, 0);
 		console.log(
 			`         Task(${ys/tileSize}/${Math.ceil(totalSizeY/tileSize)}):     ` +
@@ -753,7 +755,7 @@ const extrapolateDimension:Function = async function(cVal: number, totalCs: numb
 				return;
 			}
 		);
-        writeJSONtoFile(`${outputImageData}stageMap-${stage}`, retHeightMap);
+        writeJSONtoFile(`${outputImageData}stageMap-${cVal}-${stage}`, retHeightMap);
 	}
 
     console.log(`>> Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
@@ -817,6 +819,7 @@ const buildCustomPyramids:Function = async function buildCustomPyramids(): Promi
 	finalCZIJson.zoom_level_count = Math.sqrt(maxZoom);
 	finalCZIJson.c_values = [] as any;
 	finalCZIJson.c_value_count = 0;
+	finalCZIJson.total_files = 0;
 
     //for all channels in the base image
 	for (const cval of supportedViews.scalable_image.channels) {
@@ -879,15 +882,16 @@ main();
 // async function main2() {
 //
 // 	let layout: WholeCZIHierarchy = require(`${outputImageData}layout.json`);
-// 	let retHeightMap: CZIHeightMap = require(`${outputImageData}stageMap-1`);
-// 	filecoutner = 5365;
+// 	let retHeightMap: any[] = [{}, {}, require(`${outputImageData}stageMap-2.json`)];
+// 	filecoutner = 5530;
 //
-// 	for (let stage:number = 2; stage < Math.sqrt(maxZoom); stage++) {
+// 	for (let stage:number = 3; stage < Math.sqrt(maxZoom); stage++) {
 // 		console.log(`Stage (${0 * Math.sqrt(maxZoom) + 1 + stage}/${1}):`);
-// 		await zoomTier(retHeightMap)
+// 		await zoomTier(retHeightMap[stage -1])
 // 		.then((v: CZIHeightMap) =>
 // 			{
-//         		writeJSONtoFile(`${outputImageData}stageMap-${stage}`, v);
+//                 retHeightMap.push(v);
+//         		writeJSONtoFile(`${outputImageData}stageMap-${stage}.json`, v);
 // 				return;
 // 			}
 // 		);
