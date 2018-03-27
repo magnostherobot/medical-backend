@@ -2,10 +2,12 @@
 /* Chai assertions look silly when formatted multiline. */
 /* tslint:disable:no-unused-expression */
 /* Chai assertions do not require assignation. */
+/* tslint:disable:typedef */
+/* Mocha tests do not require strong typing. */
 
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
-import { default as seq } from '../../src/db/orm';
+import { Credentials, Database, addUser, initDB, resetDB } from '../test-db';
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -19,135 +21,158 @@ import 'mocha';
 import * as App from '../../src/app';
 const app = App.TestApp();
 
-const badRequestErr = 
-	{ status: 'error',
-	  error: 'invalid_request',
-	  error_description: 'Missing parameters' };
-const unsupportedGrantTypeErr = 
-	{ status: 'error',
-	  error: 'unsupported_grant_type',
-	  error_description: 'invalid grant type' }
-const authorisationErr = 
-	{ status: 'error',
-	  error: 'not_authorised',
-	  error_description: 'user does not have correct authorisation for task' }
-		
+let database: Database;
+let mockUser: Credentials;
+let token: string;
 
-const bobbyCredentials = {
-	username: 'bobby',
-	password: 'tables',
-	grant_type: 'password'
+const initDatabase = async() => {
+	database = initDB();
+	await database.authenticate();
 };
 
-let bobbyToken: string;
+const populateDatabase = async() => {
+	await resetDB(database);
+	mockUser = await addUser(database);
+};
 
-async function resetDatabase(done: any){
-	await seq.sync({
-		force: true
+const getToken = async() => {
+	return chai.request(app)
+	.post('/cs3099group-be-4/login')
+	.send({
+		username: mockUser.username,
+		password: mockUser.password,
+		grant_type: 'password'
+	})
+	.then((res) => {
+		token = res.body.access_token;
 	});
-	const u: string = bobbyCredentials.username
-	const p: string = bobbyCredentials.password
+};
 
-	const newUser: User = new User({
-		username: u,
-		password: p,
-		userGroups: []
-	});
-	await newUser.save();
-	done();
-}
+const badRequestErr = {
+	status: 'error',
+	error: 'invalid_request',
+	error_description: 'Missing parameters'
+};
 
-async function setupDatabase(done: any) {
-	await seq.authenticate();
-	await seq.sync({
-		force: true
-	});
-	done();
-}
+const unsupportedGrantTypeErr = {
+	status: 'error',
+	error: 'unsupported_grant_type',
+	error_description: 'invalid grant type'
+};
 
-// Add user
-before((done: any) => {
-	setupDatabase(done);
-});
+const authorisationErr = {
+	status: 'error',
+	error: 'not_authorised',
+	error_description: 'user does not have correct authorisation for task'
+};
 
 describe('authentication', () => {
+	before(initDatabase);
 	context('invalid password authentication', () => {
+		before(populateDatabase);
+		it('should reject login to invalid endpoints', () => {
+			return chai.request(app)
+			.post('/')
+			.send({
+				username: mockUser.username,
+				password: mockUser.password,
+				grant_type: 'password'
+			})
+			.then((res) => {
+				expect(res).to.have.status(400);
+			});
+		});
 		it('should reject invalid usernames', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, username: 'invalid'})
+			.send({
+				username: 'invalid',
+				password: mockUser.password,
+				grant_type: 'password'
+			})
 			.then((res) => {
 				expect(res).to.have.status(401);
 			});
 		});
 		it('should reject invalid passwords', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, password: 'asasasas'})
+			.send({
+				username: mockUser.username,
+				password: 'asasasas',
+				grant_type: 'password'
+			})
 			.then((res) => {
 				expect(res).to.have.status(401);
 			});
 		});
 		it('should reject invalid grant_type', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, grant_type: 'invalid'})
+			.send({
+				username: mockUser.username,
+				password: mockUser.password,
+				grant_type: 'invalid'
+			})
 			.catch((reason) => {
 				expect(reason.response.body).to.eql(unsupportedGrantTypeErr);
 			});
 		});
 		it('should reject empty usernames', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, username: ''})
+			.send({
+				username: '',
+				password: mockUser.password,
+				grant_type: 'password'
+			})
 			.catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty passwords', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, password: ''})
+			.send({
+				username: mockUser.username,
+				password: '',
+				grant_type: 'password'
+			})
 			.catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty grant_type', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send({...bobbyCredentials, grant_type: ''})
+			.send({
+				username: mockUser.username,
+				password: mockUser.password,
+				grant_type: ''
+			})
 			.catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 	});
 	context('valid password authentication', () => {
-		before((done: any) => {
-			resetDatabase(done);
-		});
+		before(populateDatabase);
 		it('should accept correct credentials', () => {
-			chai.request(app)
+			return chai.request(app)
 			.post('/cs3099group-be-4/login')
-			.send(bobbyCredentials)
+			.send({
+				username: mockUser.username,
+				password: mockUser.password,
+				grant_type: 'password'
+			})
 			.then((res) => {
 				expect(res).to.have.status(200);
 			});
 		});
 	});
 	context('token authentication', () => {
-		let bobbyToken: string;
-		before((done: any) => {
-			resetDatabase(() => {
-				chai.request(app)
-				.post('/cs3099group-be-4/login')
-				.send(bobbyCredentials)
-				.end((err, res) => {
-					if (err) { throw err; }
-					bobbyToken = res.body.access_token;
-					done();
-				});
-			});
-		});
+		beforeEach(populateDatabase);
+		beforeEach(getToken);
 		it('should reject invalid tokens', () => {
 			return chai.request(app).get('/')
 			.set('Authorization', 'Bearer ' + 'invalid')
@@ -159,7 +184,7 @@ describe('authentication', () => {
 		});
 		it('should accept valid tokens', () => {
 			return chai.request(app).get('/')
-			.set('Authorization', 'Bearer ' + bobbyToken)
+			.set('Authorization', `Bearer ${token}`)
 			.then((res) => {
 				expect(res).to.have.status(200);
 			});

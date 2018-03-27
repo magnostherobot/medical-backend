@@ -19,7 +19,7 @@ const BASE_FILE_STORAGE: string = 'TODO: figure this out';
 /**
  * The type of an Express middleware callback.
  */
-type Middleware =
+export type Middleware =
 	(req: Request, res: Response, next: NextFunction) => void;
 
 /**

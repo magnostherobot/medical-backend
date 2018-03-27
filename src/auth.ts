@@ -1,13 +1,14 @@
-import { RequestError } from './errors/errorware';
+/* tslint:disable:prefer-function-over-method */
+
+import { Errorware, RequestError } from './errors/errorware';
 import { NextFunction, Request, Response, Router } from 'express';
+import { Middleware } from './FileRouter';
 import * as jwt from 'jsonwebtoken';
 import * as passport from 'passport';
 import { Strategy } from 'passport-local';
 import { default as Project } from './db/model/Project';
 import { default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
-
-import { Errorware } from './errors/errorware';
 
 /**
  * The module for system authentication.
@@ -98,12 +99,14 @@ export class AuthRouter {
 	 */
 	public checkErr(req: Request, res: Response, next: NextFunction): void {
 		if (!req.body.grant_type || !req.body.username || !req.body.password) {
-			next(new RequestError(400, 'invalid_request', 'Missing parameters'));
+			return next(new RequestError(400, 'invalid_request', 'Missing parameters'));
 		}
 
 		if (req.body.grant_type !== 'refresh_token'
 			&& req.body.grant_type !== 'password') {
-			next(new RequestError(400, 'unsupported_grant_type', 'invalid grant type'));
+			return next(new RequestError(
+				400, 'unsupported_grant_type', 'invalid grant type'
+			));
 		}
 
 		next();
@@ -135,7 +138,12 @@ export class AuthRouter {
 	public init(): void {
 		this.configStrategy();
 
-		this.router.post('/oauth/token', this.checkErr, this.authenticate, this.genToken);
+		this.router.post(
+			'/oauth/token',
+			this.checkErr,
+			this.authenticate,
+			this.genToken
+		);
 		this.router.get(
 			'/logout',
 			(req: Request, res: Response): void => { req.logout(); }
@@ -173,11 +181,12 @@ export const unauthorisedErr: Errorware =
  * @param res The Express http response.
  * @param next The next Express middleware function.
  */
-export const isAdmin: any =
+export const isAdmin: Middleware =
 (req: Request, res: Response, next: NextFunction): void => {
-	let isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
+	const admin: boolean = req.user.object.userGroups
+		.some((x: UserGroup): boolean => x.name === 'admin');
 
-	if (!isAdmin) {
+	if (!admin) {
 		next(new RequestError(
 			401, 'not_authorised',
 			'user is not authorised to perform task'
