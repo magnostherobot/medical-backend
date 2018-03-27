@@ -2,12 +2,12 @@
 /* Chai assertions look silly when formatted multiline. */
 /* tslint:disable:no-unused-expression */
 /* Chai assertions do not require assignation. */
+/* tslint:disable:typedef */
+/* Mocha tests do not require strong typing. */
 
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
-const should = chai.should();
-import * as ex from 'express';
-import { default as seq } from '../../src/db/orm';
+import { Credentials, Database, addUser, initDB, resetDB } from '../test-db';
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -19,66 +19,58 @@ chai.use(require('chai-http'));
 import 'mocha';
 
 import * as App from '../../src/app';
-const app: ex.Express = App.TestApp();
+const app = App.TestApp();
 
-const userCredentials: Object = {
-	username: 'bobby',
-	password: 'pass',
-	grant_type: 'password'
-};
-
+let database: Database;
+let mockUser: Credentials;
 let token: string;
 
-async function startDatabase(done: any) {
-	await seq.authenticate();
-	await seq.sync({
-		force: true
-	});
+const initDatabase = async() => {
+	database = initDB();
+	await database.authenticate();
+};
 
-	const newUser: User = new User({
-		username: 'bobby',
-		password: 'pass',
-		userGroups: []
-	});
-	await newUser.save();
-	done();
-}
+const populateDatabase = async() => {
+	await resetDB(database);
+	mockUser = await addUser(database);
+};
 
-// Add user
-before(function(done: any) {
-	startDatabase(done);
-});
+const getToken = async() => {
+	return chai.request(app)
+	.post('/cs3099group-be-4/login')
+	.send({
+		username: mockUser.username,
+		password: mockUser.password,
+		grant_type: 'password'
+	})
+	.then((res) => {
+		token = res.body.access_token;
+	});
+};
 
 describe('routes : index', () => {
+	before(initDatabase);
 	describe('GET /', () => {
+		before(populateDatabase);
 		it('should return 401 without authentication', () => {
 			chai.request(app).get('/')
-			.catch(function(err: any) {
+			.catch((err) => {
 				return expect(err).to.have.status(401);
 			});
 		});
 
 		context('with authentication', () => {
-			before(function(done) {
-				chai.request(app)
-					.post('/cs3099group-be-4/login')
-					.send(userCredentials)
-					.end(function(err, res) {
-						if (err) { throw err; }
-						token = res.body.access_token;
-						done();
-					});
-			});
+			beforeEach(getToken);
 			it('should return 200', () => {
 				return chai.request(app).get('/')
-				.set('Authorization', 'Bearer ' + token)
+				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
-					res.status.should.eql(200);
+					expect(res).to.have.status(200);
 				});
 			});
 			it('should return json', () => {
 				return chai.request(app).get('/')
-				.set('Authorization', 'Bearer ' + token)
+				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
 					expect(res.type).to.eql('application/json');
 				});
@@ -86,7 +78,7 @@ describe('routes : index', () => {
 
 			it('should return a message prop', () => {
 				return chai.request(app).get('/')
-				.set('Authorization', 'Bearer ' + token)
+				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
 					expect(res.body.message).to.eql('Welcome to the CS3099 BE4 server!');
 				});
@@ -94,7 +86,7 @@ describe('routes : index', () => {
 
 			it('should return an important prop', () => {
 				return chai.request(app).get('/')
-				.set('Authorization', 'Bearer ' + token)
+				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
 					expect(res.body.important)
 						.to.eql('Endpoints start from /cs3099group-be-4/');
@@ -103,5 +95,4 @@ describe('routes : index', () => {
 		});
 
 	});
-
 });

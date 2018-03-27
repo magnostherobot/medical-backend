@@ -94,8 +94,7 @@ class App {
 					}
 				});
 				if (user === null) {
-					next(new RequestError(404, 'user_not_found'));
-					return;
+					return next(new RequestError(404, 'user_not_found'));
 				} else {
 					res.locals.user = user;
 				}
@@ -142,8 +141,7 @@ class App {
 						}
 					});
 					if (fileOrNull === null) {
-						next();
-						return;
+						return next();
 					} else {
 						file = fileOrNull;
 					}
@@ -159,8 +157,7 @@ class App {
 					}
 				});
 				if (parentFolder === null) {
-					next();
-					return;
+					return next();
 				}
 				res.locals.parentFolder = parentFolder;
 				const tFile: File | undefined = parentFolder.containedFiles.find(

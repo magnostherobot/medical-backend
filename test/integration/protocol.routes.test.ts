@@ -1,19 +1,60 @@
-import * as chai from 'chai';
-import * as mocha from 'mocha';
-const expect: Chai.ExpectStatic = chai.expect;
+/* tslint:disable:newline-per-chained-call */
+/* Chai assertions look silly when formatted multiline. */
+/* tslint:disable:no-unused-expression */
+/* Chai assertions do not require assignation. */
+/* tslint:disable:typedef */
+/* Mocha tests do not require strong typing. */
 
+import * as chai from 'chai';
+const expect: Chai.ExpectStatic = chai.expect;
+import { Credentials, Database, addUser, initDB, resetDB } from '../test-db';
+import { default as User } from '../../src/db/model/User';
+
+// Chai-http must be imported this way:
+// tslint:disable-next-line:no-var-requires no-require-imports
 chai.use(require('chai-http'));
+
+// Mocha must be imported as a side-effect library:
+// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
+
+// Mocha-each must be imported using a require:
+// tslint:disable-next-line:no-require-imports
 import forEach = require('mocha-each');
 
 import * as App from '../../src/app';
-import * as ex from 'express';
+const app = App.TestApp();
+
+let database: Database;
+let mockUser: Credentials;
+let token: string;
+
+const initDatabase = async() => {
+	database = initDB();
+	await database.authenticate();
+};
+
+const populateDatabase = async() => {
+	await resetDB(database);
+	mockUser = await addUser(database);
+};
+
+const getToken = async() => {
+	return chai.request(app)
+	.post('/cs3099group-be-4/login')
+	.send({
+		username: mockUser.username,
+		password: mockUser.password,
+		grant_type: 'password'
+	})
+	.then((res) => {
+		token = res.body.access_token;
+	});
+};
+
 import { Template, alternative, array, exact, match, optional
 	} from '../../src/matcher/options';
-import { default as seq } from '../../src/db/orm';
 import { default as types } from '../../src/matcher/types';
-import { default as User } from '../../src/db/model/User';
-const app = App.TestApp();
 
 // The general response template according to protocol
 const responseTemplate: Template = {
@@ -36,78 +77,32 @@ const errorResponseTemplate: Template = {
 
 type MochaForEachInput = [ string, string, Template, number ];
 
-const bobbyCredentials = {
-	username: 'bobby',
-	password: 'tables',
-	grant_type: 'password'
-};
-
-let bobbyToken: string;
-
-async function resetDatabase(done: any){
-	await seq.sync({
-		force: true
-	});
-	const u: string = bobbyCredentials.username
-	const p: string = bobbyCredentials.password
-
-	const newUser: User = new User({
-		username: u,
-		password: p,
-		userGroups: []
-	});
-	await newUser.save();
-	done();
-}
-
-async function setupDatabase(done: any) {
-	await seq.authenticate();
-	await seq.sync({
-		force: true
-	});
-	done();
-}
-
-// Add user
-before((done: any) => {
-	setupDatabase(() => {
-		resetDatabase(() => {
-			chai.request(app)
-			.post('/cs3099group-be-4/login')
-			.send(bobbyCredentials)
-			.end((err, res) => {
-				if (err) { throw err; }
-				bobbyToken = res.body.access_token;
-				done();
-			});
-		});
-	});
-	
-});
-
 describe('routes : errors', () => {
-	describe('GET invalid routes', function() {
+	before(initDatabase);
+	describe('GET invalid routes', () => {
 		it('should have response code 404', () => {
 			return chai.request(app).get('/invalid/route')
-			.set('Authorization', 'Bearer ' + bobbyToken)
-			.catch(function(err: any) {
+			.set('Authorization', `Bearer ${token}`)
+			.catch((err) => {
 				expect(err.status).to.equal(404);
 			});
 		});
-		it('should conform to the error protocol', function() {
+		it('should conform to the error protocol', () => {
 			return chai.request(app).get('/invalid/route')
-			.set('Authorization', 'Bearer ' + bobbyToken)
-			.catch(function(err: any) {
-				match(errorResponseTemplate)(err.response.body).should.be.true;
+			.set('Authorization', `Bearer ${token}`)
+			.catch((err) => {
+				expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
 			});
 		});
 	});
-
 });
 
 describe('routes : protocol', () => {
 	const base: string = '/cs3099group-be-4';
-	// format:
+
+	/* tslint:disable:align */
+
+	// Format:
 	// <method> <route> <json-response-template> <response-code>
 	const completeProtocol: MochaForEachInput[] = [
 		['get', '/_supported_protocols_', exact({
@@ -166,7 +161,7 @@ describe('routes : protocol', () => {
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
 		}), 401],
-		// todo types.metadata
+		// TODO types.metadata
 		['get', '/users/:username', {
 			username: types.string,
 			privileges: array(types.string),
@@ -230,55 +225,63 @@ describe('routes : protocol', () => {
 		['get', '/projects/:project_name/files_by_id/:id', null, 200]
 	];
 
+	/* tslint:enable:align */
+
+	before(initDatabase);
+	beforeEach(populateDatabase);
+	beforeEach(getToken);
+
 	describe('Access all valid routes', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
-			(method: string, path: string, temp: Template, res_code: number) => {
+			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + bobbyToken);
+			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res.type).to.equal('application/json');
-			}).catch(function(err: any) {
-				match(errorResponseTemplate)(err.response.body).should.be.true;
+			}).catch((err) => {
+				expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
 			});
 		});
 		forEach(completeProtocol).it(
 			'%s %s should have a status %4$d',
-			(method: string, path: string, temp: Template, res_code: number) => {
+			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + bobbyToken);
+			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
-				expect(res).to.have.status(res_code);
-			}).catch(function(err: any) {
-				match(errorResponseTemplate)(err.response.body).should.be.true;
+				expect(res).to.have.status(resCode);
+			}).catch((err) => {
+				expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
 			});
 		});
 		forEach(completeProtocol).it(
 			'%s %s should conform to the general response protocol',
-			(method: string, path: string, temp: Template, res_code: number) => {
+			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
-			request.set('Authorization', 'Bearer ' + bobbyToken);
+			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
 				match(responseTemplate, JSON.parse(res.body)).shoul.be.true;
-			}).catch(function(err: any) {
-				match(errorResponseTemplate)(err.response.body).should.be.true;
+			}).catch((err) => {
+				expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
 			});
 		});
 		forEach(completeProtocol).it(
 			'the response for %s %s should conform to its specific response protocol',
-			(method: string, path: string, temp: Template, res_code: number) => {
+			(method: string, path: string, temp: Template, resCode: number) => {
 			if (method === 'get' && temp != null) {
-				return chai.request(app).get(base + path).set('Authorization', 'Bearer ' + bobbyToken)
+				return chai.request(app)
+				.get(base + path)
+				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
-					match(temp)(JSON.parse(res.body)).should.be.true;
-				}).catch(function(err: any) {
-					match(errorResponseTemplate)(err.response.body).should.be.true;
+					expect(match(temp)(JSON.parse(res.body))).to.be.true;
+				}).catch((err) => {
+					expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
 				});
 			} else {
 				return true;

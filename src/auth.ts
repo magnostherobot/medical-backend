@@ -26,7 +26,7 @@ export class AuthRouter {
 				username: req.body.username
 			},
 			include: [ UserGroup, Project]
-		});		
+		});
 
 		if (user === null) {
 			// Whoa, what an error!
@@ -68,18 +68,18 @@ export class AuthRouter {
 	// Checks for errors within request before authentication
 	public checkErr(req: Request, res: Response, next: NextFunction): void {
 		if (!req.body.grant_type || !req.body.username || !req.body.password) {
-			next(new RequestError(400, 'invalid_request', 'Missing parameters'));
+			return next(new RequestError(400, 'invalid_request', 'Missing parameters'));
 		}
 
 		if (req.body.grant_type !== 'refresh_token'
 			&& req.body.grant_type !== 'password') {
-			next(new RequestError(400, 'unsupported_grant_type', 'invalid grant type'));
+			return next(new RequestError(400, 'unsupported_grant_type', `invalid grant type`));
 		}
 
 		next();
 	}
 
-	
+
 	// Configure local strategy to use with passport-js.
 	private configStrategy(): void {
 		// tslint:disable-next-line:typedef
@@ -93,7 +93,7 @@ export class AuthRouter {
 
 			if (!user || user.password !== password) {
 				return done(null, false);
-			}			
+			}
 			return done(null, user);
 		}));
 	}
@@ -122,10 +122,10 @@ export const unauthorisedErr: Errorware =
 };
 
 // Middleware to check privileges - admin
-export const isAdmin: any = 
-(req: Request, res: Response, next: NextFunction): void => {	
+export const isAdmin: any =
+(req: Request, res: Response, next: NextFunction): void => {
 	var isAdmin: boolean = req.user.object.userGroups.some((x: UserGroup): boolean => x.name === 'admin');
-	
+
 	if (!isAdmin) {
 		next(new RequestError(
 			401, 'not_authorised',
