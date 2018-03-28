@@ -6,6 +6,7 @@ cache:
 stages:
     - build
     - test
+    - lint
 
 install:
     stage: build
@@ -13,12 +14,17 @@ install:
         - npm install --global yarn
         - yarn
 
-mocha:
+unit-test:
     stage: test
     script:
-        - yarn test:routes:index
+        - yarn test:unit
+
+route-test:
+    stage: test
+    script:
+        - yarn test:routes
 
 lint:
-    stage: test
+    stage: lint
     script:
-        - yarn run _gl-lint
+        - yarn _lint

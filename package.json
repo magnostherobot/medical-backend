@@ -14,9 +14,9 @@
     "docs": "typedoc --out 'docs' --readme 'README.md' --name 'St Andrews Junior Honours 2017/18 - Team BE4' --module commonjs --target ES5 --exclude '*.test.ts' --includeDeclarations --excludeExternals 'src'",
     "run:postgres": "pg_ctl start",
     "start": "ts-node src/index.ts",
-    "lint": "tslint --fix --force -p './tsconfig.json'",
-    "lint:tests": "tslint --fix --force ./test/**/*",
-    "_gl-lint": "tslint -p './tsconfig.json'"
+    "_lint": "tslint -p './tsconfig.json' -c './tslint.json'",
+    "lint":       "yarn _lint --fix --force './src/**/*.ts'",
+    "lint:tests": "yarn _lint --fix --force './test/**/*.ts'"
   },
   "repository": {
     "type": "git",
