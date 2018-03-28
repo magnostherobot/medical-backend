@@ -6,9 +6,10 @@ import { SharpInstance } from 'sharp';
 import * as parsexml from 'xml-parser';
 
 //various constants for placing files and defining tiles
-const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
-const outputImageData: string = '/cs/scratch/cjd24/0701-extraction-processed/'
-const outputImageDirectory: string = '/cs/scratch/cjd24/0701-extraction-processed/data/'
+const dirname: string = '/cs/scratch/cjd24/0701-extraction';
+const extractionDirectory: string = `${dirname}/`;
+const outputImageData: string = `${dirname}-processed/`;
+const outputImageDirectory: string = `${dirname}-processed/data/`;
 const tileOverlap: number = 0;
 const tileSize: number = 1024;
 const maxZoom: number = 64;
