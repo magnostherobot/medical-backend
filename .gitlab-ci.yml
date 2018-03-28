@@ -1,20 +1,12 @@
 image: node:9.1.0
-services:
-    - postgres:10.0
 
 cache:
     untracked: true
 
-variables:
-  POSTGRES_DB: nice_marmot
-  POSTGRES_USER: admin
-  POSTGRES_PASSWORD: ""
-  POSTGRES_HOST: postgres
-
-
 stages:
     - build
     - test
+    - lint
 
 install:
     stage: build
@@ -22,12 +14,17 @@ install:
         - npm install --global yarn
         - yarn
 
-mocha:
+unit-test:
     stage: test
     script:
-        - yarn test:routes:index
+        - yarn test:unit
+
+route-test:
+    stage: test
+    script:
+        - yarn test:routes
 
 lint:
-    stage: test
+    stage: lint
     script:
-        - yarn run _gl-lint
+        - yarn _lint

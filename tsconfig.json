@@ -12,7 +12,8 @@
 	},
 	/* Where to look for .ts files */
 	"include": [
-		"src/**/*.ts"
+		"src/**/*.ts",
+		"test/**/*.ts"
 	],
 	/* Exclude directory */
 	"exclude": [
