@@ -164,7 +164,7 @@ const orderSegments: Function = function(segments: Segment[]): Segment[][] {
 const findRegionToExtract: Function = function(segment: Segment, desired: TileBounds): TileBounds {
 
 	//return the slice within the base tile for extraction
-	return regionToExtract(getOriginalTileBounds(segment) , desired);
+	return regionToExtract(getOriginalTileBounds(segment), desired, 1);
 };
 
 /*
@@ -564,7 +564,7 @@ const extrapolateDimension:Function = async function(cVal: number, totalCs: numb
 	let baseCZIHeightMap: CZIHeightMap = {zoom_level: 1, plane: []},
 		width_in_tiles = 0, height_in_tiles = 0;
 
-	console.log(`Stage (${cVal * Math.sqrt(maxZoom) + 1}/${totalCs}):`);
+	console.log(`Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
     //For all rows within the total base pixel height
 	for (;ys < totalSizeY;) {
 		timing = process.hrtime();
@@ -609,8 +609,8 @@ const extrapolateDimension:Function = async function(cVal: number, totalCs: numb
 	console.log(">> Base tier complete for \'C\': " + cVal + "; Begin computing zoom tiers...\n")
 
 	let retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
-	for (let stage:number = 1; stage < Math.sqrt(maxZoom); stage++) {
-		console.log(`Stage (${cVal * Math.sqrt(maxZoom) + 1 + stage}/${totalCs}):`);
+	for (let stage:number = 1; stage < Math.log2(maxZoom); stage++) {
+		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
 		await zoomTier(retHeightMap[stage - 1])
 		.then((v: CZIHeightMap) =>
 			{
@@ -678,7 +678,7 @@ const buildCustomPyramids:Function = async function buildCustomPyramids(): Promi
 {
     //set some variables for errors and and percent counts
     let errorOccurred: Boolean;
-	finalCZIJson.zoom_level_count = Math.sqrt(maxZoom);
+	finalCZIJson.zoom_level_count = Math.log2(maxZoom);
 	finalCZIJson.c_values = [] as any;
 	finalCZIJson.c_value_count = 0;
 	finalCZIJson.total_files = 0;
@@ -689,7 +689,7 @@ const buildCustomPyramids:Function = async function buildCustomPyramids(): Promi
         errorOccurred = false;
         if (!errorOccurred) {
             //extract the base tiles and build up custom pyramid data
-    		await extrapolateDimension(Number.parseInt(cval.channel_id, 10), supportedViews.scalable_image.channels.length * Math.sqrt(maxZoom), maxZoom)
+    		await extrapolateDimension(Number.parseInt(cval.channel_id, 10), supportedViews.scalable_image.channels.length * Math.log2(maxZoom), maxZoom)
             .then((v: CZIHeightMap[]) =>
                 {
                     // on success, add the new heightmap to the final json data block

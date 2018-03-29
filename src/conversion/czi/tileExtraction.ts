@@ -44,7 +44,7 @@ export const isTileRelated:Function = function(origCoords: TileBounds, desired: 
  * to calculate the region within the base tile that is overlapping the new tile
  * to be extracted.
  */
-export const regionToExtract: Function = function(baseBounds: TileBounds, desired: TileBounds): TileBounds {
+export const regionToExtract: Function = function(baseBounds: TileBounds, desired: TileBounds, zoomLevel: number): TileBounds {
 
 	//get the base tile area and create an object for the chunk to extract
 	let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
@@ -80,6 +80,11 @@ export const regionToExtract: Function = function(baseBounds: TileBounds, desire
 	if (chunkToExtract.left < 0 || chunkToExtract.right < 0 || chunkToExtract.top < 0 || chunkToExtract.bottom < 0) {
 		throw new Error("Chunk to extract from base tile has invalid bound (< 0).");
 	}
+
+	chunkToExtract.left = Math.ceil(chunkToExtract.left / zoomLevel);
+	chunkToExtract.right = Math.ceil(chunkToExtract.right / zoomLevel);
+	chunkToExtract.top = Math.ceil(chunkToExtract.top / zoomLevel);
+	chunkToExtract.bottom = Math.ceil(chunkToExtract.bottom / zoomLevel);
 
 	//return the slice within the base tile for extraction
 	return chunkToExtract;
