@@ -1,9 +1,6 @@
-import { CZITile } from '../types/customPyramidIndex';
 import { TileBounds } from '../types/helperCZITypes';
-import { SharpInstance } from 'sharp';
-import * as sharp from 'sharp';
 
-export const isTileRelated:Function = function(origCoords: TileBounds, desired: TileBounds): boolean {
+export const isTileRelated: Function = function(origCoords: TileBounds, desired: TileBounds): boolean {
 
 	if (((desired.left >= origCoords.left) &&
 		(desired.left < origCoords.right)) ||
@@ -14,8 +11,7 @@ export const isTileRelated:Function = function(origCoords: TileBounds, desired: 
 
 		// Desired tile X overlaps base tile
 		((desired.left < origCoords.left) &&
-		(desired.right > origCoords.right)))
-		{
+		(desired.right > origCoords.right))) {
 
 			// Desired Y on top is within current tile
 			if (((desired.top >= origCoords.top) &&
@@ -27,8 +23,7 @@ export const isTileRelated:Function = function(origCoords: TileBounds, desired: 
 
 				// Desired tile Y overlaps whole base tile
 				((desired.top < origCoords.top) &&
-				(desired.bottom > origCoords.bottom)))
-				{
+				(desired.bottom > origCoords.bottom))) {
 
 					//If all of the if statements have passed, then this tile
 					//is part of the overlap for the new tile to be created.
@@ -36,8 +31,7 @@ export const isTileRelated:Function = function(origCoords: TileBounds, desired: 
 				}
 		}
 	return false;
-}
-
+};
 
 /*
  * Takes a base tile, and the whole bounds of a new tile, and uses this
@@ -47,7 +41,7 @@ export const isTileRelated:Function = function(origCoords: TileBounds, desired: 
 export const regionToExtract: Function = function(baseBounds: TileBounds, desired: TileBounds, zoomLevel: number): TileBounds {
 
 	//get the base tile area and create an object for the chunk to extract
-	let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
+	const chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
 
 	// check if the new tile overlaps the leftmost boundary
 	if (desired.left <= baseBounds.left) {
@@ -78,7 +72,7 @@ export const regionToExtract: Function = function(baseBounds: TileBounds, desire
 	}
 
 	if (chunkToExtract.left < 0 || chunkToExtract.right < 0 || chunkToExtract.top < 0 || chunkToExtract.bottom < 0) {
-		throw new Error("Chunk to extract from base tile has invalid bound (< 0).");
+		throw new Error('Chunk to extract from base tile has invalid bound (< 0).');
 	}
 
 	chunkToExtract.left = Math.ceil(chunkToExtract.left / zoomLevel);
@@ -89,7 +83,6 @@ export const regionToExtract: Function = function(baseBounds: TileBounds, desire
 	//return the slice within the base tile for extraction
 	return chunkToExtract;
 };
-
 
 // export const createHorizontalImageSlice: Function = async function (bufferBound: TileBounds, tileSize: number, tileOverlap: number, rowLength:number, row: Buffer[]): Promise<Buffer> {
 // 	//prepare variables to squash all of the column data into one, for this row
