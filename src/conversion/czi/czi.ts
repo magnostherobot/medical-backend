@@ -1,102 +1,22 @@
 //imports required to make the conversion
 import * as fs from 'fs';
+import * as parsexml from 'xml-parser';
 import { logger } from '../../logger';
 import * as sharp from 'sharp';
 import { SharpInstance } from 'sharp';
-import * as parsexml from 'xml-parser';
+import { CZITile, CZIHeightMap, WholeCZIHierarchy } from '../types/customPyramidIndex';
+import { Dimension, DirectoryEntry, SubBlock, Segment } from '../types/cziBinaryTypings';
+import { SupportedViews, TileBounds } from '../types/helperCZITypes';
+import { isTileRelated, regionToExtract } from './tileExtraction';
 
 //various constants for placing files and defining tiles
-const dirname: string = '/cs/scratch/cjd24/0701-extraction';
-const extractionDirectory: string = `${dirname}/`;
-const outputImageData: string = `${dirname}-processed/`;
-const outputImageDirectory: string = `${dirname}-processed/data/`;
-const tileOverlap: number = 0;
+const baseDirname: string = '/cs/scratch/cjd24/0701-extraction';
+const extractionDirectory: string = `${baseDirname}/`;
+const outputImageData: string = `${baseDirname}-processed/`;
+const outputImageDirectory: string = `${baseDirname}-processed/data/`;
+const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 1024;
 const maxZoom: number = 64;
-
-//Interfaces used to define the tiles incoming from the CZI extraction
-interface Dimension {
-	Dimension: string;
-	Start: number;
-	Size: number;
-}
-interface DirectoryEntry {
-	DimensionCount: number;
-	DimensionEntries: Dimension[];
-}
-interface SubBlock {
-	DirectoryEntry: DirectoryEntry;
-	Data: string;
-}
-interface Segment {
-	Id: string;
-	UsedSize: number;
-	Data: SubBlock;
-}
-
-//Interface used to define the pixel-bounds of a 'section' within the image
-class TileBounds {
-	public left!: number;
-	public right!: number;
-	public top!: number;
-	public bottom!: number;
-	public constructor(leftBound: number, rightBound: number, topBound: number, bottomBound: number) {
-		this.left = leftBound;
-		this.right = rightBound;
-		this.top = topBound;
-		this.bottom = bottomBound;
-	}
-}
-
-//Interface used to define the structure of the "supportedViews" section
-//of the protocol specification for scalable images
-interface SupportedViews {
-	scalable_image: {
-		width: number;
-		height: number;
-		channels: [
-			{
-				channel_id: string;
-				channel_name: string;
-				metadata?: parsexml.Node[];
-			}
-		];
-		real_width?: {
-			value?: number;
-			units?: string;
-		};
-		real_height?: {
-			value?: number;
-			units?: string;
-		};
-		metadata?: {};
-	}
-}
-
-//The following are interfaces for the Custom object storing Information
-//about the CUSTOM pyramid being created for this image
-interface CZITile {
-	x_offset: number;
-	y_offset: number;
-	width: number;
-	height: number;
-	file: string;
-}
-interface CZIHeightMap {
-	zoom_level: number,
-	tile_width_count?: number,
-	tile_height_count?: number,
-	plane: CZITile[][];
-}
-interface WholeCZIHierarchy {
-	c_values: [{
-		channel_id: string,
-		height_map: CZIHeightMap[];
-	}],
-	c_value_count: number,
-	zoom_level_count: number;
-	total_files: number;
-}
 
 /*
  * Simple function to find the tile bounds version of an original tile in the base image
@@ -146,34 +66,8 @@ const findRelatedTiles: Function = function(activeSegments: Segment[], desired: 
 			throw new Error('There was a Sad Boi error');
 		}
 
-		// Desired X on left is within current tile
-		if (((desired.left >= origCoords.left) &&
-			(desired.left < origCoords.right)) ||
-
-			// Desired X on right is within the current tile
-			((desired.right > origCoords.left) &&
-			(desired.right <= origCoords.right)) ||
-
-			// Desired tile X overlaps base tile
-			((desired.left < origCoords.left) &&
-			(desired.right > origCoords.right))) {
-
-			// Desired Y on top is within current tile
-			if (((desired.top >= origCoords.top) &&
-				(desired.top < origCoords.bottom)) ||
-
-				// Desired Y on right is within the current tile
-				((desired.bottom > origCoords.top) &&
-				(desired.bottom <= origCoords.bottom)) ||
-
-				// Desired tile Y overlaps whole base tile
-				((desired.top < origCoords.top) &&
-				(desired.bottom > origCoords.bottom))) {
-
-				//If all of the if statements have passed, then this tile
-				//is part of the overlap for the new tile to be created.
-				relatedTiles.push(baseTile);
-			}
+		if (isTileRelated(origCoords, desired)) {
+			relatedTiles.push(baseTile);
 		}
 	}
 
@@ -269,40 +163,8 @@ const orderSegments: Function = function(segments: Segment[]): Segment[][] {
  */
 const findRegionToExtract: Function = function(segment: Segment, desired: TileBounds): TileBounds {
 
-	//get the base tile area and create an object for the chunk to extract
-	const baseBounds: TileBounds = getOriginalTileBounds(segment);
-	let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
-
-	// check if the new tile overlaps the leftmost boundary
-	if (desired.left <= baseBounds.left) {
-		chunkToExtract.left = 0;
-	} else {
-		chunkToExtract.left = desired.left - baseBounds.left;
-	}
-
-	// check if the new tile overlaps the rightmost boundary
-	if (desired.right >= baseBounds.right) {
-		chunkToExtract.right = baseBounds.right - baseBounds.left;
-	} else {
-		chunkToExtract.right = desired.right - baseBounds.left;
-	}
-
-	// check if the new tile overlaps the top boundary
-	if (desired.top <= baseBounds.top) {
-		chunkToExtract.top = 0;
-	} else {
-		chunkToExtract.top = desired.top - baseBounds.top;
-	}
-
-	// check if the new tile overlaps the bottom boundary
-	if (desired.bottom >= baseBounds.bottom) {
-		chunkToExtract.bottom = baseBounds.bottom - baseBounds.top;
-	} else {
-		chunkToExtract.bottom = desired.bottom - baseBounds.top;
-	}
-
 	//return the slice within the base tile for extraction
-	return chunkToExtract;
+	return regionToExtract(getOriginalTileBounds(segment) , desired);
 };
 
 /*
@@ -797,7 +659,6 @@ const writeJSONtoFile: Function = function(filePath:string, object:Object): void
  */
 const createSupportedViewsObject: Function = function(): void
 {
-
     //parse the xml
     parseExtractedXML(`${extractionDirectory}FILE-META-1.xml`);
 
@@ -821,6 +682,7 @@ const buildCustomPyramids:Function = async function buildCustomPyramids(): Promi
 	finalCZIJson.c_values = [] as any;
 	finalCZIJson.c_value_count = 0;
 	finalCZIJson.total_files = 0;
+	finalCZIJson.complete = false;
 
     //for all channels in the base image
 	for (const cval of supportedViews.scalable_image.channels) {
@@ -852,22 +714,15 @@ const buildCustomPyramids:Function = async function buildCustomPyramids(): Promi
         //write the final json data to file with most recent changes
 		writeJSONtoFile(`${outputImageData}layout.json`, finalCZIJson);
 	}
+	finalCZIJson.complete = true;
 }
-
-
-
-
-
-
-
-
 
 
 let finalCZIJson: WholeCZIHierarchy = {} as any;
 /*
  * Main function used to call the rest of the relevant code to crunch a CZI extraction.
  */
-function main(){
+const main: Function = function() {
 	console.log("\n");
 
     console.log(">> Checking/Creating output directories...")
