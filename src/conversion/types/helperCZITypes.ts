@@ -8,13 +8,12 @@ export interface SupportedViews {
 	scalable_image: {
 		width: number;
 		height: number;
-		channels: [
+		channels:
 			{
 				channel_id: string;
 				channel_name: string;
-				metadata?: Node[];
-			}
-		];
+				metadata?: {};
+			}[];
 		real_width?: {
 			value?: number;
 			units?: string;
@@ -27,7 +26,9 @@ export interface SupportedViews {
 	};
 }
 
-// Interface used to define the pixel-bounds of a 'section' within the image
+/**
+ * Interface used to define the pixel-bounds of a 'section' within the image
+ */
 export class TileBounds {
 	public left: number;
 	public right: number;

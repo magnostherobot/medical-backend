@@ -4,6 +4,7 @@ import { TileBounds } from '../types/helperCZITypes';
 import * as sharp from 'sharp';
 import { SharpInstance } from 'sharp';
 import { isTileRelated, regionToExtract } from './tileExtraction';
+import { logger } from '../../logger';
 
 const processedDirname: string = '/cs/scratch/cjd24/0701-extraction-processed/';
 const processedImages: string = `${processedDirname}data/`;

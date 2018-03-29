@@ -3,7 +3,7 @@ import { CZIHeightMap, CZITile,
 import { Dimension, Segment } from '../types/cziBinaryTypings';
 import * as fs from 'fs';
 import { SupportedViews, TileBounds } from '../types/helperCZITypes';
-import { logger } from '../../logging';
+import { logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
@@ -351,7 +351,9 @@ const cleanSupportedViews: (view: SupportedViews) => void = (
 	view: SupportedViews
 ): void => {
 	for (const channel of view.scalable_image.channels) {
-		channel.metadata = cleanSupportedViewObject(channel.metadata);
+		channel.metadata = cleanSupportedViewObject(
+			channel.metadata as parsexml.Node[]
+		);
 	}
 };
 
@@ -553,7 +555,8 @@ const zoomTier: (
 				height: previousHeightMap.plane[ys][xs].height * 2,
 				file: `img-${filecounter++}`
 			});
-			finalCZIJson.total_files++;
+			// tslint:disable-next-line:no-non-null-assertion
+			finalCZIJson.total_files!++;
 		}
 
 		newZoomTier.plane.push(cziRow);
@@ -695,7 +698,7 @@ const writeJSONToFile: (filePath: string, obj: object) => void = (
 		JSON.stringify(obj, null, 2),
 		(err: Error) => {
 			if (err) {
-				logger.error(err);
+				logger.error(err.message);
 				throw err;
 			}
 		}
@@ -750,7 +753,7 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 			}).catch((err: Error) => {
 					// On error, write the error to console and set an error true.
 					if (err) {
-						logger.error(err);
+						logger.error(err.message);
 					}
 					errorOccurred = true;
 				}
