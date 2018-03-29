@@ -38,6 +38,7 @@ const configStrategy: () => void = (): void => {
  *
  * @param req The Express http request.
  * @param res The Express http response.
+ * @param next The next Express middleware.
  */
 const checkErr: Middleware = (
 	req: Request, res: Response, next: NextFunction
@@ -89,9 +90,10 @@ const authenticate: Middleware = (
  *
  * @param req The Express http request.
  * @param res The Express http response.
+ * @param next The next Express middleware - only used for errors.
  */
 const genToken: Middleware = async(
-	req: Request, res: Response
+	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	const user: User | null = await User.findOne({
 		where: {
@@ -102,7 +104,11 @@ const genToken: Middleware = async(
 
 	if (user === null) {
 		// Whoa, what an error!
-		return;
+		return next(new RequestError(
+			400,
+			'invalid_grant',
+			'Invalid username'
+		));
 	}
 
 	const token: string = jwt.sign(
@@ -155,6 +161,22 @@ export class AuthRouter {
 	}
 }
 
+interface UnauthorizedError {
+	name: 'UnauthorizedError';
+	message: string;
+	code: string;
+	status: number;
+}
+
+const isUnauthorizedError: (item: object) => item is UnauthorizedError = (
+	item: object
+): item is UnauthorizedError => {
+	return (item as Partial<UnauthorizedError>).name === 'UnauthorizedError'
+		&& (item as Partial<UnauthorizedError>).message !== undefined
+		&& (item as Partial<UnauthorizedError>).code    !== undefined
+		&& (item as Partial<UnauthorizedError>).status  !== undefined;
+};
+
 /**
  * Error-handling middleware used to handle authentication errors.
  *
@@ -168,10 +190,11 @@ export class AuthRouter {
  */
 export const unauthorisedErr: Errorware =
 	(err: Error, req: Request, res: Response, next: NextFunction): void => {
-	if (err.name === 'UnauthorizedError') {
+	if (isUnauthorizedError(err)) {
 		return next(new RequestError(
-			401, 'not_authorised',
-			'user does not have correct authorisation for task'
+			err.status,
+			err.code,
+			err.message
 		));
 	}
 	next(err);

@@ -37,13 +37,12 @@ const populateDatabase = async() => {
 
 const getToken = async() => {
 	return chai.request(app)
-	.post('/cs3099group-be-4/login')
+	.post('/cs3099group-be-4/oauth/token')
 	.send({
 		username: mockUser.username,
 		password: mockUser.password,
 		grant_type: 'password'
-	})
-	.then((res) => {
+	}).then((res) => {
 		token = res.body.access_token;
 	});
 };
@@ -77,80 +76,77 @@ describe('authentication', () => {
 				username: mockUser.username,
 				password: mockUser.password,
 				grant_type: 'password'
-			})
-			.then((res) => {
-				expect(res).to.have.status(400);
+			}).then((res) => {
+				// File-not-found is a valid response
+				expect(res).to.have.status(404);
+			}).catch((reason) => {
+				// Unauthorised is a valid response
+				expect(reason).to.have.status(401);
 			});
 		});
 		it('should reject invalid usernames', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: 'invalid',
 				password: mockUser.password,
 				grant_type: 'password'
-			})
-			.then((res) => {
-				expect(res).to.have.status(401);
+			}).catch((reason) => {
+				expect(reason).to.have.status(400);
 			});
 		});
 		it('should reject invalid passwords', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: mockUser.username,
 				password: 'asasasas',
 				grant_type: 'password'
-			})
-			.then((res) => {
-				expect(res).to.have.status(401);
+			}).catch((reason) => {
+				expect(reason).to.have.status(400);
 			});
 		});
 		it('should reject invalid grant_type', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
 				grant_type: 'invalid'
-			})
-			.catch((reason) => {
+			}).catch((reason) => {
 				expect(reason.response.body).to.eql(unsupportedGrantTypeErr);
 			});
 		});
 		it('should reject empty usernames', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: '',
 				password: mockUser.password,
 				grant_type: 'password'
-			})
-			.catch((reason) => {
+			}).catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty passwords', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: mockUser.username,
 				password: '',
 				grant_type: 'password'
-			})
-			.catch((reason) => {
+			}).catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
 		it('should reject empty grant_type', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
 				grant_type: ''
-			})
-			.catch((reason) => {
+			}).catch((reason) => {
 				expect(reason.response.body).to.eql(badRequestErr);
 			});
 		});
@@ -159,13 +155,12 @@ describe('authentication', () => {
 		before(populateDatabase);
 		it('should accept correct credentials', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/login')
+			.post('/cs3099group-be-4/oauth/token')
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
 				grant_type: 'password'
-			})
-			.then((res) => {
+			}).then((res) => {
 				expect(res).to.have.status(200);
 			});
 		});

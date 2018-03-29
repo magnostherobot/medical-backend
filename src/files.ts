@@ -15,8 +15,9 @@ const writableStream:
 };
 
 const logPath:
-	(type: string, projectName?: string) => string =
-	(type: string, projectName?: string): string => {
+(type: string, projectName?: string) => string = (
+	type: string, projectName?: string
+): string => {
 	return projectName
 		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;

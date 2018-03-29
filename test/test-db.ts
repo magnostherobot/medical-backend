@@ -29,13 +29,29 @@ export interface Credentials {
 	usergroups: UserGroup[];
 }
 
-export const addUser: (database?: Database) => Promise<Credentials> = async(
+export const addUser: (database?: Database, admin?: boolean) =>
+	Promise<Credentials> = async(
+		database?: Database, admin?: boolean
 ): Promise<Credentials> => {
 	const mockUser: Credentials = {
 		username: 'mock_user',
 		password: 'mock_password',
 		usergroups: []
 	};
+	if (admin) {
+		const priv: UserGroup = new UserGroup({
+			name: 'admin',
+			canCreateUsers: true,
+			canDeleteUsers: true,
+			canEditUsers: true,
+			canCreateProjects: true,
+			canDeleteProjects: true,
+			canEditProjects: true,
+			isInternal: false
+		});
+		await priv.save();
+		mockUser.usergroups.push(priv);
+	}
 	await new User(mockUser).save();
 	return mockUser;
 };

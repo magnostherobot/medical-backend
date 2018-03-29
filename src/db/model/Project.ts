@@ -107,9 +107,7 @@ export default class Project extends Model<Project> {
 		return {
 			project_name: this.name,
 			users: this.contributors
-			.map<UserInfo>(
-				(u: User) => this.getUserInfo(u)
-			),
+			.map((u: User): UserInfo => this.getUserInfo(u)),
 			public_metadata: {
 				creation_date: this.creationDate
 			},

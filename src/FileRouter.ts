@@ -217,24 +217,23 @@ const getUserPrivileges: Middleware =
  *     "private_admin_metadata": metadata
  * })
  */
-const getUsers: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getUsers: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	const users: User[] = await User.findAll({
 		include: [
 			UserGroup,
 			Project
 		]
 	});
-	res.locals.data = users.map<UserFullInfo>(
-		(u: User) => {
-			const info: UserFullInfo = u.fullInfo;
-			if (!req.user.hasPrivilege('admin')) {
-				delete info.private_user_metadata;
-				delete info.private_admin_metadata;
-			}
-			return info;
+	res.locals.data = users.map((u: User): UserFullInfo => {
+		const info: UserFullInfo = u.fullInfo;
+		if (!req.user.hasPrivilege('admin')) {
+			delete info.private_user_metadata;
+			delete info.private_admin_metadata;
 		}
-	);
+		return info;
+	});
 	next();
 };
 
@@ -416,8 +415,8 @@ const getProjects: Middleware =
 const getProjectName: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const project: Project | null = res.locals.project;
-	if (project === null) {
-		next(new RequestError(404, 'project_not_found'));
+	if (project == null) {
+		return next(new RequestError(404, 'project_not_found'));
 	} else {
 		res.locals.data = project.fullInfo;
 		next();
@@ -441,7 +440,7 @@ const postProjectName: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	let project: Project | null = res.locals.project;
 	let promise: PromiseLike<File> | null = null;
-	if (project === null) {
+	if (project == null) {
 		const file: File = new File({
 			mimetype: 'inode/directory'
 		});
@@ -474,12 +473,15 @@ const getProjectProperties: Middleware =
 /**
  * GET a File.
  */
-const getFilePath: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getFilePath: Middleware =	async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	const file: File | null = res.locals.file;
-	if (file === null) {
-		next(new RequestError(404, 'file_not_found'));
-		return;
+	const project: Project | null = res.locals.project;
+	if (file == null) {
+		return next(new RequestError(404, 'file_not_found'));
+	} else if (project == null) {
+		return next(new RequestError(404, 'project_not_found'));
 	}
 	res.locals.function = res.sendFile;
 	res.locals.data =

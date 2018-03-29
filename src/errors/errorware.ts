@@ -28,7 +28,7 @@ export class RequestError extends Error {
 	 * @returns `true` if the object is a [[RequestError]]; `false`
 	 *   otherwise.
 	 */
-	public static is(test: Object): test is RequestError {
+	public static is(test: object): test is RequestError {
 		return (test as Partial<RequestError>).code !== undefined
 			&& (test as Partial<RequestError>).name !== undefined
 			&& (test as Partial<RequestError>).responseBlock !== undefined;
@@ -110,9 +110,11 @@ export type Errorware =
  * @param err The Error to act on.
  * @param req The Express http request.
  * @param res The Express http response.
+ * @param next The next Express middleware function.
  */
-export const errorHandler: Errorware =
-	(err: Error, req: Request, res: Response): void => {
+export const errorHandler: Errorware = (
+	err: Error, req: Request, res: Response, next: NextFunction
+): void => {
 	if (RequestError.is(err)) {
 		res.status(err.code)
 			.json(err.responseBlock());

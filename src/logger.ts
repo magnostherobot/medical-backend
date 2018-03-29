@@ -31,6 +31,8 @@ interface LoggingMetadata {
 	[key: string]: any;
 }
 
+export let enabled: boolean = true;
+
 const consoleTransport: winston.TransportInstance =
 	new winston.transports.Console({
 	name: 'consoleTransport',
@@ -162,6 +164,9 @@ const makeLogFunction: (level: LogLevel) => LogFunction = (
 	return (
 		message: string, meta: LoggingMetadata = {}
 	): void => {
+		if (!enabled) {
+			return;
+		}
 		meta.user = meta.user || '_BE4_system';
 		meta.component = meta.component || 'core';
 		basicLogger.log(level, message, meta);

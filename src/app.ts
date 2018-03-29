@@ -12,6 +12,7 @@ import FileRouter from './FileRouter';
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
 import { default as User } from './db/model/User';
+import { default as UserGroup } from './db/model/UserGroup';
 
 /**
  * Configuration of the Express server app, including installation of
@@ -67,6 +68,21 @@ class App {
 			] })
 		);
 		this.express.use(passport.initialize());
+		this.express.use(async(
+			req: ex.Request, res: ex.Response, next: ex.NextFunction
+		): Promise<void> => {
+			if (req.user != null) {
+				req.user = await User.findOne({
+					where: {
+						username: req.user.object.username
+					},
+					include: [
+						UserGroup
+					]
+				});
+			}
+			next();
+		});
 		if (this.logEnabled) {
 			this.express.use(logger('combined'));
 		}

@@ -37,7 +37,7 @@ const populateDatabase = async() => {
 
 const getToken = async() => {
 	return chai.request(app)
-	.post('/cs3099group-be-4/login')
+	.post('/cs3099group-be-4/oauth/token')
 	.send({
 		username: mockUser.username,
 		password: mockUser.password,

@@ -110,7 +110,6 @@ export default class User extends Model<User> {
 	}
 
 	public hasPrivilege(privilege: string): boolean {
-		// FIXME: Fetch these things if they aren't already present
 		if (this.userGroups === undefined) {
 			throw new Error('usergroups undefined');
 		}
