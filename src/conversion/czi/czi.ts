@@ -9,6 +9,7 @@ import * as sharp from 'sharp';
 import { SharpInstance } from 'sharp';
 import { isTileRelated, regionToExtract } from './tileExtraction';
 import * as parsexml from 'xml-parser';
+import { uuid } from '../../uuid'
 
 // Various constants for placing files and defining tiles
 const baseDirname: string = '/cs/scratch/cjd24/0701-extraction';
@@ -18,6 +19,7 @@ const outputImageDirectory: string = `${baseDirname}-processed/data/`;
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 1024;
 const maxZoom: number = 64;
+const shell = require('shelljs');
 
 /**
  * Simple function to find the tile bounds version of an original tile
@@ -505,48 +507,34 @@ const zoomTier: (
 		for (let xs: number = 0; xs < previousHeightMap.plane[0].length; xs += 2) {
 
 			// Combine 4 tiles into a new tile and scale down for this tier
-			let combinedTile: SharpInstance;
 			// Top left
-			combinedTile = await sharp(
-				`${outputImageDirectory}${previousHeightMap.plane[ys][xs].file}`
-			).background({
-				r: 0,
-				g: 0,
-				b: 0,
-				alpha: 0
-			}).extend({
-				top: 0,
-				left: 0,
-				bottom: tileSize,
-				right: tileSize
-			});
+			let quadrents:string = `${outputImageDirectory}${previousHeightMap.plane[ys][xs].file} `;
+			let across:number = 1;
 
 			// Combine top right
 			const moreToRight: boolean = (xs + 1) < previousHeightMap.plane[0].length;
 			if (moreToRight) {
-				combinedTile = sharp(await combinedTile.overlayWith(
-					`${outputImageDirectory}${previousHeightMap.plane[ys][xs + 1].file}`,
-					{top: 0, left: tileSize}).toBuffer());
+				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys][xs + 1].file} `;
+				across++;
 			}
-
 			// Combine bottom left
 			const moreToBottom: boolean = (ys + 1) < previousHeightMap.plane.length;
 			if (moreToBottom) {
-				combinedTile = sharp(await combinedTile.overlayWith(
-					`${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs].file}`,
-					{top: tileSize, left: 0}).toBuffer());
+				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs].file} `;
 			}
-
 			// Combine bottom right
 			if (moreToBottom && moreToRight) {
-				combinedTile = sharp(await combinedTile.overlayWith(
-					`${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs + 1].file}`,
-					{top: tileSize, left: tileSize}).toBuffer());
+				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs + 1].file} `;
 			}
 
+			let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`
+			shell.exec(`./vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`)
+
 			// Rescale and push to file
-			await combinedTile.resize(tileSize, tileSize)
+			await sharp(outputFileName)
+				.resize(tileSize, tileSize)
 				.toFile(`${outputImageDirectory}img-${filecounter}`);
+			shell.rm(outputFileName);
 
 			cziRow.push({
 				x_offset: previousHeightMap.plane[ys][xs].x_offset,
@@ -556,7 +544,7 @@ const zoomTier: (
 				file: `img-${filecounter++}`
 			});
 			// tslint:disable-next-line:no-non-null-assertion
-			finalCZIJson.total_files!++;
+			finalCZIJson.total_files++;
 		}
 
 		newZoomTier.plane.push(cziRow);
@@ -690,20 +678,19 @@ const checkForOutputDirectories: (directories: string[]) => void = (
 /**
  * Write given JSON object to given filepath
  */
-const writeJSONToFile: (filePath: string, obj: object) => void = (
-	filePath: string, obj: object
-): void => {
-	fs.writeFile(
-		filePath,
-		JSON.stringify(obj, null, 2),
-		(err: Error) => {
-			if (err) {
-				logger.error(err.message);
-				throw err;
+const writeJSONToFile: (filePath: string, obj: object) =>
+	void = (filePath: string, obj: object): void => {
+		fs.writeFile(
+			filePath,
+			JSON.stringify(obj, null, 2),
+			(err: Error) => {
+				if (err) {
+					logger.error(err.message);
+					throw err;
+				}
 			}
-		}
-	);
-};
+		);
+	};
 
 /**
  * used to write the supported views object to file both in total and "cleaned"
@@ -729,10 +716,6 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 	// Set some variables for errors and and percent counts
 	let errorOccurred: Boolean;
 	finalCZIJson.zoom_level_count = Math.log2(maxZoom);
-	finalCZIJson.c_values = [];
-	finalCZIJson.c_value_count = 0;
-	finalCZIJson.total_files = 0;
-	finalCZIJson.complete = false;
 
 	// For all channels in the base image
 	for (const cval of supportedViews.scalable_image.channels) {
@@ -745,10 +728,8 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 				maxZoom
 			).then((v: CZIHeightMap[]) => {
 				// On success, add the new heightmap to the final json data block
-				// tslint:disable-next-line:no-non-null-assertion
-				finalCZIJson.c_values!.push({channel_id: cval.channel_id, height_map: v});
-				// tslint:disable-next-line:no-non-null-assertion
-				finalCZIJson.c_value_count!++;
+				finalCZIJson.c_values.push({channel_id: cval.channel_id, height_map: v});
+				finalCZIJson.c_value_count++;
 				return;
 			}).catch((err: Error) => {
 					// On error, write the error to console and set an error true.
@@ -768,7 +749,13 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 	finalCZIJson.complete = true;
 };
 
-const finalCZIJson: Partial<WholeCZIHierarchy> = {};
+const finalCZIJson: WholeCZIHierarchy = {
+	c_value_count: 0,
+	total_files: 0,
+	complete: false,
+	c_values: [],
+	zoom_level_count: 0
+};
 
 /**
  * Main function used to call the rest of the relevant code to crunch a CZI

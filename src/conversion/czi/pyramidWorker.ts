@@ -39,7 +39,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	let involvedTiles: string = '';
 	for (const row of imageTier.plane) {
 		for (const tile of row) {
-			involvedTiles += `${imageDir}${tile.file} `
+			involvedTiles += `${imageDir}/data/${tile.file} `
 		}
 	}
 

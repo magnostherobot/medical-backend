@@ -18,14 +18,14 @@ export interface CZIHeightMap {
 }
 
 export interface WholeCZIHierarchy {
-	c_values: {
-		channel_id: string,
-		height_map: CZIHeightMap[];
-	}[];
 	c_value_count: number;
 	zoom_level_count: number;
 	total_files: number;
 	complete: boolean;
+	c_values: {
+		channel_id: string,
+		height_map: CZIHeightMap[];
+	}[];
 }
 
 export interface CZITileRequest {
