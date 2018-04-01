@@ -1,3 +1,5 @@
+import { TileBounds } from './helperCZITypes'
+
 //The following are interfaces for the Custom object storing Information
 //about the CUSTOM pyramid being created for this image
 export interface CZITile {
@@ -24,4 +26,12 @@ export interface WholeCZIHierarchy {
 	zoom_level_count: number;
 	total_files: number;
 	complete: boolean;
+}
+
+export interface CZITileRequest {
+	dimensions: TileBounds,
+	original_bounds: TileBounds,
+	zoom_level: number,
+	c_value: string,
+	file_path: string
 }

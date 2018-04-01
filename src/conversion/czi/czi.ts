@@ -778,7 +778,7 @@ const main: () => void = (): void => {
 	logger.info('\n');
 
 	logger.info('>> Checking/Creating output directories...');
-	checkForOutputDirectories([outputImageData, outputImageDirectory]);
+	checkForOutputDirectories([outputImageData, outputImageDirectory, `${outputImageData}tmp/`]);
 
 	logger.info('>> Creating Supported Views and writing files...');
 	createSupportedViewsObject();
