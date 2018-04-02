@@ -3,7 +3,7 @@ import { CZIHeightMap, CZITile,
 import { Dimension, Segment } from '../types/cziBinaryTypings';
 import * as fs from 'fs';
 import { SupportedViews, TileBounds } from '../types/helperCZITypes';
-import { logger } from '../../logger';
+// import { logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
@@ -188,91 +188,88 @@ const findRegionToExtract: (
  * into a new image
  */
 const extractAndStitchChunks: (
-	segments: Segment[][], desiredRegion: TileBounds
-) => Promise<SharpInstance> = async(
-	segments: Segment[][], desiredRegion: TileBounds
-): Promise<SharpInstance> => {
-	// Create a buffer for the rows part of raw image data
-	const tileVerticalBuffer: Buffer[] = [];
+	segments: Segment[][], desiredRegion: TileBounds, fileCount: number
+) => Promise<void> = async (
+	segments: Segment[][], desiredRegion: TileBounds, fileCount: number
+): Promise<void> => {
 
-	// For all ros (y coords) in the image
+	let involvedTiles: string = '';
+	// For all rows (y coords) in the image
 	for (const segRow of segments) {
-		// Create a buffer for this row
-		const tileRow: Buffer[] = [];
-		let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
-
-		// For all of the columns within this row
 		for (const segCol of segRow) {
-			// Find out the region of the base tile to be added to the new image
-			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
-			// Extract this section of image data into a sharp buffer
-			const data: Promise<Buffer> =
-				sharp(`${extractionDirectory}${segCol.Data.Data}`)
+			involvedTiles += `${extractionDirectory}${segCol.Data.Data} `;
+		}
+	}
+
+	let originalRegion: TileBounds = new TileBounds(
+		getDimension(segments[0][0], 'X').Start,
+		getDimension(segments[0][0], 'X').Start + getDimension(segments[0][0], 'X').Size,
+		getDimension(segments[0][0], 'Y').Start,
+		getDimension(segments[0][0], 'Y').Start + getDimension(segments[0][0], 'Y').Size
+	)
+	let finalImage: SharpInstance;
+
+	try{
+		let outputFileName: string = '';
+		if (segments[0].length !== 1 || segments.length !== 1) {
+			outputFileName = `${outputImageDirectory}${uuid.generate()}.png`
+			shell.exec(`vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${segments[0].length}`)
+
+			finalImage = sharp(outputFileName)
 				.extract({
-					left: chunkToExtract.left,
-					top: chunkToExtract.top,
-					width: chunkToExtract.right - chunkToExtract.left,
-					height: chunkToExtract.bottom - chunkToExtract.top
+					top: desiredRegion.top - getDimension(segments[0][0], 'Y').Start,
+					left: desiredRegion.left - getDimension(segments[0][0], 'X').Start,
+					width: desiredRegion.width(),
+					height: desiredRegion.height()
 				})
-				.toBuffer();
 
-			// Push this data into the row buffer
-			tileRow.push(await data);
-		}
-
-		// Prepare variables to squash all of the column data into one, for this row
-		let imageVerticalSlice: SharpInstance = sharp(tileRow[0]);
-		const bufferBound: TileBounds = findRegionToExtract(segRow[0], desiredRegion);
-		// Check if the inital chunk needs to be extended to support the other columns
-		if ((bufferBound.right - bufferBound.left) < (tileSize - tileOverlap)) {
-			imageVerticalSlice = await imageVerticalSlice.extend({
-				top: 0,
-				left: 0,
-				bottom: 0,
-				right: (tileSize - (bufferBound.right - bufferBound.left))
-			});
-		}
-		// For every column along this row, join it to the previous column data
-		for (let index: number = 1; index < segRow.length; index++) {
-			imageVerticalSlice = await imageVerticalSlice
-				.overlayWith(tileRow[index], {
-					top: 0,
-					left: (bufferBound.right - bufferBound.left)
-						+ ((index - 1) * tileSize)
+		} else {
+			desiredRegion = regionToExtract(
+				new TileBounds(
+					getDimension(segments[0][0], 'X').Start,
+					getDimension(segments[0][0], 'X').Start + getDimension(segments[0][0], 'X').Size,
+					getDimension(segments[0][0], 'Y').Start,
+					getDimension(segments[0][0], 'Y').Start + getDimension(segments[0][0], 'Y').Size
+				),
+				desiredRegion,
+				1
+			);
+			finalImage = sharp(`${extractionDirectory}${segments[0][0].Data.Data}`)
+				.extract({
+					top: desiredRegion.top,
+					left: desiredRegion.left,
+					width: desiredRegion.width(),
+					height: desiredRegion.height()
 				});
 		}
 
-		// Add this horizontal data buffer to the vertical buffer
-		tileVerticalBuffer.push(await imageVerticalSlice.toBuffer());
-	}
+		if (desiredRegion.width() < tileSize || desiredRegion.height() < tileSize) {
+			finalImage
+				.background({
+					r: 0, g: 0, b: 0, alpha: 0})
+				.extend({
+					left: 0,
+					right: tileSize - desiredRegion.width(),
+					top: 0,
+					bottom: tileSize - desiredRegion.height()
+				});
+		} else {
+			finalImage.background({
+				r: 0, g: 0, b: 0, alpha: 0})
+		}
 
-	// Prepare variables used to combine all rows into one image
-	let finalImage: SharpInstance = sharp(tileVerticalBuffer[0]);
-	const bufferBound: TileBounds =
-		findRegionToExtract(segments[0][0], desiredRegion);
-	// Check if the inital row needs to be extended to support further rows
-	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
-		finalImage = await finalImage.background({
-			r: 0,
-			g: 0,
-			b: 0,
-			alpha: 0
-		}).extend({
-			top: 0,
-			left: 0,
-			bottom: (tileSize - (bufferBound.bottom - bufferBound.top)),
-			right: 0
-		});
+		await finalImage.toFile(`${outputImageDirectory}img-${fileCount}.png`);
+		if (segments[0].length !== 1 || segments.length !== 1) {
+			shell.rm(outputFileName);
+		}
+	} catch (error) {
+		console.log();
+		console.log(error);
+		console.log(desiredRegion)
+		console.log(involvedTiles)
+		console.log(desiredRegion.top - getDimension(segments[0][0], 'Y').Start, desiredRegion.left - getDimension(segments[0][0], 'X').Start, desiredRegion.width(), desiredRegion.height())
+		throw new Error("SAD BOI ERROR>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 	}
-	// For all further rows in the image, combine it with the previous rows' data
-	for (let index: number = 1; index < segments.length; index++) {
-		finalImage = finalImage.overlayWith(
-			tileVerticalBuffer[index],
-			{top: getDimension(segments[index - 1][0], 'Y').Size, left: 0});
-	}
-
-	// Return the finalised image.
-	return finalImage;
 };
 
 /**
@@ -364,9 +361,11 @@ const cleanSupportedViews: (view: SupportedViews) => void = (
  * of the initial extraction.
  */
 // tslint:disable-next-line:no-var-requires
-const dataBlocks: Segment[] = require(`${extractionDirectory}outputjson.json`)
-	.czi.filter(
-		(s: Segment) => s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty');
+const dataBlocks: Segment[] =
+	require(`${extractionDirectory}outputjson.json`)
+	.czi.filter((s: Segment) =>
+		s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty'
+	);
 
 let totalSizeX: number = -1;
 let totalSizeY: number = -1;
@@ -491,7 +490,7 @@ const zoomTier: (
 	// Check the condition where another zoom level does not make sense
 	if (previousHeightMap.plane.length === 1
 	 && previousHeightMap.plane[0].length === 1) {
-		logger.info(
+		console.log(
 			'         Task(1/1):     ' +
 			'Stage 100% complete. ' +
 			'(0 sec/iter)  Stage was skipped as maximum sensible zoom level was reached.'
@@ -527,13 +526,13 @@ const zoomTier: (
 				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs + 1].file} `;
 			}
 
-			let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`
-			shell.exec(`./vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`)
+			let outputFileName: string =`${outputImageData}tmp/${uuid.generate()}.png`
+			shell.exec(`vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`)
 
 			// Rescale and push to file
 			await sharp(outputFileName)
 				.resize(tileSize, tileSize)
-				.toFile(`${outputImageDirectory}img-${filecounter}`);
+				.toFile(`${outputImageDirectory}img-${filecounter}.png`);
 			shell.rm(outputFileName);
 
 			cziRow.push({
@@ -541,19 +540,18 @@ const zoomTier: (
 				y_offset: previousHeightMap.plane[ys][xs].y_offset,
 				width: previousHeightMap.plane[ys][xs].width * 2,
 				height: previousHeightMap.plane[ys][xs].height * 2,
-				file: `img-${filecounter++}`
+				file: `img-${filecounter++}.png`
 			});
-			// tslint:disable-next-line:no-non-null-assertion
 			finalCZIJson.total_files++;
 		}
 
 		newZoomTier.plane.push(cziRow);
 		timing = process.hrtime(timing);
-		iterTimes.push(timing[0]);
+		iterTimes.push(timing[0] * 2);
 		if (iterTimes.length > 5) { iterTimes.shift(); }
 		// tslint:disable-next-line:typedef
 		avgItrTime = iterTimes.reduce((p, c, i) => p + (c - p) / (i + 1), 0);
-		logger.info(
+		console.log(
 			`         Task(${ys / 2 + 1}/${
 				Math.floor(previousHeightMap.plane.length / 2) + 1}):     ` +
 			`Stage ${Math.ceil(((ys / previousHeightMap.plane.length)
@@ -587,19 +585,18 @@ const extrapolateDimension: (
 			getDimension(item, 'C').Start === cVal
 	);
 	// Begin output for the base tier
-	logger.info('=========================================================');
-	logger.info(`>>    Beginning Dimension Extrapolation for \'C\' : ${cVal}`);
-	logger.info('=========================================================');
-	logger.info('>> Computing base tier, this will take a while...\n');
+	console.log('=========================================================');
+	console.log(`>>    Beginning Dimension Extrapolation for \'C\' : ${cVal}`);
+	console.log('=========================================================');
+	console.log('>> Computing base tier, this will take a while...\n');
 	const baseCZIHeightMap: CZIHeightMap = {zoom_level: 1, plane: []};
-	let width_in_tiles = 0;
-	let height_in_tiles = 0;
 
-	logger.info(`Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
+	console.log(`Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
 	// For all rows within the total base pixel height
 	for (; ys < totalSizeY;) {
 		timing = process.hrtime();
 		const cziRow: CZITile[] = [];
+		process.stdout.write(`${Math.ceil(totalSizeX/tileSize)} : `);
 		for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
 			const desired: TileBounds = new TileBounds(
 				xs - tileOverlap,
@@ -613,42 +610,41 @@ const extrapolateDimension: (
 				y_offset: ys,
 				width: tileSize,
 				height: tileSize,
-				file: `img-${filecounter}`
+				file: `img-${filecounter}.png`
 			});
 			const sortedSegments: Segment[][] =
 				orderSegments(findRelatedTiles(filteredDataBlocks, desired));
-			(await extractAndStitchChunks(sortedSegments, desired))
-				.toFile(`${outputImageDirectory}img-${filecounter++}`);
-			// tslint:disable-next-line:no-non-null-assertion
-			finalCZIJson.total_files!++;
-			width_in_tiles = xs / tileSize;
+
+			await extractAndStitchChunks(sortedSegments, desired, filecounter++);
+			process.stdout.write(">");
+			finalCZIJson.total_files++;
 		}
 		baseCZIHeightMap.plane.push(cziRow);
 		ys += tileSize;
 		timing = process.hrtime(timing);
-		iterTimes.push(timing[0]);
+		iterTimes.push(timing[0] * 2);
 		if (iterTimes.length > 5) { iterTimes.shift(); }
 		// tslint:disable-next-line:typedef
 		avgItrTime = iterTimes.reduce((p, c, i) => p + (c - p) / (i + 1), 0);
-		logger.info(
+		process.stdout.write("\r");
+		console.log(
 			`         Task(${ys / tileSize}/${Math.ceil(totalSizeY / tileSize)}):     ` +
 			`Stage ${Math.ceil(((ys / totalSizeY) * 100) * 100) / 100}% complete. ` +
 			`(${timing[0]} sec/iter,  est: ${((avgItrTime *
 				(Math.ceil(totalSizeY / tileSize) - ys / tileSize)) /
 					60).toFixed(2)} mins remain.)`
 		);
-		height_in_tiles = ys / tileSize;
 	}
-	baseCZIHeightMap.tile_height_count = height_in_tiles;
-	baseCZIHeightMap.tile_width_count = width_in_tiles;
+	baseCZIHeightMap.tile_height_count = baseCZIHeightMap.plane.length;
+	baseCZIHeightMap.tile_width_count = baseCZIHeightMap.plane[0].length;
 
 	// BUILD UP THE HIGHER ZOOM LAYERS.
-	logger.info(`>> Base tier complete for \'C\': ${cVal
+	console.log(`>> Base tier complete for \'C\': ${cVal
 		}; Begin computing zoom tiers...\n`);
 
 	const retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
 	for (let stage: number = 1; stage < Math.log2(maxZoom); stage++) {
-		logger.info(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
+		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
 		await zoomTier(retHeightMap[stage - 1])
 		.then((v: CZIHeightMap) => {
 				retHeightMap.push(v);
@@ -658,7 +654,7 @@ const extrapolateDimension: (
 		writeJSONToFile(`${outputImageData}stageMap-${cVal}-${stage}`, retHeightMap);
 	}
 
-	logger.info(`>> Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
+	console.log(`>> Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
 	return retHeightMap;
 };
 
@@ -685,7 +681,7 @@ const writeJSONToFile: (filePath: string, obj: object) =>
 			JSON.stringify(obj, null, 2),
 			(err: Error) => {
 				if (err) {
-					logger.error(err.message);
+					console.error(err.message);
 					throw err;
 				}
 			}
@@ -734,14 +730,14 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 			}).catch((err: Error) => {
 					// On error, write the error to console and set an error true.
 					if (err) {
-						logger.error(err.message);
+						console.error(err.message);
 					}
 					errorOccurred = true;
 				}
 			);
 		} else {
-			logger.error(`\nAn error occurred while extracting dimension: ${cval}`);
-			logger.error('Skipping futher elements and moving to next dimension.\n\n');
+			console.error(`\nAn error occurred while extracting dimension: ${cval}`);
+			console.error('Skipping futher elements and moving to next dimension.\n\n');
 		}
 		// Write the final json data to file with most recent changes
 		writeJSONToFile(`${outputImageData}layout.json`, finalCZIJson);
@@ -762,36 +758,33 @@ const finalCZIJson: WholeCZIHierarchy = {
  * extraction.
  */
 const main: () => void = (): void => {
-	logger.info('\n');
+	console.log('\n');
 
-	logger.info('>> Checking/Creating output directories...');
+	console.log('>> Checking/Creating output directories...');
 	checkForOutputDirectories([outputImageData, outputImageDirectory, `${outputImageData}tmp/`]);
 
-	logger.info('>> Creating Supported Views and writing files...');
+	console.log('>> Creating Supported Views and writing files...');
 	createSupportedViewsObject();
 
-	logger.info('');
+	console.log('');
 	buildCustomPyramids();
 };
 main();
 
-/* tslint:disable */
+// /* tslint:disable */
 // async function main2() {
 //
 // 	let layout: WholeCZIHierarchy = require(`${outputImageData}layout.json`);
-// 	let retHeightMap: any[] = [{}, {}, require(`${outputImageData}stageMap-2.json`)];
 // 	filecounter = 5530;
 //
-// 	for (let stage:number = 3; stage < Math.sqrt(maxZoom); stage++) {
-// 		logger.info(`Stage (${0 * Math.sqrt(maxZoom) + 1 + stage}/${1}):`);
-// 		await zoomTier(retHeightMap[stage -1])
-// 		.then((v: CZIHeightMap) =>
-// 			{
-//                 retHeightMap.push(v);
-//         		writeJSONToFile(`${outputImageData}stageMap-${stage}.json`, v);
-// 				return;
-// 			}
-// 		);
+// 	for (let stage:number = 1; stage < Math.sqrt(maxZoom); stage++) {
+// 		await zoomTier(layout.c_values[0].height_map[stage - 1])
+// 				.then((v: CZIHeightMap) =>
+// 					{
+// 		        		writeJSONToFile(`${outputImageData}stageMap-${stage}.json`, v);
+// 						return;
+// 					}
+// 				);
 // 	}
 // }
 //
