@@ -10,11 +10,16 @@ coutner = 0
 def convertjxrs(filename):
     global counter
     global totalFiles
-    asTif = filename.rsplit('.',1)[0] + ".tif"
-    check_call(['./JxrDecApp', "-i", filename, "-o", asTif])
-    check_call(['convert', asTif, filename.rsplit('.',1)[0] + ".png"])
-    check_call(['rm', filename, asTif])
-    counter += 1
+	try:
+		asTif = filename.rsplit('.',1)[0] + ".tif"
+	    check_call(['JxrDecApp', "-i", filename, "-o", asTif])
+	    check_call(['convert', asTif, filename.rsplit('.',1)[0] + ".png"])
+	    check_call(['rm', filename, asTif])
+	    counter += 1
+	except:
+		print ("Processing Failed. Probably couldn't find decoder due to invalid system environment path, check this before debugging.")
+		exit(0);
+
     print (f"> Processed File: {counter}/{totalFiles}   :   {filename}  -->  {filename.rsplit('.',1)[0]}.png")
 
 

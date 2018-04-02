@@ -44,7 +44,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	}
 
 	let outputFileName: string =`${imageDir}/tmp/${uuid.generate()}.png`
-	require('shelljs').exec(`./vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${imageTier.plane[0].length}`)
+	require('shelljs').exec(`vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${imageTier.plane[0].length}`)
 
 	let extractionRegion = new TileBounds(
 		desiredRegion.left - imageTier.plane[0][0].width,
