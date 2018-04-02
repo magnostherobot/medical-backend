@@ -213,12 +213,30 @@ const extractAndStitchChunks: (
 		let outputFileName: string = '';
 		if (segments[0].length !== 1 || segments.length !== 1) {
 			outputFileName = `${outputImageDirectory}${uuid.generate()}.png`
+			//top left of new image
+			let x1:number = getDimension(segments[0][0], 'X').Start;
+			let x2:number = getDimension(
+				segments[segments.length - 1][segments[0].length - 1], 'X').Start
+				+
+				getDimension(segments[segments.length - 1][segments[0].length - 1], 'X').Size;
+			//bottom right of new image
+			let y1:number = getDimension(segments[0][0], 'Y').Start;
+			let y2:number = getDimension(
+				segments[segments.length - 1][segments[0].length - 1], 'Y').Start
+				+
+				getDimension(segments[segments.length - 1][segments[0].length - 1], 'Y').Size;
+
+			desiredRegion = regionToExtract(
+				new TileBounds(x1, x2, y1, y2),
+				desiredRegion,
+				1
+			);
 			shell.exec(`vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${segments[0].length}`)
 
 			finalImage = sharp(outputFileName)
 				.extract({
-					top: desiredRegion.top - getDimension(segments[0][0], 'Y').Start,
-					left: desiredRegion.left - getDimension(segments[0][0], 'X').Start,
+					top: desiredRegion.top,
+					left: desiredRegion.left,
 					width: desiredRegion.width(),
 					height: desiredRegion.height()
 				})
@@ -547,7 +565,7 @@ const zoomTier: (
 
 		newZoomTier.plane.push(cziRow);
 		timing = process.hrtime(timing);
-		iterTimes.push(timing[0] * 2);
+		iterTimes.push(timing[0]);
 		if (iterTimes.length > 5) { iterTimes.shift(); }
 		// tslint:disable-next-line:typedef
 		avgItrTime = iterTimes.reduce((p, c, i) => p + (c - p) / (i + 1), 0);
@@ -622,7 +640,7 @@ const extrapolateDimension: (
 		baseCZIHeightMap.plane.push(cziRow);
 		ys += tileSize;
 		timing = process.hrtime(timing);
-		iterTimes.push(timing[0] * 2);
+		iterTimes.push(timing[0]);
 		if (iterTimes.length > 5) { iterTimes.shift(); }
 		// tslint:disable-next-line:typedef
 		avgItrTime = iterTimes.reduce((p, c, i) => p + (c - p) / (i + 1), 0);
