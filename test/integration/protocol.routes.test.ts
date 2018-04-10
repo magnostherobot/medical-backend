@@ -111,7 +111,7 @@ describe('routes : protocol', () => {
 				required: array(types.string)
 		}), 200],
 		['get', '/log', types.array({
-			component: types.string,
+			//component: types.string,
 			level: alternative([
 				'info',
 				'security',
