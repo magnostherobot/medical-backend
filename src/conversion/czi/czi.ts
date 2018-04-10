@@ -187,107 +187,93 @@ const findRegionToExtract: (
  * Take an ordered selection of segments and cookie cutter out a tile from this
  * into a new image
  */
-const extractAndStitchChunks: (
-	segments: Segment[][], desiredRegion: TileBounds, fileCount: number
-) => Promise<void> = async (
-	segments: Segment[][], desiredRegion: TileBounds, fileCount: number
-): Promise<void> => {
+ const extractAndStitchChunks: (
+ 	segments: Segment[][], desiredRegion: TileBounds
+ ) => Promise<SharpInstance> = async(
+ 	segments: Segment[][], desiredRegion: TileBounds
+ ): Promise<SharpInstance> => {
 
-	let involvedTiles: string = '';
-	// For all rows (y coords) in the image
+    // Create a buffer for the rows part of raw image data
+	const tileVerticalBuffer: Buffer[] = [];
+
+	// For all ros (y coords) in the image
 	for (const segRow of segments) {
+		// Create a buffer for this row
+		const tileRow: Buffer[] = [];
+		let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
+
+		// For all of the columns within this row
 		for (const segCol of segRow) {
-			involvedTiles += `${extractionDirectory}${segCol.Data.Data} `;
-		}
-	}
-
-	let originalRegion: TileBounds = new TileBounds(
-		getDimension(segments[0][0], 'X').Start,
-		getDimension(segments[0][0], 'X').Start + getDimension(segments[0][0], 'X').Size,
-		getDimension(segments[0][0], 'Y').Start,
-		getDimension(segments[0][0], 'Y').Start + getDimension(segments[0][0], 'Y').Size
-	)
-	let finalImage: SharpInstance;
-
-	try{
-		let outputFileName: string = '';
-		if (segments[0].length !== 1 || segments.length !== 1) {
-			outputFileName = `${outputImageDirectory}${uuid.generate()}.png`
-			//top left of new image
-			let x1:number = getDimension(segments[0][0], 'X').Start;
-			let x2:number = getDimension(
-				segments[segments.length - 1][segments[0].length - 1], 'X').Start
-				+
-				getDimension(segments[segments.length - 1][segments[0].length - 1], 'X').Size;
-			//bottom right of new image
-			let y1:number = getDimension(segments[0][0], 'Y').Start;
-			let y2:number = getDimension(
-				segments[segments.length - 1][segments[0].length - 1], 'Y').Start
-				+
-				getDimension(segments[segments.length - 1][segments[0].length - 1], 'Y').Size;
-
-			desiredRegion = regionToExtract(
-				new TileBounds(x1, x2, y1, y2),
-				desiredRegion,
-				1
-			);
-			shell.exec(`vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${segments[0].length}`)
-
-			finalImage = sharp(outputFileName)
+			// Find out the region of the base tile to be added to the new image
+			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
+			// Extract this section of image data into a sharp buffer
+			const data: Promise<Buffer> =
+				sharp(`${extractionDirectory}${segCol.Data.Data}`)
 				.extract({
-					top: desiredRegion.top,
-					left: desiredRegion.left,
-					width: desiredRegion.width(),
-					height: desiredRegion.height()
+					left: chunkToExtract.left,
+					top: chunkToExtract.top,
+					width: chunkToExtract.right - chunkToExtract.left,
+					height: chunkToExtract.bottom - chunkToExtract.top
 				})
+				.toBuffer();
 
-		} else {
-			desiredRegion = regionToExtract(
-				new TileBounds(
-					getDimension(segments[0][0], 'X').Start,
-					getDimension(segments[0][0], 'X').Start + getDimension(segments[0][0], 'X').Size,
-					getDimension(segments[0][0], 'Y').Start,
-					getDimension(segments[0][0], 'Y').Start + getDimension(segments[0][0], 'Y').Size
-				),
-				desiredRegion,
-				1
-			);
-			finalImage = sharp(`${extractionDirectory}${segments[0][0].Data.Data}`)
-				.extract({
-					top: desiredRegion.top,
-					left: desiredRegion.left,
-					width: desiredRegion.width(),
-					height: desiredRegion.height()
-				});
+			// Push this data into the row buffer
+			tileRow.push(await data);
 		}
 
-		if (desiredRegion.width() < tileSize || desiredRegion.height() < tileSize) {
-			finalImage
-				.background({
-					r: 0, g: 0, b: 0, alpha: 0})
-				.extend({
-					left: 0,
-					right: tileSize - desiredRegion.width(),
+		// Prepare variables to squash all of the column data into one, for this row
+		let imageVerticalSlice: SharpInstance = sharp(tileRow[0]);
+		const bufferBound: TileBounds = findRegionToExtract(segRow[0], desiredRegion);
+		// Check if the inital chunk needs to be extended to support the other columns
+		if ((bufferBound.right - bufferBound.left) < (tileSize - tileOverlap)) {
+			imageVerticalSlice = await imageVerticalSlice.extend({
+				top: 0,
+				left: 0,
+				bottom: 0,
+				right: (tileSize - (bufferBound.right - bufferBound.left))
+			});
+		}
+		// For every column along this row, join it to the previous column data
+		for (let index: number = 1; index < segRow.length; index++) {
+			imageVerticalSlice = await imageVerticalSlice
+				.overlayWith(tileRow[index], {
 					top: 0,
-					bottom: tileSize - desiredRegion.height()
+					left: (bufferBound.right - bufferBound.left)
+						+ ((index - 1) * tileSize)
 				});
-		} else {
-			finalImage.background({
-				r: 0, g: 0, b: 0, alpha: 0})
 		}
 
-		await finalImage.toFile(`${outputImageDirectory}img-${fileCount}.png`);
-		if (segments[0].length !== 1 || segments.length !== 1) {
-			shell.rm(outputFileName);
-		}
-	} catch (error) {
-		console.log();
-		console.log(error);
-		console.log(desiredRegion)
-		console.log(involvedTiles)
-		console.log(desiredRegion.top - getDimension(segments[0][0], 'Y').Start, desiredRegion.left - getDimension(segments[0][0], 'X').Start, desiredRegion.width(), desiredRegion.height())
-		throw new Error("SAD BOI ERROR>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+		// Add this horizontal data buffer to the vertical buffer
+		tileVerticalBuffer.push(await imageVerticalSlice.toBuffer());
 	}
+
+	// Prepare variables used to combine all rows into one image
+	let finalImage: SharpInstance = sharp(tileVerticalBuffer[0]);
+	const bufferBound: TileBounds =
+		findRegionToExtract(segments[0][0], desiredRegion);
+	// Check if the inital row needs to be extended to support further rows
+	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
+		finalImage = await finalImage.background({
+			r: 0,
+			g: 0,
+			b: 0,
+			alpha: 0
+		}).extend({
+			top: 0,
+			left: 0,
+			bottom: (tileSize - (bufferBound.bottom - bufferBound.top)),
+			right: 0
+		});
+	}
+	// For all further rows in the image, combine it with the previous rows' data
+	for (let index: number = 1; index < segments.length; index++) {
+		finalImage = finalImage.overlayWith(
+			tileVerticalBuffer[index],
+			{top: getDimension(segments[index - 1][0], 'Y').Size, left: 0});
+	}
+
+	// Return the finalised image.
+	return finalImage;
 };
 
 /**
@@ -628,12 +614,12 @@ const extrapolateDimension: (
 				y_offset: ys,
 				width: tileSize,
 				height: tileSize,
-				file: `img-${filecounter}.png`
+				file: `img-${filecounter++}.png`
 			});
 			const sortedSegments: Segment[][] =
 				orderSegments(findRelatedTiles(filteredDataBlocks, desired));
 
-			await extractAndStitchChunks(sortedSegments, desired, filecounter++);
+			await extractAndStitchChunks(sortedSegments, desired);
 			process.stdout.write(">");
 			finalCZIJson.total_files++;
 		}
