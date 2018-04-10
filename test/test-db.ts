@@ -1,3 +1,4 @@
+import { default as Project } from '../src/db/model/Project';
 import { default as User } from '../src/db/model/User';
 import { default as UserGroup } from '../src/db/model/UserGroup';
 
@@ -29,6 +30,13 @@ export interface Credentials {
 	usergroups: UserGroup[];
 }
 
+export interface Projec {
+	name: string;
+	contributors: Credentials[];
+	creationDate: Date;
+	lastActivity: Date;
+}
+
 export const addUser: (database?: Database, admin?: boolean) =>
 	Promise<Credentials> = async(
 		database?: Database, admin?: boolean
@@ -54,4 +62,19 @@ export const addUser: (database?: Database, admin?: boolean) =>
 	}
 	await new User(mockUser).save();
 	return mockUser;
+};
+
+export const addProjec: (database: Database, user: Credentials) =>
+	Promise<Projec> = async(
+		database: Database, user: Credentials
+): Promise<Projec> => {
+	const mockProject: Projec = {
+		name: 'mocky',
+		contributors: [user],
+		creationDate: new Date(),
+		lastActivity: new Date()
+	};
+
+	await new Project(mockProject).save();
+	return mockProject;
 };

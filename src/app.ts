@@ -161,6 +161,7 @@ class App {
 				req: ex.Request, res: ex.Response, next: ex.NextFunction,
 				project: string
 			): Promise<void> => {
+				console.log("## as " + project)
 				res.locals.project = await Project.findOne({
 					where: {
 						name: project

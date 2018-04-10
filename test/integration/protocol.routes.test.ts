@@ -7,7 +7,8 @@
 
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
-import { Credentials, Database, addUser, initDB, resetDB } from '../test-db';
+import { Credentials, Database, addUser, initDB, resetDB,
+	Projec, addProjec } from '../test-db';
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -28,6 +29,7 @@ const app = App.TestApp();
 let database: Database;
 let mockUser: Credentials;
 let token: string;
+let mockProj: Projec;
 
 const initDatabase = async() => {
 	database = initDB();
@@ -37,6 +39,7 @@ const initDatabase = async() => {
 const populateDatabase = async() => {
 	await resetDB(database);
 	mockUser = await addUser(database, true);
+	mockProj = await addProjec(database, mockUser);
 };
 
 const getToken = async() => {
@@ -111,7 +114,7 @@ describe('routes : protocol', () => {
 				required: array(types.string)
 		}), 200],
 		['get', '/log', types.array({
-			//component: types.string,
+			component: types.string,
 			level: alternative([
 				'info',
 				'security',
@@ -122,8 +125,12 @@ describe('routes : protocol', () => {
 			value: types.anything,
 			username: types.string,
 			timestamp: types.string
-		}), 500],
-		['post', '/log', null, 500],
+		}), 200],
+		['post', '/log', [{
+			component: 'tesssst',
+			level: 'info',
+			value: 'sdasdasdasdasdasd'
+		}], 200],
 		['get', '/properties', types.array({
 			id: types.string,
 			display: optional(match({
@@ -163,7 +170,7 @@ describe('routes : protocol', () => {
 			private_admin_metadata: types.anything
 		}), 401],
 		// TODO types.metadata
-		['get', '/users/:username', {
+		['get', '/users/mock_user', {
 			username: types.string,
 			privileges: array(types.string),
 			projects: array({
@@ -175,8 +182,8 @@ describe('routes : protocol', () => {
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
 		}, 401],
-		['post', '/users/:username', null, 401],
-		['get', '/users/:username/properties', {
+		['post', '/users/mock_user', null, 401],
+		['get', '/users/mock_user/properties', {
 			data: optional(types.anything)
 		}, 401],
 		['get', '/current_user', {
@@ -207,7 +214,7 @@ describe('routes : protocol', () => {
 			private_metadata: optional(types.anything),
 			admin_metadata: optional(types.anything)
 		}), 200],
-		['get', '/projects/:project_name', {
+		['get', '/projects/mocky', {
 			project_name: types.string,
 			users: array({
 				username: types.string,
@@ -217,13 +224,13 @@ describe('routes : protocol', () => {
 			private_metadata: types.anything,
 			admin_metadata: optional(types.anything)
 		}, 200],
-		['post', '/projects/:project_name', null, 200],
-		['get', '/projects/:project_name/properties', {
+		['post', '/projects/mocky', null, 200],
+		['get', '/projects/mocky/properties', {
 			data: optional(types.anything)
 		}, 200],
-		['get', '/projects/:project_name/files/:path', null, 200],
-		['post', '/projects/:project_name/files/:id', null, 200],
-		['get', '/projects/:project_name/files_by_id/:id', null, 200]
+		['get', '/projects/mocky/files/:path', null, 200],
+		['post', '/projects/mocky/files/:id', null, 200],
+		['get', '/projects/mocky/files_by_id/:id', null, 200]
 	];
 
 	/* tslint:enable:align */
@@ -238,7 +245,8 @@ describe('routes : protocol', () => {
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
-				: chai.request(app).post(base + path);
+				: chai.request(app).post(base + path)
+					.set('content-type', 'application/json').send(temp);
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
 				expect(res.type).to.equal('application/json');
