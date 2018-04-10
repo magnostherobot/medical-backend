@@ -444,8 +444,10 @@ const postProjectName: Middleware =
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
 		const file: File = new File({
+			uuid: uuid.generate(),
 			mimetype: 'inode/directory'
 		});
+		console.log(req.params.project_name)
 		promise = file.save();
 		project = new Project({
 			name: req.params.project_name,
@@ -454,8 +456,11 @@ const postProjectName: Middleware =
 	}
 	project.metadata = req.body;
 	// tslint:disable-next-line:await-promise
+	console.log("anything prequel")
 	await promise;
+	console.log("anything")
 	await project.save();
+	console.log("anything part 2")
 	next();
 };
 
