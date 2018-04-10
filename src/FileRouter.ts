@@ -8,7 +8,7 @@ import { default as UserGroup } from './db/model/UserGroup';
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { RequestError } from './errors/errorware';
-import { files } from './files';
+import { View, files, views } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -268,7 +268,7 @@ const getUserProperties: Middleware =
  */
 const getUsername: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
-	if (res.locals.user === null) {
+	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
 	}
@@ -473,36 +473,29 @@ const getProjectProperties: Middleware =
 /**
  * GET a File.
  */
-const getFilePath: Middleware =	async(
+const getFile: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	const file: File | null = res.locals.file;
-	const project: Project | null = res.locals.project;
 	if (file == null) {
 		return next(new RequestError(404, 'file_not_found'));
-	} else if (project == null) {
-		return next(new RequestError(404, 'project_not_found'));
 	}
-	res.locals.function = res.sendFile;
-	res.locals.data =
-		`${BASE_FILE_STORAGE}/${res.locals.project.name}/${file.uuid}`;
+	const project: Project = res.locals.project;
+	const view: View = views[req.query.view || 'meta'];
+	res.locals.function = view.getResponseFunction(req, res);
+	res.locals.data = view.getResponseData(file, project, req.query);
 	next();
 };
 
 /**
  * GET a File.
  */
-const getFileId: Middleware =
-	(req: Request, res: Response, next: NextFunction): void =>  {
-	const file: File | null = res.locals.file;
-	if (file === null) {
-		next(new RequestError(404, 'file_not_found'));
-		return;
-	}
-	res.locals.function = res.sendFile;
-	res.locals.data = files.path(req.params.id, res.locals.project.name);
-	next();
-};
+const getFilePath: Middleware = getFile;
+
+/**
+ * GET a File.
+ */
+const getFileId: Middleware = getFile;
 
 /**
  * Post a File. / delete / move / etc

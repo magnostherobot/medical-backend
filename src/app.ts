@@ -1,7 +1,6 @@
 import * as bodyParser from 'body-parser';
 import * as ex from 'express';
 import * as expressJwt from 'express-jwt';
-import * as logger from 'morgan';
 import * as passport from 'passport';
 
 import { default as authRouter, unauthorisedErr } from './auth';
@@ -24,7 +23,7 @@ import { default as UserGroup } from './db/model/UserGroup';
  */
 class App {
 	/**
-	 * The Express app used throught the server.
+	 * The Express app used throughout the server.
 	 */
 	public express: ex.Express;
 
@@ -42,16 +41,23 @@ class App {
 	public constructor(enableLog: boolean) {
 		this.logEnabled = enableLog;
 		this.express = ex();
+		this.express.use((
+			req: ex.Request, res: ex.Response, next: ex.NextFunction
+		): void => { console.log(req.url); next(); });
 		this.precondition();
 		this.middleware();
 		this.mountRoutes();
 		this.express.use(
 			async(req: ex.Request, res: ex.Response, next: ex.NextFunction):
 			Promise<void> => {
-				res.json({
-					status: 'success',
-					data: await res.locals.data
-				});
+				if (res.locals.function) {
+					res.locals.function.bind(res)(res.locals.data);
+				} else {
+					res.json({
+						status: 'success',
+						data: await res.locals.data
+					});
+				}
 			}
 		);
 		this.errorware();
@@ -83,9 +89,6 @@ class App {
 			}
 			next();
 		});
-		if (this.logEnabled) {
-			this.express.use(logger('combined'));
-		}
 		this.express.use(bodyParser.json());
 		this.express.use(bodyParser.urlencoded({ extended: false }));
 	}
@@ -143,7 +146,7 @@ class App {
 						username: name
 					}
 				});
-				if (user === null) {
+				if (user == null) {
 					return next(new RequestError(404, 'user_not_found'));
 				} else {
 					res.locals.user = user;
@@ -177,9 +180,8 @@ class App {
 			): Promise<void> => {
 				const fileNames: string[] = req.params.path.split('/');
 				const project: Project | null = res.locals.project;
-				if (project === null) {
-					next(new RequestError(404, 'project_not_found'));
-					return;
+				if (project == null) {
+					return next(new RequestError(404, 'project_not_found'));
 				}
 				let file: File = project.rootFolder;
 				// TODO Rewrite using sub-queries instead of repeated queries.
@@ -190,7 +192,7 @@ class App {
 							parentFolder: file
 						}
 					});
-					if (fileOrNull === null) {
+					if (fileOrNull == null) {
 						return next();
 					} else {
 						file = fileOrNull;
@@ -206,7 +208,7 @@ class App {
 						name: fileNames[0]
 					}
 				});
-				if (parentFolder === null) {
+				if (parentFolder == null) {
 					return next();
 				}
 				res.locals.parentFolder = parentFolder;
@@ -231,9 +233,8 @@ class App {
 						uuid: fileId
 					}
 				});
-				if (file === null) {
-					next(new RequestError(404, 'file_not_found'));
-					return;
+				if (file == null) {
+					return next(new RequestError(404, 'file_not_found'));
 				} else {
 					res.locals.file = file;
 				}
