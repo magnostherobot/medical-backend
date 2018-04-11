@@ -104,7 +104,8 @@ class App {
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		defRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
+		const errRouter: ex.Router = ex.Router();
+		errRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
 			res.status(404)
 			.json({
 				status: 'error',
@@ -115,6 +116,7 @@ class App {
 		this.express.use('/cs3099group-be-4', FileRouter);
 		this.express.use('/cs3099group-be-4', authRouter);
 		this.express.use('/', defRouter);
+		this.express.use('/XX*', errRouter);
 	}
 
 	/**
@@ -162,6 +164,7 @@ class App {
 				req: ex.Request, res: ex.Response, next: ex.NextFunction,
 				project: string
 			): Promise<void> => {
+				console.log("## as " + project)
 				res.locals.project = await Project.findOne({
 					where: {
 						name: project

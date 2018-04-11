@@ -265,12 +265,17 @@ interface LogItem {
 	timestamp: string;
 }
 
-const fetchLogs: (level: LogLevel, params?: FetchParams) => LogItem[] = (
-	level: LogLevel, params: FetchParams = {}
+const fetchLogs: (level?: LogLevel, params?: FetchParams) => LogItem[] = (
+	level?: LogLevel, params: FetchParams = {}
 ): LogItem[] => {
-	const matches: (log: any, level: LogLevel, params?: FetchParams) => boolean = (
-		log: any, minLevel: LogLevel, fetchParams: FetchParams = {}
+	const matches: (log: any, level?: LogLevel, params?: FetchParams)
+	=> boolean = (
+		log: any, minLevel?: LogLevel, fetchParams: FetchParams = {}
 	): boolean => {
+		if (!minLevel) {
+			// tslint:disable-next-line:no-parameter-reassignment
+			minLevel = 'info';
+		}
 		const time: Date = new Date(log.timestamp);
 		if (params.before && params.before < time) {
 			return false;
@@ -284,7 +289,7 @@ const fetchLogs: (level: LogLevel, params?: FetchParams) => LogItem[] = (
 	basicLogger.stream({ level }).on('log', (log: any): void => {
 		if (matches(log, level, params)) {
 			out.push({
-				component: log.meta.component,
+				component: log.component,
 				level: log.level,
 				value: log.message,
 				username: log.user,
