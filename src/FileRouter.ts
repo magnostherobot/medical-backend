@@ -63,7 +63,7 @@ const getProtocols: Middleware =
 const postLog: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
 	if (!req.user.hasPrivilege('logging')) {
-		next(new RequestError(400, 'invalid_privilege'));
+		next(new RequestError(401, 'invalid_privilege'));
 		return;
 	} else if (!logger.isEnabled()) {
 		next(new RequestError(501, 'logging_not_enabled'));
@@ -103,7 +103,7 @@ const postLog: Middleware =
 const getLog: Middleware =
 	(req: Request, res: Response, next: NextFunction): void => {
 	if (!req.user.hasPrivilege('admin')) {
-		next(new RequestError(400, 'invalid_privilege'));
+		next(new RequestError(401, 'invalid_privilege'));
 	}
 	res.locals.data = logger.fetch(
 		req.params.level, {
@@ -416,9 +416,11 @@ const getProjectName: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const project: Project | null = res.locals.project;
 	if (project == null) {
+		console.log("was null")
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
 		res.locals.data = project.fullInfo;
+		console.log("wasnt " + res.locals.data)
 		next();
 	}
 };
@@ -442,8 +444,10 @@ const postProjectName: Middleware =
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
 		const file: File = new File({
+			uuid: uuid.generate(),
 			mimetype: 'inode/directory'
 		});
+		console.log(req.params.project_name)
 		promise = file.save();
 		project = new Project({
 			name: req.params.project_name,
@@ -452,8 +456,11 @@ const postProjectName: Middleware =
 	}
 	project.metadata = req.body;
 	// tslint:disable-next-line:await-promise
+	console.log("anything prequel")
 	await promise;
+	console.log("anything")
 	await project.save();
+	console.log("anything part 2")
 	next();
 };
 
