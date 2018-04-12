@@ -240,7 +240,7 @@ describe('routes : protocol', () => {
 	beforeEach(getToken);
 
 	describe('Access all valid routes', () => {
-		forEach(completeProtocol).it(
+		forEach(completeProtocol).it.only(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'

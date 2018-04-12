@@ -419,6 +419,7 @@ const getProjectName: Middleware =
 		console.log("was null")
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
+		console.log(project.contributors);
 		res.locals.data = project.fullInfo;
 		console.log("wasnt " + res.locals.data)
 		next();
@@ -568,13 +569,13 @@ export class FileRouter {
 			async(
 				req: Request, res: Response, next: NextFunction,
 				project: string
-			): Promise<void> => {
-				console.log("## as " + project)
+			): Promise<void> => {				
 				res.locals.project = await Project.findOne({
 					where: {
 						name: project
 					}
 				});
+				console.log("## as " + res.locals.project);
 				next();
 			}
 		);
