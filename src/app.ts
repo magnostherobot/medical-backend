@@ -4,6 +4,7 @@ import * as expressJwt from 'express-jwt';
 import * as passport from 'passport';
 
 import { default as authRouter, unauthorisedErr } from './auth';
+import { logger } from './logger';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -39,11 +40,15 @@ class App {
 	 *   server.
 	 */
 	public constructor(enableLog: boolean) {
+		logger.debug('Constructing router');
 		this.logEnabled = enableLog;
 		this.express = ex();
-		this.express.use((
-			req: ex.Request, res: ex.Response, next: ex.NextFunction
-		): void => { console.log(req.url); next(); });		
+		this.express.use(
+			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
+				logger.info(`Connection from ${req.ip} requesting ${req.url}`);
+				next();
+			}
+		);
 		this.middleware();
 		this.mountRoutes();
 		this.express.use(
@@ -57,6 +62,7 @@ class App {
 						data: await res.locals.data
 					});
 				}
+				logger.success(`Responded to ${req.ip}`);
 			}
 		);
 		this.errorware();
@@ -66,6 +72,7 @@ class App {
 	 * Configures regular Express middleware.
 	 */
 	private middleware(): void {
+		logger.debug('Loading basic middleware');
 		this.express.use(expressJwt({secret: 'Mr Secret'})
 			.unless({path: [
 				'/cs3099group-be-4/oauth/token',
