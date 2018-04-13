@@ -716,11 +716,8 @@ export class FileRouter {
 						uuid: fileId
 					}
 				});
-				if (file == null) {
-					return next(new RequestError(404, 'file_not_found'));
-				} else {
-					res.locals.file = file;
-				}
+				
+				res.locals.file = file;				
 				next();
 			}
 		);
