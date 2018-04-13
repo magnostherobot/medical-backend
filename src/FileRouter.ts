@@ -572,6 +572,7 @@ export class FileRouter {
 			): Promise<void> => {
 				logger.debug('Retrieving project \'${project}\'');
 				res.locals.project = await Project.findOne({
+					include: [{all: true}],
 					where: {
 						name: project
 					}
