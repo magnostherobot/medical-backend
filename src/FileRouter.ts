@@ -569,7 +569,7 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				project: string
 			): Promise<void> => {
-				console.log("## as " + project)
+				logger.debug('Retrieving project \'${project}\'');
 				res.locals.project = await Project.findOne({
 					where: {
 						name: project
