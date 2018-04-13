@@ -419,6 +419,7 @@ const getProjectName: Middleware =
 		console.log("was null")
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
+		console.log(project.contributors);
 		res.locals.data = project.fullInfo;
 		console.log("wasnt " + res.locals.data)
 		next();
@@ -533,10 +534,131 @@ export class FileRouter {
 	}
 
 	/**
+	 * Introduces variable-preconditioning middleware to the Express app.
+	 *
+	 * These middleware functions pre-process Express' matching variables
+	 * in routes (e.g. `:project_name`).
+	 * If an entity cannot be found in the database, the corresponding
+	 * value is set to `null` instead.
+	 */
+	private precondition(): void {
+		// Fetch a user from their name:
+		this.router.param(
+			'username',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				name: string
+			): Promise<void> => {
+				const user: User | null = await User.findOne({
+					where: {
+						username: name
+					}
+				});
+				if (user == null) {
+					return next(new RequestError(404, 'user_not_found'));
+				} else {
+					res.locals.user = user;
+				}
+				next();
+			}
+		);
+
+		// Fetch a project from its name:
+		this.router.param(
+			'project_name',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				project: string
+			): Promise<void> => {				
+				res.locals.project = await Project.findOne({
+					where: {
+						name: project
+					}
+				});
+				console.log("## as " + res.locals.project);
+				next();
+			}
+		);
+
+		// Fetch a file from its path:
+		this.router.param(
+			'file',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				filename: string
+			): Promise<void> => {
+				const fileNames: string[] = req.params.path.split('/');
+				const project: Project | null = res.locals.project;
+				if (project == null) {
+					return next(new RequestError(404, 'project_not_found'));
+				}
+				let file: File = project.rootFolder;
+				// TODO Rewrite using sub-queries instead of repeated queries.
+				while (fileNames.length > 2) {
+					const fileOrNull: File | null = await File.findOne({
+						where: {
+							name: fileNames[0],
+							parentFolder: file
+						}
+					});
+					if (fileOrNull == null) {
+						return next();
+					} else {
+						file = fileOrNull;
+					}
+					fileNames.splice(0, 1);
+				}
+				const parentFolder: File | null = await File.findOne({
+					include: [
+						{ model: File, as: 'containedFiles' }
+					],
+					where: {
+						parentFolder: file,
+						name: fileNames[0]
+					}
+				});
+				if (parentFolder == null) {
+					return next();
+				}
+				res.locals.parentFolder = parentFolder;
+				const tFile: File | undefined = parentFolder.containedFiles.find(
+					(f: File): boolean => f.name === fileNames[1]
+				);
+				res.locals.file = tFile;
+				res.locals.filename = fileNames[1];
+				next();
+			}
+		);
+
+		// Fetch a file from its UUID:
+		this.router.param(
+			'id',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				fileId: string
+			): Promise<void> => {
+				const file: File | null = await File.findOne({
+					where: {
+						uuid: fileId
+					}
+				});
+				if (file == null) {
+					return next(new RequestError(404, 'file_not_found'));
+				} else {
+					res.locals.file = file;
+				}
+				next();
+			}
+		);
+	}
+
+	/**
 	 * Take each handler, and attach to one of the Express.Router's
 	 * endpoints.
 	 */
 	public init(): void {
+		this.precondition();
+
 		// General
 		this.router.get ('/_supported_protocols_',					   getProtocols);
 		this.router.get ('/log',						                     getLog);
