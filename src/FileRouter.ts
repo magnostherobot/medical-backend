@@ -257,6 +257,10 @@ const getUserProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Listing additional properties for a user');
+	if (res.locals.user == null) {
+		next(new RequestError(404, 'user_not_found'));
+		return;
+	}
 	res.locals.data = res.locals.user.properties;
 	next();
 };
@@ -363,7 +367,9 @@ const postUsername: Middleware = async(
 		logger.debug('Editing user');
 		user.password = req.params.password;
 	}
-	user.metadata = req.body;
+	if (req.body) {
+		user.metadata = req.body;
+	}
 	next();
 };
 

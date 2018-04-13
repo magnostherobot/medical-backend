@@ -170,7 +170,7 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}), 401],
+		}), 200],
 		// TODO types.metadata
 		['get', '/users/mock_user', {
 			username: types.string,
@@ -183,11 +183,11 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}, 401],
-		['post', '/users/mock_user', null, 401],
+		}, 200],
+		['post', '/users/new_user', null, 200],
 		['get', '/users/mock_user/properties', {
 			data: optional(types.anything)
-		}, 401],
+		}, 200],
 		['get', '/current_user', {
 			username: types.string,
 			privileges: array(types.string),
@@ -266,14 +266,14 @@ describe('routes : protocol', () => {
 			});
 		});
 		forEach(completeProtocol).it(
-			'%s %s should conform to the general response protocol',
+			'%s %s should conform to the general response template',
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
-				match(responseTemplate, JSON.parse(res.body)).shoul.be.true;
+				expect(match(responseTemplate)(res.body)).to.be.true;
 			});
 		});
 		forEach(completeProtocol).it(
@@ -284,7 +284,7 @@ describe('routes : protocol', () => {
 				.get(base + path)
 				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
-					expect(match(temp)(JSON.parse(res.body))).to.be.true;
+					expect(match(temp)(res.body)).to.be.true;
 				});
 			} else {
 				return true;
