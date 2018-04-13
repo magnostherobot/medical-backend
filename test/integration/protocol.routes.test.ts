@@ -8,7 +8,7 @@
 import * as chai from 'chai';
 const expect: Chai.ExpectStatic = chai.expect;
 import { Credentials, Database, addUser, initDB, resetDB,
-	Projec, addProjec } from '../test-db';
+	Projec, addProjec, Filee, addFilee } from '../test-db';
 import { default as User } from '../../src/db/model/User';
 
 // Chai-http must be imported this way:
@@ -30,6 +30,7 @@ let database: Database;
 let mockUser: Credentials;
 let token: string;
 let mockProj: Projec;
+let mockFile: Filee;
 
 const initDatabase = async() => {
 	database = initDB();
@@ -40,6 +41,7 @@ const populateDatabase = async() => {
 	await resetDB(database);
 	mockUser = await addUser(database, true);
 	mockProj = await addProjec(database, mockUser);
+	mockFile = await addFilee(database, mockUser);
 };
 
 const getToken = async() => {
@@ -228,9 +230,9 @@ describe('routes : protocol', () => {
 		['get', '/projects/mocky/properties', {
 			data: optional(types.anything)
 		}, 200],
-		['get', '/projects/mocky/files/:path', null, 200],
-		['post', '/projects/mocky/files/:id', null, 200],
-		['get', '/projects/mocky/files_by_id/:id', null, 200]
+		['get', '/projects/mocky/files/example/path', null, 200],
+		['post', '/projects/mocky/files/mockyfile2', null, 200],
+		['get', '/projects/mocky/files_by_id/file1', null, 200]
 	];
 
 	/* tslint:enable:align */

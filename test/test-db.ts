@@ -1,6 +1,8 @@
 import { default as Project } from '../src/db/model/Project';
 import { default as User } from '../src/db/model/User';
 import { default as UserGroup } from '../src/db/model/UserGroup';
+import { default as File } from '../src/db/model/File';
+import { FileTypeName } from '../src/files';
 
 import { Sequelize } from 'sequelize-typescript';
 import * as sqlite from 'sqlite3';
@@ -35,6 +37,14 @@ export interface Projec {
 	contributors: Credentials[];
 	creationDate: Date;
 	lastActivity: Date;
+}
+
+export interface Filee {
+	name: string,
+	path: string,
+	uuid: string,
+	creator: Credentials,
+	type: FileTypeName
 }
 
 export const addUser: (database?: Database, admin?: boolean) =>
@@ -77,4 +87,20 @@ export const addProjec: (database: Database, user: Credentials) =>
 
 	await new Project(mockProject).save();
 	return mockProject;
+};
+
+export const addFilee: (database: Database, user: Credentials) =>
+	Promise<Filee> = async(
+		database: Database, user: Credentials
+): Promise<Filee> => {
+	const mockFile: Filee = {
+		name: 'mockyFile',
+		path: 'example/path',
+		uuid: 'file1',
+		creator: user,
+		type: "generic"
+	};
+
+	await new File(mockFile).save();
+	return mockFile;
 };

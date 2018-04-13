@@ -415,13 +415,10 @@ const getProjects: Middleware =
 const getProjectName: Middleware =
 	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const project: Project | null = res.locals.project;
-	if (project == null) {
-		console.log("was null")
+	if (project == null) {	
 		return next(new RequestError(404, 'project_not_found'));
-	} else {
-		console.log(project.contributors);
-		res.locals.data = project.fullInfo;
-		console.log("wasnt " + res.locals.data)
+	} else {		
+		res.locals.data = project.fullInfo;		
 		next();
 	}
 };
@@ -639,6 +636,7 @@ export class FileRouter {
 				fileId: string
 			): Promise<void> => {
 				const file: File | null = await File.findOne({
+					include: [{all: true}],
 					where: {
 						uuid: fileId
 					}
