@@ -639,6 +639,9 @@ export class FileRouter {
 				projectName: string
 			): Promise<void> => {
 				res.locals.project = await Project.findOne({
+					include: [
+						User
+					],
 					where: {
 						name: projectName
 					}
