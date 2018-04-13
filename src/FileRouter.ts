@@ -257,6 +257,10 @@ const getUserProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Listing additional properties for a user');
+	if (res.locals.user == null) {
+		next(new RequestError(404, 'user_not_found'));
+		return;
+	}
 	res.locals.data = res.locals.user.properties;
 	next();
 };
@@ -354,16 +358,18 @@ const postUsername: Middleware = async(
 ): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
 	if (user == null) {
-		logger.debug('Adding new user');
+		console.log('Adding new user');
 		user = new User({
 			username: req.params.username,
 			password: req.params.password
 		});
 	} else {
-		logger.debug('Editing user');
+		console.log('Editing user');
 		user.password = req.params.password;
 	}
-	user.metadata = req.body;
+	if (req.body) {
+		user.metadata = req.body;
+	}
 	next();
 };
 
@@ -622,11 +628,7 @@ export class FileRouter {
 						username: name
 					}
 				});
-				if (user == null) {
-					return next(new RequestError(404, 'user_not_found'));
-				} else {
-					res.locals.user = user;
-				}
+				res.locals.user = user;
 				next();
 			}
 		);
