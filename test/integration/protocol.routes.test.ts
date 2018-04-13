@@ -58,8 +58,7 @@ const getToken = async() => {
 	});
 };
 
-import { Template, alternative, array, exact, match, optional
-	} from '../../src/matcher/options';
+import options, { Template, alternative, array, exact, match, optional } from '../../src/matcher/options';
 import { default as types } from '../../src/matcher/types';
 
 // The general response template according to protocol
@@ -112,11 +111,11 @@ describe('routes : protocol', () => {
 	// Format:
 	// <method> <route> <json-response-template> <response-code>
 	const completeProtocol: MochaForEachInput[] = [
-		['get', '/_supported_protocols_', exact({
+		['get', '/_supported_protocols_', {
 				supported: array(types.string),
 				required: array(types.string)
-		}), 200],
-		['get', '/log', types.array({
+		}, 200],
+		['get', '/log', array({
 			component: types.string,
 			level: alternative([
 				'info',
@@ -134,7 +133,7 @@ describe('routes : protocol', () => {
 			level: 'info',
 			value: 'sdasdasdasdasdasd'
 		}], 200],
-		['get', '/properties', types.array({
+		['get', '/properties', array({
 			id: types.string,
 			display: optional(match({
 				category: types.string,
@@ -162,8 +161,8 @@ describe('routes : protocol', () => {
 		}), 200],
 		['get', '/users', array({
 			username: types.string,
-			privileges: array(types.string),
-			projects: array({
+			privileges: types.array(types.string),
+			projects: types.array({
 				project_name: types.string,
 				access_level: types.string
 			}),
@@ -191,8 +190,8 @@ describe('routes : protocol', () => {
 		}, 200],
 		['get', '/current_user', {
 			username: types.string,
-			privileges: array(types.string),
-			projects: array({
+			privileges: types.array(types.string),
+			projects: types.array({
 				project_name: types.string,
 				access_level: types.string
 			}),
@@ -209,7 +208,7 @@ describe('routes : protocol', () => {
 		}), 200],
 		['get', '/projects', array({
 			project_name: types.string,
-			users: array({
+			users: types.array({
 				username: types.string,
 				access_level: types.string
 			}),
@@ -228,9 +227,7 @@ describe('routes : protocol', () => {
 			admin_metadata: optional(types.anything)
 		}, 200],
 		['post', '/projects/mocky', null, 200],
-		['get', '/projects/mocky/properties', {
-			data: optional(types.anything)
-		}, 200],
+		['get', '/projects/mocky/properties', null, 200],
 		['get', '/projects/mocky/files/example/path', null, 200],
 		['post', '/projects/mocky/files/some_file?action=overwrite', {}, 200],
 		['get', '/projects/mocky/files_by_id/file1', null, 200]
@@ -282,10 +279,7 @@ describe('routes : protocol', () => {
 				: chai.request(app).post(base + path);
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
-				if(path == '/properties' || path == '/current_user'){
-					//console.log(res.body)
-					//console.log(responseTemplate);
-				}
+				
 				expect(match(responseTemplate)(res.body)).to.be.true;
 			});
 		});
@@ -297,7 +291,13 @@ describe('routes : protocol', () => {
 				.get(base + path)
 				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
-					expect(match(temp)(res.body)).to.be.true;
+					if(!match(temp)(res.body.data)){
+						console.log("******" + method + " - " + path + "*****8")
+						console.log(res.body)
+						console.log(temp);
+						console.log("*************************************9")
+					}
+					expect(match(temp)(res.body.data)).to.be.true;
 				});
 			} else {
 				return true;

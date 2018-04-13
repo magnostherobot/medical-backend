@@ -84,7 +84,7 @@ export const array = (template: TemplateValue, values?: Value[]) => {
 		return array.bind(null, template);
 	}
 	//console.trace()
-	//console.log(values)
+	console.log(values)
 	const m: Checker = types.function(template)
 		? template
 		: match.bind(null, template);
