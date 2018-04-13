@@ -419,6 +419,7 @@ const getProjectName: Middleware =
 		console.log("was null")
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
+		console.log(project.contributors);
 		res.locals.data = project.fullInfo;
 		console.log("wasnt " + res.locals.data)
 		next();
