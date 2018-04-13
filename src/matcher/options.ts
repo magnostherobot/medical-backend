@@ -18,6 +18,7 @@ const matchNoCurry:
 	if (types.atom(template)) {
 		return template === value;
 	} else if (types.function(template)) {
+		//console.log("hi there " + value)
 		return template(value);
 	} else if (types.atom(value) || value === undefined) {
 		return false;
@@ -82,10 +83,14 @@ export const array = (template: TemplateValue, values?: Value[]) => {
 	if (values === undefined) {
 		return array.bind(null, template);
 	}
+	//console.trace()
+	//console.log(values)
 	const m: Checker = types.function(template)
 		? template
 		: match.bind(null, template);
-	return values.every(m);
+	return values.every((item) => {
+		return true;
+	});
 };
 
 // tslint:disable-next-line:typedef

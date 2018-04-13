@@ -10,6 +10,7 @@ const expect: Chai.ExpectStatic = chai.expect;
 import { Credentials, Database, addUser, initDB, resetDB,
 	Projec, addProjec, Filee, addFilee } from '../test-db';
 import { default as User } from '../../src/db/model/User';
+import * as fs from 'fs';
 
 // Chai-http must be imported this way:
 // tslint:disable-next-line:no-var-requires no-require-imports
@@ -153,7 +154,7 @@ describe('routes : protocol', () => {
 				types.boolean
 			])
 		}), 200],
-		['post', '/properties', null, 200],
+		['post', '/properties?action=update', null, 200],
 		['get', '/user_privileges', array({
 			privilege: types.string,
 			description: types.string,
@@ -231,7 +232,7 @@ describe('routes : protocol', () => {
 			data: optional(types.anything)
 		}, 200],
 		['get', '/projects/mocky/files/example/path', null, 200],
-		['post', '/projects/mocky/files/mockyfile2', null, 200],
+		['post', '/projects/mocky/files/some_file?action=overwrite', {}, 200],
 		['get', '/projects/mocky/files_by_id/file1', null, 200]
 	];
 
@@ -257,11 +258,19 @@ describe('routes : protocol', () => {
 		forEach(completeProtocol).it(
 			'%s %s should have a status %4$d',
 			(method: string, path: string, temp: Template, resCode: number) => {
-			const request: ChaiHttp.Request = method === 'get'
+			const request: any = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path);
+			/*if (path.includes('/projects/mocky/files/some_file')) {
+				fs.createReadStream('test/mockUI/ui.html').pipe(
+					request);
+					console.log("tasdasdas")
+			}*/
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
+				if (path.includes('/projects/mocky/files/some_file')) {
+					console.log("something")
+				}
 				expect(res).to.have.status(resCode);
 			});
 		});
@@ -273,6 +282,10 @@ describe('routes : protocol', () => {
 				: chai.request(app).post(base + path);
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
+				if(path == '/properties' || path == '/current_user'){
+					//console.log(res.body)
+					//console.log(responseTemplate);
+				}
 				expect(match(responseTemplate)(res.body)).to.be.true;
 			});
 		});

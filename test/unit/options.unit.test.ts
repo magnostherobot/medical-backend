@@ -159,5 +159,15 @@ describe('Matching:', () => {
 			};
 			options.match(template, matchee).should.be.false;
 		});
+		it('accepts optional matches', () => {
+			const template = {
+				a: options.optional(types.array),
+				b: options.optional(types.anything)
+			};
+			const matchee = {
+				b: []
+			};
+			options.match(template)(matchee).should.be.true;
+		});
 	});
 });
