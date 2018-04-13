@@ -115,8 +115,8 @@ export let enabled: boolean = true;
 const consoleTransport: winston.TransportInstance =
 	new winston.transports.Console({
 	name: 'consoleTransport',
-	level: 'info',
-	silent: false,
+	level: 'verbose',
+	silent: process.env.NODE_ENV === 'test',
 	handleExceptions: true,
 	humanReadableUncaughtException: true,
 	formatter: (

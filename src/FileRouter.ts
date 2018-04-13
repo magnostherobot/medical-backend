@@ -32,8 +32,10 @@ export type Middleware =
  *     "required": array(string)
  * })
  */
-const getProtocols: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProtocols: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Fetching supported protocols');
 	res.locals.data = {
 		supported: [],
 		required: [
@@ -60,8 +62,10 @@ const getProtocols: Middleware =
  *     "value": anything
  * })
  */
-const postLog: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const postLog: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Adding forwarded log');
 	if (!req.user.hasPrivilege('logging')) {
 		next(new RequestError(401, 'invalid_privilege'));
 		return;
@@ -100,8 +104,10 @@ const postLog: Middleware =
  *     "timestamp": string
  * })
  */
-const getLog: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getLog: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Fetching log');
 	if (!req.user.hasPrivilege('admin')) {
 		next(new RequestError(401, 'invalid_privilege'));
 	}
@@ -135,8 +141,10 @@ const getLog: Middleware =
  *     "value": alternative([string, integer, boolean])
  * })
  */
-const getProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing server properties');
 	res.locals.data = serverConfig;
 	next();
 };
@@ -153,8 +161,10 @@ const getProperties: Middleware =
  *     "value": alternative([string, integer, boolean])
  * })
  */
-const postProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const postProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Editing server properties');
 	for (const newProp of req.body) {
 		const prop: Property | undefined = serverConfig.find(
 			(p: Property): boolean => p.id === newProp.id
@@ -188,8 +198,10 @@ const postProperties: Middleware =
  *     "internal": boolean
  * })
  */
-const getUserPrivileges: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getUserPrivileges: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Listing all user privileges');
 	const usergroups: UserGroup[] = await UserGroup.findAll();
 	res.locals.data = usergroups.map(
 		(ug: UserGroup) => ug.getPrivilege()
@@ -220,6 +232,7 @@ const getUserPrivileges: Middleware =
 const getUsers: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	logger.debug('Listing all registered users');
 	const users: User[] = await User.findAll({
 		include: [
 			UserGroup,
@@ -240,8 +253,10 @@ const getUsers: Middleware = async(
 /**
  * Expose additional configuration options for individual users
  */
-const getUserProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getUserProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing additional properties for a user');
 	res.locals.data = res.locals.user.properties;
 	next();
 };
@@ -266,8 +281,10 @@ const getUserProperties: Middleware =
  *     "private_admin_metadata": metadata
  * }
  */
-const getUsername: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getUsername: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug(`Listing user ${res.locals.user}`);
 	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
@@ -276,8 +293,10 @@ const getUsername: Middleware =
 	next();
 };
 
-const getCurUser: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getCurUser: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing current user');
 	res.locals.data = req.user.fullInfo;
 	next();
 };
@@ -300,8 +319,10 @@ const getCurUser: Middleware =
  *     "private_admin_metadata": not_present
  * }
  */
-const postCurUser: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postCurUser: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Editing current user');
 	try {
 		await req.user.updateInfo(req.body);
 		await req.user.save();
@@ -328,15 +349,18 @@ const postCurUser: Middleware =
  *     "private_admin_metadata": optional(metadata)
  * }
  */
-const postUsername: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postUsername: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
 	if (user == null) {
+		logger.debug('Adding new user');
 		user = new User({
 			username: req.params.username,
 			password: req.params.password
 		});
 	} else {
+		logger.debug('Editing user');
 		user.password = req.params.password;
 	}
 	user.metadata = req.body;
@@ -354,8 +378,10 @@ const postUsername: Middleware =
  *     "internal": boolean
  * })
  */
-const getProjectRoles: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjectRoles: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Listing available project roles');
 	const roles: ContributorGroup[] = await ContributorGroup.findAll();
 	res.locals.data = roles.filter(
 		(cg: ContributorGroup): boolean => !cg.isInternal
@@ -382,8 +408,10 @@ const getProjectRoles: Middleware =
  *     "admin_metadata": optional(metadata)
  * })
  */
-const getProjects: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjects: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Listing all projects');
 	const projects: Project[] = await Project.findAll({
 		include: [
 			User
@@ -412,13 +440,15 @@ const getProjects: Middleware =
  *     "admin_metadata": optional(metadata)
  * }
  */
-const getProjectName: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjectName: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Getting project properties');
 	const project: Project | null = res.locals.project;
-	if (project == null) {	
+	if (project == null) {
 		return next(new RequestError(404, 'project_not_found'));
-	} else {		
-		res.locals.data = project.fullInfo;		
+	} else {
+		res.locals.data = project.fullInfo;
 		next();
 	}
 };
@@ -436,37 +466,39 @@ const getProjectName: Middleware =
  *     "admin_metadata": optional(metadata)
  * }
  */
-const postProjectName: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postProjectName: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	let project: Project | null = res.locals.project;
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
+		logger.debug('Adding new project');
 		const file: File = new File({
 			uuid: uuid.generate(),
 			mimetype: 'inode/directory'
 		});
-		console.log(req.params.project_name)
 		promise = file.save();
 		project = new Project({
 			name: req.params.project_name,
 			rootFolder: file
 		});
+	} else {
+		logger.debug('Updating project properties');
 	}
 	project.metadata = req.body;
 	// tslint:disable-next-line:await-promise
-	console.log("anything prequel")
 	await promise;
-	console.log("anything")
 	await project.save();
-	console.log("anything part 2")
 	next();
 };
 
 /**
  * additional configuration options for individual projects
  */
-const getProjectProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProjectProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Getting project properties');
 	if (res.locals.project == null) {
 		next(new RequestError(404, 'project_not_found'));
 	} else {
@@ -481,6 +513,7 @@ const getProjectProperties: Middleware =
 const getFile: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	logger.debug(`Getting file in ${req.query.view} view`);
 	const file: File | null = res.locals.file;
 	if (file == null) {
 		return next(new RequestError(404, 'file_not_found'));
@@ -505,8 +538,10 @@ const getFileId: Middleware = getFile;
 /**
  * Post a File. / delete / move / etc
  */
-const postFilePath: Middleware =
-	(req: Request, res: Response, next: NextFunction): void =>  {
+const postFilePath: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void =>  {
+	logger.debug('Receiving file');
 	if (res.locals.file != null) {
 		next(new RequestError(400, 'file_exists'));
 	}
@@ -531,6 +566,39 @@ export class FileRouter {
 	}
 
 	/**
+	 * Take each handler, and attach to one of the Express.Router's
+	 * endpoints.
+	 */
+	public init(): void {
+		this.precondition();
+
+		// General
+		this.router.get ('/_supported_protocols_',					   getProtocols);
+		this.router.get ('/log',						                     getLog);
+		this.router.post('/log',	       									postLog);
+		this.router.get ('/properties',						          getProperties);
+		this.router.post('/properties',						         postProperties);
+		// Users
+		this.router.get ('/user_privileges',				      getUserPrivileges);
+		this.router.get ('/users',									       getUsers);
+		this.router.get ('/users/:username',				            getUsername);
+		this.router.post('/users/:username',				           postUsername);
+		this.router.get ('/users/:username/properties',           getUserProperties);
+		this.router.get ('/current_user',					             getCurUser);
+		this.router.post('/current_user',					            postCurUser);
+		// Projects
+		this.router.get ('/project_roles',					        getProjectRoles);
+		this.router.get ('/projects',							        getProjects);
+		this.router.get ('/projects/:project_name',                  getProjectName);
+		this.router.post('/projects/:project_name',                 postProjectName);
+		this.router.get ('/projects/:project_name/properties', getProjectProperties);
+		// File access
+		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
+		this.router.post('/projects/:project_name/files/:id',          postFilePath);
+		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
+	}
+
+	/**
 	 * Introduces variable-preconditioning middleware to the Express app.
 	 *
 	 * These middleware functions pre-process Express' matching variables
@@ -539,6 +607,7 @@ export class FileRouter {
 	 * value is set to `null` instead.
 	 */
 	private precondition(): void {
+		logger.debug('Adding parameter preconditioning to router');
 		// Fetch a user from their name:
 		this.router.param(
 			'username',
@@ -546,6 +615,7 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				name: string
 			): Promise<void> => {
+				logger.debug(`Searching for user ${name}`);
 				const user: User | null = await User.findOne({
 					include: [{all: true}],
 					where: {
@@ -566,13 +636,11 @@ export class FileRouter {
 			'project_name',
 			async(
 				req: Request, res: Response, next: NextFunction,
-				project: string
+				projectName: string
 			): Promise<void> => {
-				logger.debug('Retrieving project \'${project}\'');
 				res.locals.project = await Project.findOne({
-					include: [{all: true}],
 					where: {
-						name: project
+						name: projectName
 					}
 				});
 				next();
@@ -586,9 +654,11 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				filename: string
 			): Promise<void> => {
+				logger.debug(`Searching for file ${filename}`);
 				const fileNames: string[] = req.params.path.split('/');
 				const project: Project | null = res.locals.project;
 				if (project == null) {
+					logger.debug('Project was not found: skipping finding file');
 					return next(new RequestError(404, 'project_not_found'));
 				}
 				let file: File = project.rootFolder;
@@ -636,6 +706,7 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				fileId: string
 			): Promise<void> => {
+				logger.debug(`Searching for file ${fileId}`);
 				const file: File | null = await File.findOne({
 					include: [{all: true}],
 					where: {
@@ -651,43 +722,9 @@ export class FileRouter {
 			}
 		);
 	}
-
-	/**
-	 * Take each handler, and attach to one of the Express.Router's
-	 * endpoints.
-	 */
-	public init(): void {
-		this.precondition();
-
-		// General
-		this.router.get ('/_supported_protocols_',					   getProtocols);
-		this.router.get ('/log',						                     getLog);
-		this.router.post('/log',	       									postLog);
-		this.router.get ('/properties',						          getProperties);
-		this.router.post('/properties',						         postProperties);
-		// Users
-		this.router.get ('/user_privileges',				      getUserPrivileges);
-		this.router.get ('/users',									       getUsers);
-		this.router.get ('/users/:username',				            getUsername);
-		this.router.post('/users/:username',				           postUsername);
-		this.router.get ('/users/:username/properties',           getUserProperties);
-		this.router.get ('/current_user',					             getCurUser);
-		this.router.post('/current_user',					            postCurUser);
-		// Projects
-		this.router.get ('/project_roles',					        getProjectRoles);
-		this.router.get ('/projects',							        getProjects);
-		this.router.get ('/projects/:project_name',                  getProjectName);
-		this.router.post('/projects/:project_name',                 postProjectName);
-		this.router.get ('/projects/:project_name/properties', getProjectProperties);
-		// File access
-		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:id',          postFilePath);
-		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
-	}
 }
 
 // Create the FileRouter, and export its configured Express.Router
 const fileRoutes: FileRouter = new FileRouter();
-fileRoutes.init();
 
 export default fileRoutes.router;
