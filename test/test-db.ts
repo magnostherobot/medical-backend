@@ -55,6 +55,7 @@ export const addUser: (database?: Database, admin?: boolean) =>
 			canCreateProjects: true,
 			canDeleteProjects: true,
 			canEditProjects: true,
+			canAccessLogs: true,
 			isInternal: false
 		});
 		await priv.save();

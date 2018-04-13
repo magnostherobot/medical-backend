@@ -38,6 +38,9 @@ export default class UserGroup extends Model<UserGroup> {
 	public canEditProjects!: boolean;
 
 	@Column
+	public canAccessLogs!: boolean;
+
+	@Column
 	public isInternal!: boolean;
 
 	@AllowNull

@@ -550,6 +550,7 @@ export class FileRouter {
 				name: string
 			): Promise<void> => {
 				const user: User | null = await User.findOne({
+					include: [{all: true}],
 					where: {
 						username: name
 					}

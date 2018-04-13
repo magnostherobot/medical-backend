@@ -239,8 +239,22 @@ describe('routes : protocol', () => {
 	beforeEach(populateDatabase);
 	beforeEach(getToken);
 
+	it.only('test log', () => {
+		return chai.request(app).get(base + '/log')
+		.set('Authorization', `Bearer ${token}`)
+		.catch((err) => {
+			console.log("a")
+			console.log(err.response.body)
+			expect(false);
+		}).then((res: ChaiHttp.Response) => {
+			console.log("b")
+			console.log(res.body)
+			expect(false);
+		});
+	});
+
 	describe('Access all valid routes', () => {
-		forEach(completeProtocol).it.only(
+		forEach(completeProtocol).it(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
