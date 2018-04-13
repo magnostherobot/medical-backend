@@ -184,7 +184,7 @@ describe('routes : protocol', () => {
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
 		}, 200],
-		['post', '/users/mock_user', null, 200],
+		['post', '/users/new_user', null, 200],
 		['get', '/users/mock_user/properties', {
 			data: optional(types.anything)
 		}, 200],
