@@ -56,22 +56,35 @@ export const addUser: (database?: Database, admin?: boolean) =>
 		password: 'mock_password',
 		usergroups: []
 	};
-	if (admin) {
-		const priv: UserGroup = new UserGroup({
-			name: 'admin',
-			canCreateUsers: true,
-			canDeleteUsers: true,
-			canEditUsers: true,
-			canCreateProjects: true,
-			canDeleteProjects: true,
-			canEditProjects: true,
-			canAccessLogs: true,
-			isInternal: false
-		});
-		await priv.save();
-		mockUser.usergroups.push(priv);
-	}
-	await new User(mockUser).save();
+
+	const priv: UserGroup = new UserGroup({
+		name: 'admin',
+		canCreateUsers: true,
+		canDeleteUsers: true,
+		canEditUsers: true,
+		canCreateProjects: true,
+		canDeleteProjects: true,
+		canEditProjects: true,
+		canAccessLogs: true,
+		isInternal: false
+	});
+	await priv.save();
+	mockUser.usergroups.push(priv);
+
+	const logging: UserGroup = new UserGroup({
+		name: 'logging',
+		canAccessLogs: true,
+		isInternal: false,
+		description: 'Allows Post to Log'
+	});
+	mockUser.usergroups.push(logging);
+
+	await logging.save();
+
+	const root: User = await new User(mockUser).save();
+
+	await root.$set('userGroups', [priv, logging]);
+
 	return mockUser;
 };
 
