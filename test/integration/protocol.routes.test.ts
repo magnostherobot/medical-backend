@@ -170,7 +170,7 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}), 401],
+		}), 200],
 		// TODO types.metadata
 		['get', '/users/mock_user', {
 			username: types.string,
@@ -183,11 +183,11 @@ describe('routes : protocol', () => {
 			private_user_metadata: types.anything,
 			public_admin_metadata: types.anything,
 			private_admin_metadata: types.anything
-		}, 401],
-		['post', '/users/mock_user', null, 401],
+		}, 200],
+		['post', '/users/mock_user', null, 200],
 		['get', '/users/mock_user/properties', {
 			data: optional(types.anything)
-		}, 401],
+		}, 200],
 		['get', '/current_user', {
 			username: types.string,
 			privileges: array(types.string),
