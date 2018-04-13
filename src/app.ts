@@ -75,6 +75,7 @@ class App {
 		logger.debug('Loading basic middleware');
 		this.express.use(expressJwt({secret: 'Mr Secret'})
 			.unless({path: [
+				'/',
 				'/cs3099group-be-4/oauth/token',
 				'/cs3099group-be-4/_supported_protocols_'
 			] })

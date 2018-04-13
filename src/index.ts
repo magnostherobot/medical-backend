@@ -52,17 +52,33 @@ logger.info(`Port ${port} chosen`);
 		isInternal: false,
 		description: 'Systems admin'
 	});
+	const logging: UserGroup = new UserGroup({
+		name: 'logging',
+		canAccessLogs: true,
+		isInternal: false,
+		description: 'Allows Post to Log'
+	});
 
+	await logging.save();
 	await admin.save();
+
 
 	logger.info('Adding admin user');
 	const root: User = new User({
 		username: 'hafeez',
-		password: 'pass',
-		userGroups: [admin]
+		password: 'pass'
 	});
 
 	await root.save();
+
+	await root.$set('userGroups', [admin, logging]);
+
+	const user: User | null = await User.findOne({
+		include: [{all: true}],
+		where: {
+			username: 'hafeez'
+		}
+	});
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {

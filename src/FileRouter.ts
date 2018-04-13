@@ -617,6 +617,7 @@ export class FileRouter {
 			): Promise<void> => {
 				logger.debug(`Searching for user ${name}`);
 				const user: User | null = await User.findOne({
+					include: [{all: true}],
 					where: {
 						username: name
 					}
@@ -637,7 +638,6 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				projectName: string
 			): Promise<void> => {
-				logger.debug(`Searching for project ${projectName}`);
 				res.locals.project = await Project.findOne({
 					where: {
 						name: projectName
@@ -708,6 +708,7 @@ export class FileRouter {
 			): Promise<void> => {
 				logger.debug(`Searching for file ${fileId}`);
 				const file: File | null = await File.findOne({
+					include: [{all: true}],
 					where: {
 						uuid: fileId
 					}
