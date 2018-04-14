@@ -58,7 +58,7 @@ const getToken = async() => {
 	});
 };
 
-import options, { Template, alternative, array, exact, match, optional } from '../../src/matcher/options';
+import options, { Template, alternative, array, exact, match, optional }from '../../src/matcher/options';
 import { default as types } from '../../src/matcher/types';
 
 // The general response template according to protocol
@@ -81,27 +81,6 @@ const errorResponseTemplate: Template = {
 };
 
 type MochaForEachInput = [ string, string, Template, number ];
-
-describe('routes : errors', () => {
-	before(initDatabase);
-	describe('GET invalid routes', () => {
-		// Should invalid routes also possibly be 401?
-		it.skip('should have response code 404', () => {
-			return chai.request(app).get('/invalid/route')
-			.set('Authorization', `Bearer ${token}`)
-			.catch((err) => {
-				expect(err.status).to.equal(404);
-			});
-		});
-		it('should conform to the error protocol', () => {
-			return chai.request(app).get('/invalid/route')
-			.set('Authorization', `Bearer ${token}`)
-			.catch((err) => {
-				expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
-			});
-		});
-	});
-});
 
 describe('routes : protocol', () => {
 	const base: string = '/cs3099group-be-4';
@@ -302,6 +281,27 @@ describe('routes : protocol', () => {
 			} else {
 				return true;
 			}
+		});
+	});
+
+	describe('test edge cases', () => {
+		before(initDatabase);
+		describe('GET invalid routes', () => {
+			// Should invalid routes also possibly be 401?
+			it.skip('should have response code 404', () => {
+				return chai.request(app).get('/invalid/route')
+				.set('Authorization', `Bearer ${token}`)
+				.catch((err) => {
+					expect(err.status).to.equal(404);
+				});
+			});
+			it('should conform to the error protocol', () => {
+				return chai.request(app).get('/invalid/route')
+				.set('Authorization', `Bearer ${token}`)
+				.catch((err) => {
+					expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
+				});
+			});
 		});
 	});
 });
