@@ -83,14 +83,10 @@ export const array = (template: TemplateValue, values?: Value[]) => {
 	if (values === undefined) {
 		return array.bind(null, template);
 	}
-	//console.trace()
-	console.log(values)
 	const m: Checker = types.function(template)
 		? template
 		: match.bind(null, template);
-	return values.every((item) => {
-		return true;
-	});
+	return values.every(m); //
 };
 
 // tslint:disable-next-line:typedef
