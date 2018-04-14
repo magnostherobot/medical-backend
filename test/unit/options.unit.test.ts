@@ -170,6 +170,7 @@ describe('Matching:', () => {
 			options.match(template)(matchee).should.be.true;
 		});
 		it('big bad unit test', () => {
+			/* tslint:disable:align */
 			const matchee = { status: 'success',
 			data: [ { privilege: 'admin', description: 'null', internal: false },
 				{ privilege: 'logging',
@@ -183,6 +184,36 @@ describe('Matching:', () => {
 				user_message: options.optional(types.string),
 				error_data: options.optional(types.anything)
 			};
+			/* tslint:enable:align */
+
+			options.match(template)(matchee).should.be.true;
+		});
+		it('bigger badder unit test', () => {
+			/* tslint:disable:align */
+			const matchee = [ { project_name: 'mocky',
+				users: [{ username: 'uname', access_level: 'admin'}],
+				public_metadata: { creation_date: '2018-04-14T17:13:44.291Z' },
+				private_metadata: {},
+				admin_metadata: {} } ];
+			const template = types.array({
+				project_name: types.string,
+				users: types.array({
+					username: types.string,
+					access_level: types.string
+				}),
+				public_metadata: types.anything,
+				private_metadata: options.optional(types.anything),
+				admin_metadata: options.optional(types.anything)
+			});
+			/* tslint:enable:align */
+
+			options.match(template)(matchee).should.be.true;
+		});
+		it('$$ Buy now: unit tests cheap and chearful. only £9.99', () => {
+			/* tslint:disable:align */
+			const matchee: any = [ 'test' ];
+			const template = types.array(types.anything);
+			/* tslint:enable:align */
 
 			options.match(template)(matchee).should.be.true;
 		});
