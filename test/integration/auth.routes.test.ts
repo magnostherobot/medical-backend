@@ -65,13 +65,15 @@ const authorisationErr = {
 	error_description: 'user does not have correct authorisation for task'
 };
 
+const base: string = '/cs3099group-be-4';
+
 describe('authentication', () => {
 	before(initDatabase);
 	context('invalid password authentication', () => {
 		before(populateDatabase);
 		it('should reject login to invalid endpoints', () => {
 			return chai.request(app)
-			.post('/')
+			.post('/invalid endpoint')
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
@@ -86,7 +88,7 @@ describe('authentication', () => {
 		});
 		it('should reject invalid usernames', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: 'invalid',
 				password: mockUser.password,
@@ -97,7 +99,7 @@ describe('authentication', () => {
 		});
 		it('should reject invalid passwords', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: mockUser.username,
 				password: 'asasasas',
@@ -108,7 +110,7 @@ describe('authentication', () => {
 		});
 		it('should reject invalid grant_type', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
@@ -119,7 +121,7 @@ describe('authentication', () => {
 		});
 		it('should reject empty usernames', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: '',
 				password: mockUser.password,
@@ -130,7 +132,7 @@ describe('authentication', () => {
 		});
 		it('should reject empty passwords', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: mockUser.username,
 				password: '',
@@ -141,7 +143,7 @@ describe('authentication', () => {
 		});
 		it('should reject empty grant_type', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
@@ -155,7 +157,7 @@ describe('authentication', () => {
 		before(populateDatabase);
 		it('should accept correct credentials', () => {
 			return chai.request(app)
-			.post('/cs3099group-be-4/oauth/token')
+			.post(`${base}/oauth/token`)
 			.send({
 				username: mockUser.username,
 				password: mockUser.password,
@@ -169,7 +171,7 @@ describe('authentication', () => {
 		beforeEach(populateDatabase);
 		beforeEach(getToken);
 		it('should reject invalid tokens', () => {
-			return chai.request(app).get('/')
+			return chai.request(app).get(`${base}/users`)
 			.set('Authorization', 'Bearer ' + 'invalid')
 			.then((res) => {
 				expect(res).to.have.status(401);
@@ -178,7 +180,7 @@ describe('authentication', () => {
 			});
 		});
 		it('should accept valid tokens', () => {
-			return chai.request(app).get('/')
+			return chai.request(app).get(`${base}/_supported_protocols_`)
 			.set('Authorization', `Bearer ${token}`)
 			.then((res) => {
 				expect(res).to.have.status(200);

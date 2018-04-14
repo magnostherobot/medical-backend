@@ -547,7 +547,7 @@ const getFileId: Middleware = getFile;
 const postFilePath: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void =>  {
-	logger.debug('Receiving file');
+	logger.debug('Receiving file to ' + res.locals.parentFolder);
 	if (res.locals.file != null) {
 		next(new RequestError(400, 'file_exists'));
 	}
@@ -556,7 +556,18 @@ const postFilePath: Middleware = (
 		name: res.locals.filename,
 		parentFolder: res.locals.parentFolder
 	});
-	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
+	/*
+	console.log("1: " + file.uuid + " -- " + res.locals.project.name)
+	try {
+		let x = files.writableStream(file.uuid, res.locals.project.name);
+		console.log("2")
+		req.pipe(x);
+		console.log("3")
+	} catch (err) {
+		console.log(err);
+	}
+	console.log("4")
+	*/
 	next();
 };
 
@@ -652,11 +663,12 @@ export class FileRouter {
 
 		// Fetch a file from its path:
 		this.router.param(
-			'file',
+			'path',
 			async(
 				req: Request, res: Response, next: NextFunction,
 				filename: string
 			): Promise<void> => {
+				console.log("wrong precond")
 				logger.debug(`Searching for file ${filename}`);
 				const fileNames: string[] = req.params.path.split('/');
 				const project: Project | null = res.locals.project;
@@ -709,15 +721,15 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				fileId: string
 			): Promise<void> => {
-				logger.debug(`Searching for file ${fileId}`);
+				console.log(`Searching for file ${fileId}`);
 				const file: File | null = await File.findOne({
 					include: [{all: true}],
 					where: {
 						uuid: fileId
 					}
 				});
-				
-				res.locals.file = file;				
+				res.locals.file = file;
+				console.log("precondition: " + file)
 				next();
 			}
 		);

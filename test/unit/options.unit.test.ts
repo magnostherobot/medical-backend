@@ -159,5 +159,32 @@ describe('Matching:', () => {
 			};
 			options.match(template, matchee).should.be.false;
 		});
+		it('accepts optional matches', () => {
+			const template = {
+				a: options.optional(types.array),
+				b: options.optional(types.anything)
+			};
+			const matchee = {
+				b: []
+			};
+			options.match(template)(matchee).should.be.true;
+		});
+		it('big bad unit test', () => {
+			const matchee = { status: 'success',
+			data: [ { privilege: 'admin', description: 'null', internal: false },
+				{ privilege: 'logging',
+					description: 'Allows Post to Log',
+					internal: false } ] };
+			const template = {
+				status: types.string,
+				data: options.optional(types.anything),
+				error: options.optional(types.string),
+				error_description: options.optional(types.string),
+				user_message: options.optional(types.string),
+				error_data: options.optional(types.anything)
+			};
+
+			options.match(template)(matchee).should.be.true;
+		});
 	});
 });
