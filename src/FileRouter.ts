@@ -425,7 +425,7 @@ const getProjects: Middleware = async(
 	});
 	res.locals.data = projects.map(
 		(p: Project): ProjectFullInfo => p.fullInfo
-	);
+	);	
 	next();
 };
 

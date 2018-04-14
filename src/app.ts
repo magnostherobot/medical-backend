@@ -111,19 +111,26 @@ class App {
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});	
-		const errRouter: ex.Router = ex.Router();		
-		errRouter.get('*', (req: ex.Request, res: ex.Response): void => {
-			res.status(404)
+		//const errRouter: ex.Router = ex.Router();		
+		
+		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/cs3099group-be-4', authRouter);
+		this.express.use('/', defRouter);		
+		this.express.use((req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
+			console.log(res.locals)
+			if (Object.keys(res.locals).length === 0) {
+				console.log(404)
+				res.status(404)
 			.json({
 				status: 'error',
 				error : 'invalid_route',
 				error_description: 'Endpoints start from /cs3099group-be-4/'
 			});
-		});				
-		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);
-		this.express.use('/', defRouter);
-		this.express.use('*', errRouter);
+			}
+			else {
+				next();			
+			}				
+		});
 	}
 
 	/**
