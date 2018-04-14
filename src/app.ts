@@ -77,7 +77,7 @@ class App {
 			.unless({path: [
 				'/',
 				'/cs3099group-be-4/oauth/token',
-				'/cs3099group-be-4/_supported_protocols_'
+				'/cs3099group-be-4/_supported_protocols_'				
 			] })
 		);
 		this.express.use(passport.initialize());
@@ -110,20 +110,20 @@ class App {
 				message: 'Welcome to the CS3099 BE4 server!',
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
-		});
-		const errRouter: ex.Router = ex.Router();
-		errRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
+		});	
+		const errRouter: ex.Router = ex.Router();		
+		errRouter.get('*', (req: ex.Request, res: ex.Response): void => {
 			res.status(404)
 			.json({
 				status: 'error',
 				error : 'invalid_route',
 				error_description: 'Endpoints start from /cs3099group-be-4/'
 			});
-		});
+		});				
 		this.express.use('/cs3099group-be-4', FileRouter);
 		this.express.use('/cs3099group-be-4', authRouter);
 		this.express.use('/', defRouter);
-		this.express.use('/XX*', errRouter);
+		this.express.use('*', errRouter);
 	}
 
 	/**
