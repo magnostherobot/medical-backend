@@ -575,19 +575,8 @@ const postFilePath: Middleware = (
 		name: res.locals.filename,
 		parentFolder: res.locals.parentFolder
 	});
-	console.log(res.locals);
-	/*
-	console.log("1: " + file.uuid + " -- " + res.locals.project.name)
-	try {
-		let x = files.writableStream(file.uuid, res.locals.project.name);
-		console.log("2")
-		req.pipe(x);
-		console.log("3")
-	} catch (err) {
-		console.log(err);
-	}
-	console.log("4")
-	*/
+	//console.log(res.locals);
+	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
 };
 
@@ -714,13 +703,14 @@ export class FileRouter {
 				}
 				const parentFolder: File | null = await File.findOne({
 					include: [
-						{ model: File, as: 'containedFiles' }
+						{ model: File, as: 'containedFilesInternal'},						
 					],
 					where: {
-						parentFolder: file,
-						name: fileNames[0]
+						//parentFolder: file,
+						//name: fileNames[0]
 					}
 				});
+				//console.log(parentFolder);
 				if (parentFolder == null) {
 					return next();
 				}
