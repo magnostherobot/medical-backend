@@ -18,7 +18,6 @@ const matchNoCurry:
 	if (types.atom(template)) {
 		return template === value;
 	} else if (types.function(template)) {
-		//console.log("hi there " + value)
 		return template(value);
 	} else if (types.atom(value) || value === undefined) {
 		return false;

@@ -82,137 +82,138 @@ const errorResponseTemplate: Template = {
 
 type MochaForEachInput = [ string, string, Template, number ];
 
+const base: string = '/cs3099group-be-4';
+
+/* tslint:disable:align */
+
+// Format:
+// <method> <route> <json-response-template> <response-code>
+const completeProtocol: MochaForEachInput[] = [
+	['get', '/_supported_protocols_', {
+			supported: array(types.string),
+			required: array(types.string)
+	}, 200],
+	['get', '/log', array({
+		component: types.string,
+		level: alternative([
+			'info',
+			'security',
+			'warning',
+			'error',
+			'critical'
+		]),
+		value: types.anything,
+		username: types.string,
+		timestamp: types.string
+	}), 200],
+	['post', '/log', [{
+		component: 'tesssst',
+		level: 'info',
+		value: 'sdasdasdasdasdasd'
+	}], 200],
+	['get', '/properties', array({
+		id: types.string,
+		display: optional(match({
+			category: types.string,
+			group: types.string,
+			display_name: types.string,
+			description: types.string
+		})),
+		read_only: types.boolean,
+		type: alternative([
+			'string',
+			'integer',
+			'boolean'
+		]),
+		value: alternative([
+			types.string,
+			types.integer,
+			types.boolean
+		])
+	}), 200],
+	['post', '/properties?action=update', null, 200],
+	['get', '/user_privileges', array({
+		privilege: types.string,
+		description: types.string,
+		internal: types.boolean
+	}), 200],
+	['get', '/users', array({
+		username: types.string,
+		privileges: types.array(types.string),
+		projects: types.array({
+			project_name: types.string,
+			access_level: types.string
+		}),
+		public_user_metadata: types.anything,
+		private_user_metadata: types.anything,
+		public_admin_metadata: types.anything,
+		private_admin_metadata: types.anything
+	}), 200],
+	// TODO types.metadata
+	['get', '/users/mock_user', {
+		username: types.string,
+		privileges: array(types.string),
+		projects: array({
+			project_name: types.string,
+			access_level: types.string
+		}),
+		public_user_metadata: types.anything,
+		private_user_metadata: types.anything,
+		public_admin_metadata: types.anything,
+		private_admin_metadata: types.anything
+	}, 200],
+	['post', '/users/new_user', null, 200],
+	['get', '/users/mock_user/properties', {
+		data: optional(types.anything)
+	}, 200],
+	['get', '/current_user', {
+		username: types.string,
+		privileges: types.array(types.string),
+		projects: types.array({
+			project_name: types.string,
+			access_level: types.string
+		}),
+		public_user_metadata: types.anything,
+		private_user_metadata: types.anything,
+		public_admin_metadata: types.anything,
+		private_admin_metadata: types.anything
+	}, 200],
+	['post', '/current_user', null, 200],
+	['get', '/project_roles', array({
+		role: types.string,
+		description: types.string,
+		internal: types.boolean
+	}), 200],
+	['get', '/projects', array({
+		project_name: types.string,
+		users: types.array({
+			username: types.string,
+			access_level: types.string
+		}),
+		public_metadata: types.anything,
+		private_metadata: optional(types.anything),
+		admin_metadata: optional(types.anything)
+	}), 200],
+	['get', '/projects/mocky', {
+		project_name: types.string,
+		users: array({
+			username: types.string,
+			access_level: types.string
+		}),
+		public_metadata: types.anything,
+		private_metadata: types.anything,
+		admin_metadata: optional(types.anything)
+	}, 200],
+	['post', '/projects/mocky', null, 200],
+	['get', '/projects/mocky/properties', null, 200],
+	['get', '/projects/mocky/files/example/path', null, 200],
+	['post', '/projects/mocky/files/some_file?action=overwrite', {}, 200],
+	['get', '/projects/mocky/files_by_id/file1', null, 200]
+];
+
+/* tslint:enable:align */
+
 describe('routes : protocol', () => {
-	const base: string = '/cs3099group-be-4';
-
-	/* tslint:disable:align */
-
-	// Format:
-	// <method> <route> <json-response-template> <response-code>
-	const completeProtocol: MochaForEachInput[] = [
-		['get', '/_supported_protocols_', {
-				supported: array(types.string),
-				required: array(types.string)
-		}, 200],
-		['get', '/log', array({
-			component: types.string,
-			level: alternative([
-				'info',
-				'security',
-				'warning',
-				'error',
-				'critical'
-			]),
-			value: types.anything,
-			username: types.string,
-			timestamp: types.string
-		}), 200],
-		['post', '/log', [{
-			component: 'tesssst',
-			level: 'info',
-			value: 'sdasdasdasdasdasd'
-		}], 200],
-		['get', '/properties', array({
-			id: types.string,
-			display: optional(match({
-				category: types.string,
-				group: types.string,
-				display_name: types.string,
-				description: types.string
-			})),
-			read_only: types.boolean,
-			type: alternative([
-				'string',
-				'integer',
-				'boolean'
-			]),
-			value: alternative([
-				types.string,
-				types.integer,
-				types.boolean
-			])
-		}), 200],
-		['post', '/properties?action=update', null, 200],
-		['get', '/user_privileges', array({
-			privilege: types.string,
-			description: types.string,
-			internal: types.boolean
-		}), 200],
-		['get', '/users', array({
-			username: types.string,
-			privileges: types.array(types.string),
-			projects: types.array({
-				project_name: types.string,
-				access_level: types.string
-			}),
-			public_user_metadata: types.anything,
-			private_user_metadata: types.anything,
-			public_admin_metadata: types.anything,
-			private_admin_metadata: types.anything
-		}), 200],
-		// TODO types.metadata
-		['get', '/users/mock_user', {
-			username: types.string,
-			privileges: array(types.string),
-			projects: array({
-				project_name: types.string,
-				access_level: types.string
-			}),
-			public_user_metadata: types.anything,
-			private_user_metadata: types.anything,
-			public_admin_metadata: types.anything,
-			private_admin_metadata: types.anything
-		}, 200],
-		['post', '/users/new_user', null, 200],
-		['get', '/users/mock_user/properties', {
-			data: optional(types.anything)
-		}, 200],
-		['get', '/current_user', {
-			username: types.string,
-			privileges: types.array(types.string),
-			projects: types.array({
-				project_name: types.string,
-				access_level: types.string
-			}),
-			public_user_metadata: types.anything,
-			private_user_metadata: types.anything,
-			public_admin_metadata: types.anything,
-			private_admin_metadata: types.anything
-		}, 200],
-		['post', '/current_user', null, 200],
-		['get', '/project_roles', array({
-			role: types.string,
-			description: types.string,
-			internal: types.boolean
-		}), 200],
-		['get', '/projects', array({
-			project_name: types.string,
-			users: types.array({
-				username: types.string,
-				access_level: types.string
-			}),
-			public_metadata: types.anything,
-			private_metadata: optional(types.anything),
-			admin_metadata: optional(types.anything)
-		}), 200],
-		['get', '/projects/mocky', {
-			project_name: types.string,
-			users: array({
-				username: types.string,
-				access_level: types.string
-			}),
-			public_metadata: types.anything,
-			private_metadata: types.anything,
-			admin_metadata: optional(types.anything)
-		}, 200],
-		['post', '/projects/mocky', null, 200],
-		['get', '/projects/mocky/properties', null, 200],
-		['get', '/projects/mocky/files/example/path', null, 200],
-		['post', '/projects/mocky/files/some_file?action=overwrite', {}, 200],
-		['get', '/projects/mocky/files_by_id/file1', null, 200]
-	];
-
-	/* tslint:enable:align */
 
 	before(initDatabase);
 	beforeEach(populateDatabase);
@@ -236,7 +237,7 @@ describe('routes : protocol', () => {
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: any = method === 'get'
 				? chai.request(app).get(base + path)
-				: chai.request(app).post(base + path);
+				: chai.request(app).post(base + path).send(temp);
 			/*if (path.includes('/projects/mocky/files/some_file')) {
 				fs.createReadStream('test/mockUI/ui.html').pipe(
 					request);
@@ -245,7 +246,7 @@ describe('routes : protocol', () => {
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
 				if (path.includes('/projects/mocky/files/some_file')) {
-					console.log("something")
+					//console.log("something")
 				}
 				expect(res).to.have.status(resCode);
 			});
@@ -255,26 +256,33 @@ describe('routes : protocol', () => {
 			(method: string, path: string, temp: Template, resCode: number) => {
 			const request: ChaiHttp.Request = method === 'get'
 				? chai.request(app).get(base + path)
-				: chai.request(app).post(base + path);
+				: chai.request(app).post(base + path).send(temp);;
 			request.set('Authorization', `Bearer ${token}`);
 			return request.then((res: ChaiHttp.Response) => {
-				
+				if (!(match(responseTemplate)(res.body))) {
+					console.log(`${method} ${path} ******************`);
+					console.log(res.body);
+					console.log("^^^^^^ received || template vvvvvvvv")
+					console.log(responseTemplate);
+					console.log('--------------------------------')
+				}
 				expect(match(responseTemplate)(res.body)).to.be.true;
 			});
 		});
 		forEach(completeProtocol).it(
-			'the response for %s %s should conform to its specific response protocol',
+			'%s %s should conform to its specific response template',
 			(method: string, path: string, temp: Template, resCode: number) => {
 			if (method === 'get' && temp != null) {
 				return chai.request(app)
 				.get(base + path)
 				.set('Authorization', `Bearer ${token}`)
 				.then((res: ChaiHttp.Response) => {
-					if(!match(temp)(res.body.data)){
-						console.log("******" + method + " - " + path + "*****8")
-						console.log(res.body)
+					if (!(match(temp)(res.body.data))) {
+						console.log(`${method} ${path} ******************`);
+						console.log(res.body.data);
+						console.log("^^^^^^ received || template vvvvvvvv")
 						console.log(temp);
-						console.log("*************************************9")
+						console.log('--------------------------------')
 					}
 					expect(match(temp)(res.body.data)).to.be.true;
 				});
@@ -286,6 +294,9 @@ describe('routes : protocol', () => {
 
 	describe('test edge cases', () => {
 		before(initDatabase);
+		beforeEach(populateDatabase);
+		beforeEach(getToken);
+
 		describe('GET invalid routes', () => {
 			// Should invalid routes also possibly be 401?
 			it.skip('should have response code 404', () => {
@@ -303,5 +314,39 @@ describe('routes : protocol', () => {
 				});
 			});
 		});
+
+		describe('POST invalid routes', () => {
+			// Should invalid routes also possibly be 401?
+			it.skip('should have response code 404', () => {
+				return chai.request(app).post('/invalid/route')
+				.set('Authorization', `Bearer ${token}`)
+				.catch((err) => {
+					expect(err.status).to.equal(404);
+				});
+			});
+			it('should conform to the error protocol', () => {
+				return chai.request(app).post('/invalid/route')
+				.set('Authorization', `Bearer ${token}`)
+				.catch((err) => {
+					expect(match(errorResponseTemplate)(err.response.body)).to.be.true;
+				});
+			});
+		});
+/*
+		describe('access valid routes with invalid parameters', () => {
+			forEach(completeProtocol.filter((item, index, arr) => {
+				return (item[0] == 'post');
+			})).it(
+				'%s %s with null body should throw error',
+				(method: string, path: string, temp: Template, resCode: number) => {
+				const request: any = chai.request(app).post(base + path);
+				request.set('Authorization', `Bearer ${token}`)
+				.then((res: any) => {
+					expect(res).to.have.status(400);
+				}).catch((reason: any) => {
+					expect(reason.response.body).to.eql("errererere");
+				});
+			});
+		});*/
 	});
 });
