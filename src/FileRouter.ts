@@ -556,6 +556,7 @@ const postFilePath: Middleware = (
 		name: res.locals.filename,
 		parentFolder: res.locals.parentFolder
 	});
+	console.log(res.locals);
 	/*
 	console.log("1: " + file.uuid + " -- " + res.locals.project.name)
 	try {
