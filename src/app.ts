@@ -77,7 +77,7 @@ class App {
 			.unless({path: [
 				'/',
 				'/cs3099group-be-4/oauth/token',
-				'/cs3099group-be-4/_supported_protocols_'				
+				'/cs3099group-be-4/_supported_protocols_'
 			] })
 		);
 		this.express.use(passport.initialize());

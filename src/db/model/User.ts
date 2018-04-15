@@ -126,18 +126,20 @@ export default class User extends Model<User> {
 	}
 
 	public get fullInfo(): UserFullInfo {
+		console.log("fullinfo called")
 		// FIXME: Fetch these things if they aren't already present
 		if (this.userGroups === undefined) {
-			throw new Error('userGroups undefined');
+			this.userGroups = [];
 		} else if (this.projects === undefined) {
-			throw new Error('projects undefined');
+			this.projects = [];
 		}
+		console.log("2")
 		return {
 			username : this.username,
-			privileges: this.userGroups
+			privileges: this.userGroups!
 				.filter((ug: UserGroup): boolean => ug.name !== null)
 				.map((ug: UserGroup): string => ug.name as string),
-			projects : this.projects.map(
+			projects : this.projects!.map(
 				(p: Project): ProjectInfo => this.getProjectInfo(p)
 			),
 			// TODO: Check if we have anything to use these for yet?
