@@ -8,7 +8,7 @@ import { default as UserGroup } from './db/model/UserGroup';
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { RequestError } from './errors/errorware';
-import { View, files, views, rootPathId, createProjectFolder } from './files';
+import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -565,22 +565,56 @@ const getFileId: Middleware = getFile;
 /**
  * Post a File. / delete / move / etc
  */
-const postFilePath: Middleware = (
+/* tslint:disable */
+const postFilePath: Middleware = async(
 	req: Request, res: Response, next: NextFunction
-): void =>  {
+): Promise<void> =>  {
 	logger.debug(`Receiving file to ${res.locals.parentFolder}`);
-	res.locals.modified = true;
+
 	if (res.locals.file != null) {
 		next(new RequestError(400, 'file_exists'));
 	}
+
+	// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+	let remainingPath: string = res.locals.path.split(res.locals.deepestFolderName)[1];
+	console.log(`remainingPath: ${remainingPath}`)
+	
+	while((remainingPath.match(/\//g) || []).length > 1){
+		// If there are more subfolders that dont exist, then create them
+		const subFolder: string = remainingPath.split("/")[1]
+		logger.debug(`Adding subfolder \'${subFolder}`);
+		const dir: File = new File({
+			uuid: uuid.generate(),
+			mimetype: 'inode/directory',
+			name: subFolder,
+			parentFolderId: res.locals.deepestFolderId
+		});
+		await dir.save();
+
+		// update parent directory of new directory
+		addSubFileToFolder(res.locals.deepestFolderId, dir.id);
+
+		// update vars
+		remainingPath = remainingPath.split(subFolder)[1]
+		res.locals.deepestFolderName = subFolder;
+		res.locals.deepestFolderId = dir.id;
+		console.log(`\tremainingPath: ${remainingPath}`)
+		console.log(`\tdeepestFolderName: ${res.locals.deepestFolderName}`)
+		console.log(`\tdeepestFolderId: ${res.locals.deepestFolderId}`)
+	}
+
 	const file: File = new File({
 		uuid: uuid.generate(),
 		name: res.locals.filename,
-		parentFolder: res.locals.parentFolder
+		parentFolder: res.locals.deepestFolderId
 	});
+	// update parent directory of new directory
+	addSubFileToFolder(res.locals.deepestFolderId, file.id);
+	// pipe the data
 	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
 };
+/* tslint:enable */
 
 export class FileRouter {
 	public router: Router;
@@ -679,8 +713,14 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				filename: string
 			): Promise<void> => {
-				filename = filename.replace(/\+/g, "/"); // Replace + with /
+				// TODO \/
+				// We need to find the res.locals.deepestFolderName (and Id) for the currently requested path
+
+				// Replace + with /
+				filename = filename.replace(/\+/g, '/');
 				logger.debug(`Searching for file ${filename}`);
+				res.locals.path = filename;
+				
 				const fileNames: string[] = req.params.path.split('/');
 				const project: Project | null = res.locals.project;
 				if (project == null) {

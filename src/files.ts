@@ -208,3 +208,10 @@ export const createProjectFolder: (name: string) => void = (projName: string): a
 		fs.mkdirSync(CONTENT_BASE_DIRECTORY + '/' + projName);
 	}
 }
+
+export const addSubFileToFolder: (parentId: string, subFileId: string) => void = (parentId: string, subFileId: string): any => {
+	// TODO:
+	// fetch parent file object from database
+	// update parent file object
+	// save
+}
