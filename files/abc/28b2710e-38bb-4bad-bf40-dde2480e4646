@@ -1,0 +1,11 @@
+------WebKitFormBoundary4I0l9vAyn9AB6jO8
+Content-Disposition: form-data; name="pres"; filename="config"
+Content-Type: application/octet-stream
+
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+
+------WebKitFormBoundary4I0l9vAyn9AB6jO8--

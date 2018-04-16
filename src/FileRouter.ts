@@ -689,6 +689,7 @@ export class FileRouter {
 				// TODO Rewrite using sub-queries instead of repeated queries.
 				while (fileNames.length > 2) {
 					const fileOrNull: File | null = await File.findOne({
+						include: [{all: true}],
 						where: {
 							name: fileNames[0],
 							parentFolder: file
@@ -703,7 +704,7 @@ export class FileRouter {
 				}
 				const parentFolder: File | null = await File.findOne({
 					include: [
-						{ model: File, as: 'containedFilesInternal'},						
+						{ model: File, as: 'containedFilesInternal'}
 					],
 					where: {
 						//parentFolder: file,

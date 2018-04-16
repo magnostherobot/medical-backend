@@ -126,14 +126,12 @@ export default class User extends Model<User> {
 	}
 
 	public get fullInfo(): UserFullInfo {
-		console.log("fullinfo called")
 		// FIXME: Fetch these things if they aren't already present
 		if (this.userGroups === undefined) {
 			this.userGroups = [];
 		} else if (this.projects === undefined) {
 			this.projects = [];
 		}
-		console.log("2")
 		return {
 			username : this.username,
 			privileges: this.userGroups!

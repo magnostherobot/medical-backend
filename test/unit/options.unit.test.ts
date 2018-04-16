@@ -209,10 +209,10 @@ describe('Matching:', () => {
 
 			options.match(template)(matchee).should.be.true;
 		});
-		it('$$ Buy now: unit tests cheap and chearful. only £9.99', () => {
+		it.only('Matching Arrays', () => {
 			/* tslint:disable:align */
-			const matchee: any = [ 'test' ];
-			const template = types.array(types.anything);
+			const matchee: any = ['ss'];
+			const template: any = types.array;
 			/* tslint:enable:align */
 
 			options.match(template)(matchee).should.be.true;
