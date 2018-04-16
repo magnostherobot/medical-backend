@@ -13,7 +13,7 @@ export default class User extends Model<User> {
 	public username!: string;
 
 	@Column
-	private readonly passwordInternal!: string;
+	private passwordInternal!: string;
 
 	@BelongsToMany(() => UserGroup, () => UserHasPrivilege)
 	public userGroups?: UserGroup[];
@@ -173,7 +173,7 @@ export default class User extends Model<User> {
 
 	public set password(newPassword: string) {
 		// TODO use salting
-		this.password = newPassword;
+		this.passwordInternal = newPassword;
 	}
 }
 

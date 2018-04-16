@@ -382,6 +382,7 @@ const postUsername: Middleware = async(
 	if (req.body) {
 		user.metadata = req.body;
 	}
+	await user.save();
 	next();
 };
 
