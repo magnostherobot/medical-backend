@@ -367,6 +367,7 @@ const postCurUser: Middleware = async(
 const postUsername: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	//if (req.query.action === 'create')
 	let user: User | null | undefined = res.locals.user;
 	res.locals.modified = true;
 	if (user == null) {
@@ -382,6 +383,7 @@ const postUsername: Middleware = async(
 	if (req.body) {
 		user.metadata = req.body;
 	}
+	await user.save()
 	next();
 };
 

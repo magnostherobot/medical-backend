@@ -2,7 +2,7 @@ import { default as Project } from './Project';
 import { BelongsTo, Column, CreatedAt, DataType, ForeignKey, Model, Table
 	} from 'sequelize-typescript';
 import { default as User } from './User';
-import { default as ContributorGroup } from './UserGroup';
+import { default as ContributorGroup } from './ContributorGroup';
 
 @Table
 export default class UserJoinsProject extends Model<UserJoinsProject> {
