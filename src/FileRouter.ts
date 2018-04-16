@@ -575,7 +575,7 @@ const postFilePath: Middleware = (
 		name: res.locals.filename,
 		parentFolder: res.locals.parentFolder
 	});
-	//console.log(res.locals);
+	//console.log(res.locals);	
 	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
 };
@@ -701,13 +701,16 @@ export class FileRouter {
 					}
 					fileNames.splice(0, 1);
 				}
+				if (file == null) {
+					return next();
+				}
 				const parentFolder: File | null = await File.findOne({
 					include: [
 						{ model: File, as: 'containedFilesInternal'},						
 					],
 					where: {
-						//parentFolder: file,
-						//name: fileNames[0]
+						parentFolderId: file.id,
+						name: fileNames[0]
 					}
 				});
 				//console.log(parentFolder);
