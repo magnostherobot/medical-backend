@@ -6,17 +6,12 @@ import { default as Project } from './db/model/Project';
 
 const CONTENT_BASE_DIRECTORY: string = './files';
 const LOG_BASE_DIRECTORY: string = './logs';
-
-const path: (filename: string, projectName: string) => string
-	= (filename: string, projectName: string): string => {
+/* tslint:disable */
+const path: (filename: string, projectName: string) => string = (filename: string, projectName: string): string => {
 	return `${CONTENT_BASE_DIRECTORY}/${projectName}/${filename}`;
 };
 
-const writableStream: (
-	filename: string, projectName: string
-) => fs.WriteStream = (
-	filename: string, projectName: string
-): fs.WriteStream => {
+const writableStream: (filename: string, projectName: string) => fs.WriteStream = (filename: string, projectName: string): fs.WriteStream => {
 	return fs.createWriteStream(path(filename, projectName));
 };
 
@@ -25,29 +20,29 @@ interface RawSize {
 	length: number;
 }
 
-const readableStream: (
-	filename: string, projectName: string,
-	{ offset, length }?: Partial<RawSize>
-) => fs.ReadStream = (
-	filename: string, projectName: string,
-	{ offset, length }: Partial<RawSize> =
-		{ offset: undefined, length: undefined }
-): fs.ReadStream => {
+const readableStream: (filename: string, projectName: string, { offset, length }?: Partial<RawSize>) => fs.ReadStream 
+	= (filename: string, projectName: string, { offset, length }: Partial<RawSize> = { offset: undefined, length: undefined }): fs.ReadStream => {
 	const options: object = {
-		start: offset
-			? offset
-			: 0,
-		end: offset && length
-			? offset + length
-			: undefined
+		start: offset? offset: 0,
+		end: offset && length? offset + length: undefined
 	};
 	return fs.createReadStream(path(filename, projectName), options);
 };
+/*
+// prj name, file uuid => if exists and return path string/ parent folder
+const findParent: (projectName: string, fileUUID: string) => File | null = (projectName: string, fileUUID: string) => {
+	if(!projectName || !fileUUID){
+		return null;
+	}
+	function findFile(dir: string, fileList: string[]) : string {
 
-const logPath:
-(type: string, projectName?: string) => string = (
-	type: string, projectName?: string
-): string => {
+	}
+
+}
+*/
+
+const logPath: (type: string, projectName?: string) => string = (
+	type: string, projectName?: string): string => {
 	return projectName
 		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;
@@ -198,3 +193,18 @@ class MimeTypeMap extends Map<string, string> {
 export const mimes: MimeTypeMap = new MimeTypeMap([
 	[ 'inode/directory', 'directory' ]
 ]);
+
+export const rootPathId: string = '0';
+export const rootPathFile: File | null = null;
+
+export const createRootFolder: () => void = (): any => {
+	if (!fs.existsSync(CONTENT_BASE_DIRECTORY)){
+		fs.mkdirSync(CONTENT_BASE_DIRECTORY);
+	}
+}
+
+export const createProjectFolder: (name: string) => void = (projName: string): any => {
+	if (!fs.existsSync(CONTENT_BASE_DIRECTORY + '/' + projName)){
+		fs.mkdirSync(CONTENT_BASE_DIRECTORY + '/' + projName);
+	}
+}

@@ -8,7 +8,7 @@ import { default as UserGroup } from './db/model/UserGroup';
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { RequestError } from './errors/errorware';
-import { View, files, views } from './files';
+import { View, files, views, rootPathId, createProjectFolder } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -497,9 +497,12 @@ const postProjectName: Middleware = async(
 		logger.debug('Adding new project');
 		const file: File = new File({
 			uuid: uuid.generate(),
-			mimetype: 'inode/directory'
+			mimetype: 'inode/directory',
+			name: req.params.project_name,
+			parentFolderId: rootPathId
 		});
 		promise = file.save();
+		createProjectFolder(req.params.project_name);
 		project = new Project({
 			name: req.params.project_name,
 			rootFolder: file
@@ -575,7 +578,6 @@ const postFilePath: Middleware = (
 		name: res.locals.filename,
 		parentFolder: res.locals.parentFolder
 	});
-	//console.log(res.locals);	
 	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
 };
@@ -677,11 +679,12 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				filename: string
 			): Promise<void> => {
-				console.log(`parsing path ${filename}`)
+				filename = filename.replace(/\+/g, "/"); // Replace + with /
 				logger.debug(`Searching for file ${filename}`);
 				const fileNames: string[] = req.params.path.split('/');
 				const project: Project | null = res.locals.project;
 				if (project == null) {
+					// Project should have been found by previous precondition
 					logger.debug('Project was not found: skipping finding file');
 					return next(new RequestError(404, 'project_not_found'));
 				}
@@ -696,15 +699,21 @@ export class FileRouter {
 						}
 					});
 					if (fileOrNull == null) {
+						console.log("fileOrNull was null")
 						return next();
 					} else {
+						console.log("^^")
+						console.log(file)
 						file = fileOrNull;
 					}
 					fileNames.splice(0, 1);
 				}
+
 				if (file == null) {
+					console.log("file was null")
 					return next();
 				}
+				console.log(file)
 				const parentFolder: File | null = await File.findOne({
 					include: [
 						{ model: File, as: 'containedFilesInternal'}
@@ -714,7 +723,8 @@ export class FileRouter {
 						name: fileNames[0]
 					}
 				});
-				//console.log(parentFolder);
+				console.log("parent folder: ")
+				console.log(parentFolder);
 				if (parentFolder == null) {
 					return next();
 				}
