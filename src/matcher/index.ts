@@ -10,6 +10,7 @@ export {
 
 export {
 	Atom,
+	isPresent   as anything,
 	isNumber    as number,
 	isString    as string,
 	isBoolean   as boolean,
