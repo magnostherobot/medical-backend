@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import * as fs from 'fs';
+import { logger } from './logger';
 
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
 
 const CONTENT_BASE_DIRECTORY: string = './files';
 const LOG_BASE_DIRECTORY: string = './logs';
+
 /* tslint:disable */
 const path: (filename: string, projectName: string) => string = (filename: string, projectName: string): string => {
 	return `${CONTENT_BASE_DIRECTORY}/${projectName}/${filename}`;
@@ -198,6 +200,7 @@ export const createProjectFolder: (name: string) => void = (projName: string): a
 }
 
 export const addSubFileToFolder: (parentId: string, subFileId: string) => Promise<boolean> = async(parentId: string, subFileId: string): Promise<boolean> => {
+	logger.debug(`adding file ${subFileId}) to directory ${parentId}`)
 	// Fetch parent and subFile object from database
 	const parent: File | null = await File.findOne({
 		include: [{all: true}],
@@ -216,10 +219,10 @@ export const addSubFileToFolder: (parentId: string, subFileId: string) => Promis
 	}
 	// update both objects
 	parent.containedFiles.push(file);
-	file.parentFolderId = parent.id;
+	file.parentFolderId = parent.uuid;
 	// save
-	await parent.save();
 	await file.save();
+	await parent.save();
 
 	return true;
 }
