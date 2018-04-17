@@ -6,12 +6,12 @@ import { UserFullInfo, default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
 import { NextFunction, Request, Response, Router } from 'express';
-
 import { RequestError } from './errors/errorware';
-import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder } from './files';
+import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, moveFile } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
+
 
 /**
  * The type of an Express middleware callback.
@@ -567,6 +567,8 @@ const getFileId: Middleware = getFile;
 /* tslint:disable */
 const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
 	logger.debug(`Receiving file ${res.locals.path}`);
+	console.log(req.file);
+	// req.query.action
 
 	if (res.locals.file != null) {
 		// TODO update metadata or append to file
@@ -605,10 +607,9 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 
 	const file: File = new File({
 		uuid: uuid.generate(),
-		nameInternal: res.locals.filename//,
-		//parentFolder: res.locals.deepestFolderId
+		nameInternal: res.locals.filename
 	});
-	file.mimetype = req.headers['content-type']!;
+	file.mimetype = req.file.mimetype;
 
 	await file.save();
 
@@ -618,9 +619,8 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 		next(new RequestError(500, 'Adding file to folder failed'))
 	}
 
-	// TODO respond to correct query params (like update metadata, move, etc)
-	// pipe the data
-	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
+	// Move temp file to proper location
+	moveFile(req.file.originalname, res.locals.project.name, file.uuid);
 	next();
 };
 /* tslint:enable */
@@ -665,7 +665,8 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:path',        postFilePath);
+		this.router.post('/projects/:project_name/files/:path',
+			upload.single('userfile'), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 
@@ -730,6 +731,9 @@ export class FileRouter {
 				// Vars arleady assigned:
 				//  - res.locals.project: requested project object
 
+				//console.log(`req.file.filename: ${req.file}`)
+				console.log(req.file)
+
 				// Replace + with /
 				res.locals.path = filename.replace(/\+/g, '/');
 				logger.debug(`Searching for path \'${res.locals.path}\'`);
@@ -748,7 +752,7 @@ export class FileRouter {
 				res.locals.deepestFolderId = curDir.uuid;
 				res.locals.deepestFolderName = curDir.name;
 				let i: number = 0;
-				// Loop through the path and find the deepest folder that exists. 
+				// Loop through the path and find the deepest folder that exists.
 				// 		Also find the file if possible.
 				while (curDir && i < fileNames.length) {
 					logger.debug(`Searching for \'${fileNames[i]}\'`);
@@ -797,13 +801,13 @@ export class FileRouter {
 					}
 				});
 				res.locals.file = file;
-				if(file) {
+				if (file) {
 					res.locals.filename = file.name;
 					res.locals.deepestFolderId = file.parentFolderId;
 					if (file.parentFolder) {
 						res.locals.deepestFolderName = file.parentFolder.name;
 					} else {
-						logger.debug('parentfolder not set!')
+						logger.debug('parentfolder not set!');
 					}
 				}
 				next();

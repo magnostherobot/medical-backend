@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import { logger } from './logger';
+import * as Multer from 'multer';
 
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
@@ -37,6 +38,23 @@ const logPath: (type: string, projectName?: string) => string = (
 		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;
 };
+
+let storage = Multer.diskStorage({
+	destination: function (req, file, cb) {
+		cb(null, CONTENT_BASE_DIRECTORY)
+	  },
+	  filename: function (req, file, cb) {
+		cb(null, `temp-${file.originalname}`)
+	  }
+});
+
+export const upload: Multer.Instance = Multer({ storage: storage });
+
+export const moveFile: (filename: string, projectname: string, fileId: string) => void = 
+	(filename: string, projectname: string, fileId: string): void => {
+	
+	fs.moveSync(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`, `${CONTENT_BASE_DIRECTORY}/${projectname}/${fileId}`);
+}
 
 export const files: {
 	path: (f: string, p: string) => string;
