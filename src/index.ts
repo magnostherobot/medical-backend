@@ -8,7 +8,9 @@ import { default as app } from './app';
 
 logger.info('Importing database ORM');
 import { default as seq } from './db/orm';
+import { View, files, views, rootPathId, createRootFolder } from './files';
 
+import { default as File } from './db/model/File';
 import { default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
@@ -40,6 +42,14 @@ logger.info(`Port ${port} chosen`);
 		process.exit(1);
 	}
 
+	logger.info('Setting up directory structure');
+	const rootDir: File = new File({
+		uuid: rootPathId,
+		mimetype: 'inode/directory',
+		name: '/'
+	});
+	await rootDir.save();
+
 	logger.info('Adding admin privileges');
 	const admin: UserGroup = new UserGroup({
 		name: 'admin',
@@ -70,6 +80,7 @@ logger.info(`Port ${port} chosen`);
 	});
 
 	await root.save();
+	createRootFolder();
 
 	await root.$set('userGroups', [admin, logging]);
 

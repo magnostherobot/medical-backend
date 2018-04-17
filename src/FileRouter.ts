@@ -8,13 +8,10 @@ import { default as UserGroup } from './db/model/UserGroup';
 import { NextFunction, Request, Response, Router } from 'express';
 
 import { RequestError } from './errors/errorware';
-import { View, files, views } from './files';
+import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
-
-// TODO: figure this out
-const BASE_FILE_STORAGE: string = 'TODO: figure this out';
 
 /**
  * The type of an Express middleware callback.
@@ -65,6 +62,7 @@ const getProtocols: Middleware = (
 const postLog: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
+	res.locals.modified = true;
 	logger.debug('Adding forwarded log');
 	if (!req.user.hasPrivilege('logging')) {
 		next(new RequestError(401, 'invalid_privilege'));
@@ -108,9 +106,15 @@ const getLog: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Fetching log');
+	res.locals.modified = true;
 	if (!req.user.hasPrivilege('admin')) {
 		next(new RequestError(401, 'invalid_privilege'));
 	}
+	/* tslint:disable */ 
+	if(!req.params.level) req.params.level = 'info';
+	if(!req.params.before) req.params.before = new Date();
+	if(!req.params.after) req.params.after = new Date(0);
+	/* tslint:enable */
 	res.locals.data = logger.fetch(
 		req.params.level, {
 			before: new Date(req.params.before),
@@ -165,6 +169,7 @@ const postProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Editing server properties');
+	res.locals.modified = true;
 	for (const newProp of req.body) {
 		const prop: Property | undefined = serverConfig.find(
 			(p: Property): boolean => p.id === newProp.id
@@ -257,6 +262,7 @@ const getUserProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Listing additional properties for a user');
+	res.locals.modified = true;
 	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
@@ -289,6 +295,7 @@ const getUsername: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug(`Listing user ${res.locals.user}`);
+	res.locals.modified = true;
 	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
@@ -327,6 +334,7 @@ const postCurUser: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	logger.debug('Editing current user');
+	res.locals.modified = true;
 	try {
 		await req.user.updateInfo(req.body);
 		await req.user.save();
@@ -357,6 +365,7 @@ const postUsername: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
+	res.locals.modified = true;
 	if (user == null) {
 		logger.debug('Adding new user');
 		user = new User({
@@ -387,6 +396,7 @@ const postUsername: Middleware = async(
 const getProjectRoles: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	res.locals.modified = true;
 	logger.debug('Listing available project roles');
 	const roles: ContributorGroup[] = await ContributorGroup.findAll();
 	res.locals.data = roles.filter(
@@ -418,6 +428,7 @@ const getProjects: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	logger.debug('Listing all projects');
+	res.locals.modified = true;
 	const projects: Project[] = await Project.findAll({
 		include: [
 			User
@@ -450,6 +461,7 @@ const getProjectName: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	logger.debug('Getting project properties');
+	res.locals.modified = true;
 	const project: Project | null = res.locals.project;
 	if (project == null) {
 		return next(new RequestError(404, 'project_not_found'));
@@ -476,14 +488,18 @@ const postProjectName: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	let project: Project | null = res.locals.project;
+	res.locals.modified = true;
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
 		logger.debug('Adding new project');
 		const file: File = new File({
 			uuid: uuid.generate(),
-			mimetype: 'inode/directory'
+			mimetype: 'inode/directory',
+			name: req.params.project_name,
+			parentFolderId: rootPathId
 		});
 		promise = file.save();
+		createProjectFolder(req.params.project_name);
 		project = new Project({
 			name: req.params.project_name,
 			rootFolder: file
@@ -505,6 +521,7 @@ const getProjectProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
 	logger.debug('Getting project properties');
+	res.locals.modified = true;
 	if (res.locals.project == null) {
 		next(new RequestError(404, 'project_not_found'));
 	} else {
@@ -544,21 +561,57 @@ const getFileId: Middleware = getFile;
 /**
  * Post a File. / delete / move / etc
  */
-const postFilePath: Middleware = (
-	req: Request, res: Response, next: NextFunction
-): void =>  {
-	logger.debug('Receiving file');
+/* tslint:disable */
+const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
+	logger.debug(`Receiving file to ${res.locals.parentFolder}`);
+
 	if (res.locals.file != null) {
 		next(new RequestError(400, 'file_exists'));
 	}
+
+	// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+	let remainingPath: string = res.locals.path.split(res.locals.deepestFolderName)[1];
+	console.log(`remainingPath: ${remainingPath}`)
+	
+	// Loop the part of the path that doesn't exist yet and create all the folders
+	while((remainingPath.match(/\//g) || []).length > 1){
+		// If there are more subfolders that dont exist, then create them
+		const subFolder: string = remainingPath.split("/")[1]
+		logger.debug(`Adding subfolder \'${subFolder}`);
+		const dir: File = new File({
+			uuid: uuid.generate(),
+			mimetype: 'inode/directory',
+			name: subFolder,
+			parentFolderId: res.locals.deepestFolderId
+		});
+		await dir.save();
+
+		// update parent directory of new directory
+		addSubFileToFolder(res.locals.deepestFolderId, dir.id);
+
+		// update vars
+		remainingPath = remainingPath.split(subFolder)[1]
+		res.locals.deepestFolderName = subFolder;
+		res.locals.deepestFolderId = dir.id;
+		console.log(`\tremainingPath: ${remainingPath}`)
+		console.log(`\tdeepestFolderName: ${res.locals.deepestFolderName}`)
+		console.log(`\tdeepestFolderId: ${res.locals.deepestFolderId}`)
+	}
+
 	const file: File = new File({
 		uuid: uuid.generate(),
 		name: res.locals.filename,
-		parentFolder: res.locals.parentFolder
+		parentFolder: res.locals.deepestFolderId
 	});
+	// update parent directory of new directory
+	addSubFileToFolder(res.locals.deepestFolderId, file.id);
+
+	// TODO respond to correct query params (like update metadata, move, etc)
+	// pipe the data
 	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
 };
+/* tslint:enable */
 
 export class FileRouter {
 	public router: Router;
@@ -600,7 +653,7 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:id',          postFilePath);
+		this.router.post('/projects/:project_name/files/:path',        postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 
@@ -658,52 +711,62 @@ export class FileRouter {
 
 		// Fetch a file from its path:
 		this.router.param(
-			'file',
+			'path',
 			async(
 				req: Request, res: Response, next: NextFunction,
 				filename: string
 			): Promise<void> => {
+				// TODO \/
+				// We need to find the res.locals.deepestFolderName (and Id) for the currently requested path
+
+				// Replace + with /
+				filename = filename.replace(/\+/g, '/');
 				logger.debug(`Searching for file ${filename}`);
+				res.locals.path = filename;
+				
+				// split path into parts
 				const fileNames: string[] = req.params.path.split('/');
+				res.locals.filename = fileNames[-1];
 				const project: Project | null = res.locals.project;
 				if (project == null) {
+					// Project should have been found by previous precondition
 					logger.debug('Project was not found: skipping finding file');
 					return next(new RequestError(404, 'project_not_found'));
 				}
-				let file: File = project.rootFolder;
-				// TODO Rewrite using sub-queries instead of repeated queries.
-				while (fileNames.length > 2) {
+				console.debug(fileNames);
+
+				let curDir: File | null = project.rootFolder;
+				res.locals.deepestFolderId = curDir.id;
+				res.locals.deepestFolderName = curDir.name;
+				let i: number = 0;
+				
+				// Loop through the path and find the deepest folder that exists. Also find the file if possible.
+				while (curDir && i < fileNames.length) {
 					const fileOrNull: File | null = await File.findOne({
+						include: [{all: true}],
 						where: {
-							name: fileNames[0],
-							parentFolder: file
+							name: fileNames[i],
+							parentFolder: curDir
 						}
 					});
 					if (fileOrNull == null) {
+						console.log("next subdir not found in DB");
 						return next();
-					} else {
-						file = fileOrNull;
+					} 
+					
+					if(i < fileNames.length-1){
+						// Found next subdirectory
+						console.log(`found subdir ${fileOrNull.name}`);
+						res.locals.deepestFolderId = fileOrNull.id;
+						res.locals.deepestFolderName = fileOrNull.name;	
+					}else{
+						// Found actual file
+						console.log(`found file ${fileOrNull.name}`);
+						res.locals.file = fileOrNull;
 					}
-					fileNames.splice(0, 1);
+					curDir = fileOrNull;
 				}
-				const parentFolder: File | null = await File.findOne({
-					include: [
-						{ model: File, as: 'containedFiles' }
-					],
-					where: {
-						parentFolder: file,
-						name: fileNames[0]
-					}
-				});
-				if (parentFolder == null) {
-					return next();
-				}
-				res.locals.parentFolder = parentFolder;
-				const tFile: File | undefined = parentFolder.containedFiles.find(
-					(f: File): boolean => f.name === fileNames[1]
-				);
-				res.locals.file = tFile;
-				res.locals.filename = fileNames[1];
+
 				next();
 			}
 		);
@@ -715,17 +778,19 @@ export class FileRouter {
 				req: Request, res: Response, next: NextFunction,
 				fileId: string
 			): Promise<void> => {
-				logger.debug(`Searching for file ${fileId}`);
+				console.log(`parsing id ${fileId}`);
 				const file: File | null = await File.findOne({
 					include: [{all: true}],
 					where: {
 						uuid: fileId
 					}
 				});
-				if (file == null) {
-					return next(new RequestError(404, 'file_not_found'));
-				} else {
-					res.locals.file = file;
+				res.locals.file = file;
+				if(file) {
+					res.locals.filename = file.name;
+					res.locals.deepestFolderId = file.parentFolderId;
+					if(file.parentFolder) res.locals.deepestFolderName = file.parentFolder.name;
+					else console.log("parentfolder not set!")
 				}
 				next();
 			}

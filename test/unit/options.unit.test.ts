@@ -159,5 +159,63 @@ describe('Matching:', () => {
 			};
 			options.match(template, matchee).should.be.false;
 		});
+		it('accepts optional matches', () => {
+			const template = {
+				a: options.optional(types.array),
+				b: options.optional(types.anything)
+			};
+			const matchee = {
+				b: []
+			};
+			options.match(template)(matchee).should.be.true;
+		});
+		it('big bad unit test', () => {
+			/* tslint:disable:align */
+			const matchee = { status: 'success',
+			data: [ { privilege: 'admin', description: 'null', internal: false },
+				{ privilege: 'logging',
+					description: 'Allows Post to Log',
+					internal: false } ] };
+			const template = {
+				status: types.string,
+				data: options.optional(types.anything),
+				error: options.optional(types.string),
+				error_description: options.optional(types.string),
+				user_message: options.optional(types.string),
+				error_data: options.optional(types.anything)
+			};
+			/* tslint:enable:align */
+
+			options.match(template)(matchee).should.be.true;
+		});
+		it('bigger badder unit test', () => {
+			/* tslint:disable:align */
+			const matchee = [ { project_name: 'mocky',
+				users: [{ username: 'uname', access_level: 'admin'}],
+				public_metadata: { creation_date: '2018-04-14T17:13:44.291Z' },
+				private_metadata: {},
+				admin_metadata: {} } ];
+			const template = types.array({
+				project_name: types.string,
+				users: types.array({
+					username: types.string,
+					access_level: types.string
+				}),
+				public_metadata: types.anything,
+				private_metadata: options.optional(types.anything),
+				admin_metadata: options.optional(types.anything)
+			});
+			/* tslint:enable:align */
+
+			options.match(template)(matchee).should.be.true;
+		});
+		it.only('Matching Arrays', () => {
+			/* tslint:disable:align */
+			const matchee: any = ['ss'];
+			const template: any = types.array;
+			/* tslint:enable:align */
+
+			options.match(template)(matchee).should.be.true;
+		});
 	});
 });

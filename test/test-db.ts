@@ -112,7 +112,7 @@ export const addFilee: (database: Database, user: Credentials) =>
 		path: 'example/path',
 		uuid: 'file1',
 		creator: user,
-		type: "generic"
+		type: 'generic'
 	};
 
 	await new File(mockFile).save();

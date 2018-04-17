@@ -5,6 +5,24 @@ import { default as User } from './User';
 
 import { FileTypeName, mimes } from '../../files';
 
+/*
+ * attributes:
+ * 	- nameInternal
+ *  - fullPathInternal
+ * 	- uuid
+ * 	- type
+ *  - size
+ * 	- parentFolderId
+ *  - containedFilesInternal
+ * 	- creatorName
+ *  - creator
+ *  - rootFolderOf
+ *  - uploadDate
+ *  - modifyDate
+ *  - status
+ *  - metadataInternal
+*/
+
 @Table
 export default class File extends Model<File> {
 	@AllowNull

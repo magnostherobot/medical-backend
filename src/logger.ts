@@ -4,6 +4,7 @@ import * as colors from 'colors/safe';
 import * as winston from 'winston';
 
 import { files } from './files';
+import { QueryOptions } from 'sequelize';
 
 type Colour = (s: string) => string;
 
@@ -252,6 +253,11 @@ const makeLogFunction: (level: LogLevel) => LogFunction = (
 	};
 };
 
+function forwardLog(level: LogLevel, message: string, meta: LoggingMetadata)
+ : any {
+	basicLogger.log(level, message, meta);
+}
+
 interface FetchParams {
 	before?: Date;
 	after?: Date;
@@ -265,40 +271,27 @@ interface LogItem {
 	timestamp: string;
 }
 
-const fetchLogs: (level?: LogLevel, params?: FetchParams) => LogItem[] = (
-	level?: LogLevel, params: FetchParams = {}
-): LogItem[] => {
-	const matches: (log: any, level?: LogLevel, params?: FetchParams)
-	=> boolean = (
-		log: any, minLevel?: LogLevel, fetchParams: FetchParams = {}
-	): boolean => {
-		if (!minLevel) {
-			// tslint:disable-next-line:no-parameter-reassignment
-			minLevel = 'info';
-		}
-		const time: Date = new Date(log.timestamp);
-		if (params.before && params.before < time) {
-			return false;
-		} else if (params.after && params.after > time) {
-			return false;
-		} else {
-			return true;
-		}
+/* tslint:disable */ 
+const fetchLogs2: (level?: LogLevel, params?: FetchParams) => Promise<LogItem[]> = (level?: LogLevel, params: FetchParams = {}): Promise<LogItem[]> => {
+	const options: winston.QueryOptions = {
+		from: params.after,
+		until: params.before,
+		start: 0,
+		order: 'desc',
+		fields: ['user', 'component', 'level', 'message', 'label', 'timestamp']
 	};
-	const out: LogItem[] = [];
-	basicLogger.stream({ level }).on('log', (log: any): void => {
-		if (matches(log, level, params)) {
-			out.push({
-				component: log.component,
-				level: log.level,
-				value: log.message,
-				username: log.user,
-				timestamp: log.timestamp
-			});
-		}
+
+	return new Promise((res, rej): void => {
+		basicLogger.query(options, function (err, results) {
+			if (err) {
+				/* TODO: handle me */
+				throw err;
+			}
+			res(results.basicFileTransport);
+		});
 	});
-	return out;
 };
+/* tslint:enable */
 
 export const logger: {
 	7: LogFunction;
@@ -339,7 +332,7 @@ export const logger: {
 	shutdown: LogFunction;
 	isEnabled: () => boolean;
 	forward: (level: LogLevel, message: string, meta: LoggingMetadata) => void;
-	fetch: (level: LogLevel, params?: FetchParams) => LogItem[];
+	fetch: (level: LogLevel, params?: FetchParams) => Promise<LogItem[]>;
 } = {
 	7: makeLogFunction('7'),
 	debug: makeLogFunction('debug'),
@@ -378,8 +371,8 @@ export const logger: {
 	emergency: makeLogFunction('emergency'),
 	shutdown: makeLogFunction('shutdown'),
 	isEnabled: (): boolean => !basicFileTransport.silent,
-	forward: basicLogger.log,
-	fetch: fetchLogs
+	forward: forwardLog,
+	fetch: fetchLogs2
 };
 
 export const logQuery: (query: string, duration: string) => void = (

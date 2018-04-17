@@ -111,19 +111,22 @@ class App {
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		const errRouter: ex.Router = ex.Router();
-		errRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
-			res.status(404)
+		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/cs3099group-be-4', authRouter);
+		this.express.use('/', defRouter);
+		this.express.use((req: ex.Request, res: ex.Response, 
+			next: ex.NextFunction): void => {
+			if (Object.keys(res.locals).length === 0) {
+				res.status(404)
 			.json({
 				status: 'error',
 				error : 'invalid_route',
 				error_description: 'Endpoints start from /cs3099group-be-4/'
 			});
+			} else {
+				next();
+			}
 		});
-		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);
-		this.express.use('/', defRouter);
-		this.express.use('/XX*', errRouter);
 	}
 
 	/**
@@ -142,5 +145,5 @@ export default new App(true).express;
  */
 // tslint:disable-next-line:variable-name
 export const TestApp: () => ex.Express = (): ex.Express => {
-	return new App(false).express;
+	return new App(true).express;
 };
