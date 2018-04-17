@@ -13,9 +13,6 @@ import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
 
-// TODO: figure this out
-const BASE_FILE_STORAGE: string = 'TODO: figure this out';
-
 /**
  * The type of an Express middleware callback.
  */
@@ -540,7 +537,6 @@ const getFile: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
 	logger.debug(`Getting file in ${req.query.view} view`);
-	res.locals.modified = true;
 	const file: File | null = res.locals.file;
 	if (file == null) {
 		return next(new RequestError(404, 'file_not_found'));
@@ -566,9 +562,7 @@ const getFileId: Middleware = getFile;
  * Post a File. / delete / move / etc
  */
 /* tslint:disable */
-const postFilePath: Middleware = async(
-	req: Request, res: Response, next: NextFunction
-): Promise<void> =>  {
+const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
 	logger.debug(`Receiving file to ${res.locals.parentFolder}`);
 
 	if (res.locals.file != null) {
@@ -579,6 +573,7 @@ const postFilePath: Middleware = async(
 	let remainingPath: string = res.locals.path.split(res.locals.deepestFolderName)[1];
 	console.log(`remainingPath: ${remainingPath}`)
 	
+	// Loop the part of the path that doesn't exist yet and create all the folders
 	while((remainingPath.match(/\//g) || []).length > 1){
 		// If there are more subfolders that dont exist, then create them
 		const subFolder: string = remainingPath.split("/")[1]
@@ -610,6 +605,8 @@ const postFilePath: Middleware = async(
 	});
 	// update parent directory of new directory
 	addSubFileToFolder(res.locals.deepestFolderId, file.id);
+
+	// TODO respond to correct query params (like update metadata, move, etc)
 	// pipe the data
 	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
 	next();
@@ -721,59 +718,49 @@ export class FileRouter {
 				logger.debug(`Searching for file ${filename}`);
 				res.locals.path = filename;
 				
+				// split path into parts
 				const fileNames: string[] = req.params.path.split('/');
+				res.locals.filename = fileNames[-1];
 				const project: Project | null = res.locals.project;
 				if (project == null) {
 					// Project should have been found by previous precondition
 					logger.debug('Project was not found: skipping finding file');
 					return next(new RequestError(404, 'project_not_found'));
 				}
-				let file: File = project.rootFolder;
-				// TODO Rewrite using sub-queries instead of repeated queries.
-				while (fileNames.length > 2) {
+				console.debug(fileNames);
+
+				let curDir: File | null = project.rootFolder;
+				res.locals.deepestFolderId = curDir.id;
+				res.locals.deepestFolderName = curDir.name;
+				let i: number = 0;
+				
+				// Loop through the path and find the deepest folder that exists. Also find the file if possible.
+				while (curDir && i < fileNames.length) {
 					const fileOrNull: File | null = await File.findOne({
 						include: [{all: true}],
 						where: {
-							name: fileNames[0],
-							parentFolder: file
+							name: fileNames[i],
+							parentFolder: curDir
 						}
 					});
 					if (fileOrNull == null) {
-						console.log("fileOrNull was null")
+						console.log("next subdir not found in DB");
 						return next();
-					} else {
-						console.log("^^")
-						console.log(file)
-						file = fileOrNull;
+					} 
+					
+					if(i < fileNames.length-1){
+						// Found next subdirectory
+						console.log(`found subdir ${fileOrNull.name}`);
+						res.locals.deepestFolderId = fileOrNull.id;
+						res.locals.deepestFolderName = fileOrNull.name;	
+					}else{
+						// Found actual file
+						console.log(`found file ${fileOrNull.name}`);
+						res.locals.file = fileOrNull;
 					}
-					fileNames.splice(0, 1);
+					curDir = fileOrNull;
 				}
 
-				if (file == null) {
-					console.log("file was null")
-					return next();
-				}
-				console.log(file)
-				const parentFolder: File | null = await File.findOne({
-					include: [
-						{ model: File, as: 'containedFilesInternal'}
-					],
-					where: {
-						parentFolderId: file.id,
-						name: fileNames[0]
-					}
-				});
-				console.log("parent folder: ")
-				console.log(parentFolder);
-				if (parentFolder == null) {
-					return next();
-				}
-				res.locals.parentFolder = parentFolder;
-				const tFile: File | undefined = parentFolder.containedFiles.find(
-					(f: File): boolean => f.name === fileNames[1]
-				);
-				res.locals.file = tFile;
-				res.locals.filename = fileNames[1];
 				next();
 			}
 		);
@@ -793,6 +780,12 @@ export class FileRouter {
 					}
 				});
 				res.locals.file = file;
+				if(file) {
+					res.locals.filename = file.name;
+					res.locals.deepestFolderId = file.parentFolderId;
+					if(file.parentFolder) res.locals.deepestFolderName = file.parentFolder.name;
+					else console.log("parentfolder not set!")
+				}
 				next();
 			}
 		);

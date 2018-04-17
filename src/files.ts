@@ -28,18 +28,6 @@ const readableStream: (filename: string, projectName: string, { offset, length }
 	};
 	return fs.createReadStream(path(filename, projectName), options);
 };
-/*
-// prj name, file uuid => if exists and return path string/ parent folder
-const findParent: (projectName: string, fileUUID: string) => File | null = (projectName: string, fileUUID: string) => {
-	if(!projectName || !fileUUID){
-		return null;
-	}
-	function findFile(dir: string, fileList: string[]) : string {
-
-	}
-
-}
-*/
 
 const logPath: (type: string, projectName?: string) => string = (
 	type: string, projectName?: string): string => {
@@ -209,9 +197,29 @@ export const createProjectFolder: (name: string) => void = (projName: string): a
 	}
 }
 
-export const addSubFileToFolder: (parentId: string, subFileId: string) => void = (parentId: string, subFileId: string): any => {
-	// TODO:
-	// fetch parent file object from database
-	// update parent file object
+export const addSubFileToFolder: (parentId: string, subFileId: string) => Promise<boolean> = async(parentId: string, subFileId: string): Promise<boolean> => {
+	// Fetch parent and subFile object from database
+	const parent: File | null = await File.findOne({
+		include: [{all: true}],
+		where: {
+			uuid: parentId
+		}
+	});
+	const file: File | null = await File.findOne({
+		include: [{all: true}],
+		where: {
+			uuid: subFileId
+		}
+	});
+	if(!parent || !file){
+		return false;
+	}
+	// update both objects
+	parent.containedFiles.push(file);
+	file.parentFolderId = parent.id;
 	// save
+	await parent.save();
+	await file.save();
+
+	return true;
 }
