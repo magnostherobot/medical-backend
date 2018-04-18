@@ -31,6 +31,10 @@ export default class ContributorGroup extends Model<ContributorGroup> {
 	@Column
 	public canEditUserPermissions!: boolean;
 
+	@Column
+	public canDeleteProject!: boolean;
+	
+
 	@AllowNull
 	@Column(DataType.TEXT)
 	public description!: string | null;

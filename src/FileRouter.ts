@@ -12,6 +12,8 @@ import { View, files, views } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
+import UserHasPrivilege from './db/model/UserHasPrivilege';
+import { Contains } from 'sequelize-typescript';
 
 // TODO: figure this out
 const BASE_FILE_STORAGE: string = 'TODO: figure this out';
@@ -367,23 +369,63 @@ const postCurUser: Middleware = async(
 const postUsername: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
-	//if (req.query.action === 'create')
 	let user: User | null | undefined = res.locals.user;
 	res.locals.modified = true;
-	if (user == null) {
-		logger.debug('Adding new user');
-		user = new User({
-			username: req.params.username,
-			password: req.params.password
-		});
-	} else {
-		logger.debug('Editing user');
-		user.password = req.params.password;
+
+	
+	if( req.query.action === 'update'){
+		if (user!= null){
+			logger.debug('Editing user');
+			const priv: UserGroup[] | null = await UserGroup.findAll({
+				include: [{all: true}],
+				where: {
+					name: req.body.privileges
+				}
+			})
+			user.password = req.params.password;
+			if (req.body) {
+				user.metadata = req.body;
+			}
+			await user.save();
+			await user.$set('userGroups', priv);
+		}
+		else{
+			next(new RequestError(404, 'user_not_found'));
+			return;
+		}
 	}
-	if (req.body) {
-		user.metadata = req.body;
+	else if( req.query.action === 'delete'){
+		logger.debug('Deleting a user');
+		if (user!= null){
+			await user.destroy();
+		}
+		else{
+			next(new RequestError(404, 'user_not_found'));
+			return;
+		}
 	}
-	await user.save()
+	else{
+		if (user == null) {
+			logger.debug('Adding new user');
+			const priv: UserGroup[] | null = await UserGroup.findAll({
+				include: [{all: true}],
+				where: {
+					name: req.body.privileges
+				}
+			})
+			user = new User({
+				username: req.params.username,
+				password: req.params.password,
+			});
+			await user.save();
+			await user.$set('userGroups', priv);
+		}
+		else{
+			next(new RequestError(400, 'user_already_exists'));
+			return;
+		}
+	}
+	
 	next();
 };
 
@@ -611,14 +653,17 @@ export class FileRouter {
 		this.router.get ('/users',									       getUsers);
 		this.router.get ('/users/:username',				            getUsername);
 		this.router.post('/users/:username',				           postUsername);
+			// create, update, delete
 		this.router.get ('/users/:username/properties',           getUserProperties);
 		this.router.get ('/current_user',					             getCurUser);
 		this.router.post('/current_user',					            postCurUser);
+			// update
 		// Projects
 		this.router.get ('/project_roles',					        getProjectRoles);
 		this.router.get ('/projects',							        getProjects);
 		this.router.get ('/projects/:project_name',                  getProjectName);
 		this.router.post('/projects/:project_name',                 postProjectName);
+			// create, update, delete, update_grant 
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);

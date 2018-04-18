@@ -133,7 +133,6 @@ export default class User extends Model<User> {
 		} else if (this.projects === undefined) {
 			this.projects = [];
 		}
-		console.log("2")
 		return {
 			username : this.username,
 			privileges: this.userGroups!
