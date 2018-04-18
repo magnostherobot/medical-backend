@@ -50,10 +50,30 @@ let storage = Multer.diskStorage({
 
 export const upload: Multer.Instance = Multer({ storage: storage });
 
-export const moveFile: (filename: string, projectname: string, fileId: string) => void = 
-	(filename: string, projectname: string, fileId: string): void => {
+export const saveFile: (filename: string, projectname: string, fileId: string, offset: number, truncate?: boolean) => void = 
+	(filename: string, projectname: string, fileId: string, offset: number, truncate?: boolean): void => {
+	// TODO only overwrite beginning of file and keep rest of data
+	// ensure file exists
+	fs.ensureFileSync(`${CONTENT_BASE_DIRECTORY}/${projectname}/${fileId}`);
+	// truncate to offset
+	truncateFile(fileId, projectname, offset);
+	// open streams to append to file
+	let rStream = fs.createReadStream(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
+	let wStream = fs.createWriteStream(`${CONTENT_BASE_DIRECTORY}/${projectname}/${fileId}`, {'flags':'a'});
+	rStream.pipe(wStream);
+}
+
+export const deleteFile: (fileId: string, projectName: string) => void = 
+	(fileId: string, projectName: string): void => {
 	
-	fs.moveSync(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`, `${CONTENT_BASE_DIRECTORY}/${projectname}/${fileId}`);
+	fs.removeSync(`${CONTENT_BASE_DIRECTORY}/${projectName}/${fileId}`);
+}
+
+export const truncateFile: (fileId: string, projectName: string, newLength: number) => void = 
+	(fileId: string, projectName: string, newLength: number): void => {
+	// get the file descriptor of the file to be truncated
+	const fd: number = fs.openSync(`${CONTENT_BASE_DIRECTORY}/${projectName}/${fileId}`, 'r+');
+	fs.ftruncateSync(fd, newLength);
 }
 
 export const files: {

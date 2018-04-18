@@ -7,7 +7,7 @@ import { default as UserGroup } from './db/model/UserGroup';
 
 import { NextFunction, Request, Response, Router } from 'express';
 import { RequestError } from './errors/errorware';
-import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, moveFile } from './files';
+import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, deleteFile, truncateFile, saveFile } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -546,7 +546,9 @@ const getFile: Middleware = async(
 	}
 	const project: Project = res.locals.project;
 	const view: View = views[req.query.view || 'meta'];
-	res.locals.function = view.getResponseFunction(req, res);
+	// TODO return 400 for unsuported views
+	// TODO raw view accepts extra query params offset and length
+	res.locals.function = view.getResponseFunction(req, res); 
 	res.locals.data = view.getResponseData(file, project, req.query);
 	next();
 };
@@ -561,6 +563,42 @@ const getFilePath: Middleware = getFile;
  */
 const getFileId: Middleware = getFile;
 
+namespace qH {
+	export const hasAction: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action ? true : false);
+	}
+	export const setsMetadata: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'set_metadata' ? true : false);
+	}
+	export const mksDir: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'mkdir' ? true : false);
+	}
+	export const deletes: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'delete' ? true : false);
+	}
+	export const moves: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'move' ? true : false);
+	}
+	export const copys: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'copy' ? true : false);
+	}
+	export const overwrites: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.overwrite ? req.query.overwrite : false);
+	}
+	export const offset: ((req: Request) => number) = (req: Request): number => {
+		return (req.query.offset ? req.query.offset : 0);
+	}
+	export const truncates: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.truncate ? req.query.truncate : false);
+	}
+	export const isFinal: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.final ? req.query.final : false);
+	}
+	export const nothingSet: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (!hasAction(req) && !overwrites(req) && !truncates(req) && !isFinal(req));
+	}
+}
+
 /**
  * Post a File. / delete / move / etc
  */
@@ -568,60 +606,119 @@ const getFileId: Middleware = getFile;
 const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
 	logger.debug(`Receiving file ${res.locals.path}`);
 	console.log(req.file);
-	// req.query.action
+	// req.query.action: set_metadata, mkdir, delete, move, copy
+	// req.query.overwrite (bool)
+	// req.query.offset (int)
+	// req.query.truncate (bool)
+	// req.query.final (bool)
 
-	if (res.locals.file != null) {
-		// TODO update metadata or append to file
+	// Return 404 when one of these actions is attempted on non-existing file
+	if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
+		logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
+		next(new RequestError(404, 'file_not_found'));
+	}
+
+	// Return 400 when one of these actions is attempted on existing file
+	if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
+		logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
 		next(new RequestError(400, 'file_exists'));
 	}
 
-	// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
-	let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
-		: res.locals.path.split(res.locals.deepestFolderName)[1];
-	
-	// Loop the part of the path that doesn't exist yet and create all the folders
-	while((remainingPath.match(/\//g) || []).length > 1){
-		// If there are more subfolders that dont exist, then create them
-		const subFolder: string = remainingPath.split("/")[1]
-		logger.debug(`Adding subfolder \'${subFolder}\'`);
-		const dir: File = new File({
+	// Sets final if requested
+	if (res.locals.file && qH.isFinal(req)) {
+		res.locals.file.status = 'final';
+	}
+
+	// Sets Metadata if requested
+	if(qH.setsMetadata(req)){
+		res.locals.file.metadata = req.body;
+		await res.locals.file.save();
+		next();
+	}
+
+	// Deletes File if requested
+	if(qH.deletes(req)){
+		deleteFile(res.locals.file.uuid, res.locals.project.name);
+		await res.locals.file.delete();
+		next();
+	}
+
+	// Moves File if requested
+	if(qH.moves(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented'));
+	}
+
+	// Copies File if requested
+	if(qH.copys(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented'));
+	}
+
+	// Overwrite data but not truncate
+	// eg. OOOONNNNNNOOOO (O = old data, N = new data)
+	if(qH.overwrites(req) && !qH.truncates(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
+	}
+
+	// Create File or Folder if file doesn't exist
+	if (res.locals.file == null){
+		// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+		let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
+			: res.locals.path.split(res.locals.deepestFolderName)[1];
+
+		// Loop the part of the path that doesn't exist yet and create all the folders
+		while((remainingPath.match(/\//g) || []).length > 1){
+			// If there are more subfolders that dont exist, then create them
+			const subFolder: string = remainingPath.split("/")[1]
+			logger.debug(`Adding subfolder \'${subFolder}\'`);
+			const dir: File = new File({
+				uuid: uuid.generate(),
+				mimetype: 'inode/directory',
+				nameInternal: subFolder
+			});
+			await dir.save();
+
+			// update parent directory of new directory
+			if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
+				logger.debug("adding file to folder failed!")
+				next(new RequestError(500, 'Adding file to folder failed'))
+			}
+			// update vars
+			remainingPath = remainingPath.split(subFolder)[1]
+			res.locals.deepestFolderName = subFolder;
+			res.locals.deepestFolderId = dir.uuid;
+		}
+
+		logger.debug(`Writing file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
+		res.locals.file = new File({
 			uuid: uuid.generate(),
-			mimetype: 'inode/directory',
-			nameInternal: subFolder//,
-			//parentFolderId: res.locals.deepestFolderId
+			nameInternal: res.locals.filename
 		});
-		await dir.save();
+		res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
+
+		await res.locals.file.save();
 
 		// update parent directory of new directory
-		if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
+		if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
 			logger.debug("adding file to folder failed!")
 			next(new RequestError(500, 'Adding file to folder failed'))
 		}
-		// update vars
-		remainingPath = remainingPath.split(subFolder)[1]
-		res.locals.deepestFolderName = subFolder;
-		res.locals.deepestFolderId = dir.uuid;
 	}
 
-	logger.debug(`now adding the actual file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
-
-	const file: File = new File({
-		uuid: uuid.generate(),
-		nameInternal: res.locals.filename
-	});
-	file.mimetype = req.file.mimetype;
-
-	await file.save();
-
-	// update parent directory of new directory
-	if(!await addSubFileToFolder(res.locals.deepestFolderId, file.uuid)){
-		logger.debug("adding file to folder failed!")
-		next(new RequestError(500, 'Adding file to folder failed'))
+	// Move temp file to proper location (if not directory)
+	if(!qH.mksDir(req)){
+		saveFile(req.file.originalname, res.locals.project.name, res.locals.file.uuid, qH.offset(req));
 	}
 
-	// Move temp file to proper location
-	moveFile(req.file.originalname, res.locals.project.name, file.uuid);
+	// Sets final if requested
+	if (qH.isFinal(req)) {
+		res.locals.file.status = 'final';
+	}
+	
 	next();
+	
 };
 /* tslint:enable */
 
