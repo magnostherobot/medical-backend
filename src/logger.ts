@@ -138,7 +138,7 @@ const consoleTransport: winston.TransportInstance =
 const basicFileTransport: winston.TransportInstance =
 	new winston.transports.File({
 	name: 'basicFileTransport',
-	level: 'info',
+	level: 'debug',
 	label: 'Basic File Transport',
 	silent: false,
 	colorize: false,
@@ -193,7 +193,7 @@ const criticalFileTransport: winston.TransportInstance =
 const queryFileTransport: winston.TransportInstance =
 	new winston.transports.File({
 	name: 'queryFileTransport',
-	level: 'info',
+	level: 'debug',
 	label: 'Query Logs',
 	silent: false,
 	colorize: false,
@@ -271,7 +271,7 @@ interface LogItem {
 	timestamp: string;
 }
 
-/* tslint:disable */ 
+/* tslint:disable */
 const fetchLogs2: (level?: LogLevel, params?: FetchParams) => Promise<LogItem[]> = (level?: LogLevel, params: FetchParams = {}): Promise<LogItem[]> => {
 	const options: winston.QueryOptions = {
 		from: params.after,
