@@ -168,7 +168,7 @@ const getProperties: Middleware = (
 const postProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
-	logger.debug('Editing server properties');
+	console.log('Editing server properties');
 	res.locals.modified = true;
 	for (const newProp of req.body) {
 		const prop: Property | undefined = serverConfig.find(
@@ -189,6 +189,7 @@ const postProperties: Middleware = (
 			return;
 		}
 	}
+	console.log("Posted Properties successfully");
 	next();
 };
 
@@ -629,7 +630,8 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 
 	// Sets final if requested
 	if (res.locals.file && qH.isFinal(req)) {
-		res.locals.file.status = 'final';
+		res.locals.file.status = 'preprocessing';
+		// start file conversion
 	}
 
 	// Sets Metadata if requested
@@ -767,7 +769,7 @@ export class FileRouter {
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
 		this.router.post('/projects/:project_name/files/:path',
-			upload.single('userfile'), postFilePath);
+											upload.single('userfile'), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 

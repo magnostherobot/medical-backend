@@ -15,20 +15,13 @@ export type Value =
 const matchNoCurry:
 	(template: TemplateValue, value: Value | undefined) => boolean =
 	(template: TemplateValue, value: Value | undefined): boolean => {
-	console.log("matchNoCurry()")
-	console.log(template)
-	console.log(value)
 	if (types.atom(template)) {
-		console.log("atom")
 		return template === value;
 	} else if (types.function(template)) {
-		console.log("function")
 		return template(value);
 	} else if (types.atom(value) || value === undefined) {
-		console.log("atom2")
 		return false;
 	} else if (types.object(template)) {
-		console.log("object")
 		return Object.keys(template)
 			.every((key: string): boolean => {
 				const v: Value | undefined = value[key];
@@ -41,11 +34,7 @@ const matchNoCurry:
 
 // tslint:disable-next-line:typedef
 export const match = (template: TemplateValue, value?: Value) => {
-	console.log("match()")
-	console.log(template)
-	console.log(value)
 	if (value === undefined) {
-		console.log("is undefined")
 		return matchNoCurry.bind(null, template);
 	}
 	return matchNoCurry(template, value);
@@ -96,7 +85,7 @@ export const array = (template: TemplateValue, values?: Value[]) => {
 	const m: Checker = types.function(template)
 		? template
 		: match.bind(null, template);
-	return values.every(m); //
+	return values.every(m);
 };
 
 // tslint:disable-next-line:typedef
