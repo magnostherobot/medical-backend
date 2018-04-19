@@ -563,6 +563,9 @@ const getFilePath: Middleware = getFile;
  */
 const getFileId: Middleware = getFile;
 
+/**
+ * Checks the parameters for file posting
+ */
 namespace qH {
 	export const hasAction: ((req: Request) => boolean) = (req: Request): boolean => {
 		return (req.query.action ? true : false);
@@ -638,8 +641,9 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 
 	// Deletes File if requested
 	if(qH.deletes(req)){
+		logger.info(`File ${res.locals.file.name} will be deleted`)
 		deleteFile(res.locals.file.uuid, res.locals.project.name);
-		await res.locals.file.delete();
+		await res.locals.file.destroy();
 		next();
 	}
 

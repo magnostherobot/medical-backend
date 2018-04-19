@@ -60,7 +60,11 @@ export const saveFile: (filename: string, projectname: string, fileId: string, o
 	// open streams to append to file
 	let rStream = fs.createReadStream(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
 	let wStream = fs.createWriteStream(`${CONTENT_BASE_DIRECTORY}/${projectname}/${fileId}`, {'flags':'a'});
-	rStream.pipe(wStream);
+	rStream.pipe(wStream).on('finish', () => {
+		fs.removeSync(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
+	}).on('error', (err: any) => {
+		logger.debug(`Error while saving file to proper location: ${err}`);
+	});
 }
 
 export const deleteFile: (fileId: string, projectName: string) => void = 
