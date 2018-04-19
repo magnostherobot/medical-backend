@@ -22,16 +22,7 @@ const port: number = process.env.PORT
 	: DEFAULT_PORT;
 logger.info(`Port ${port} chosen`);
 
-// tslint:disable:no-floating-promises
-(async(): Promise<void> => {
-	try {
-		logger.info('Authenticating with database');
-		await seq.authenticate();
-	} catch (err) {
-		logger.error(`Cannot authenticate with database: ${err}`);
-		process.exit(1);
-	}
-
+async function reset(): Promise<void> {
 	try {
 		logger.info('Resetting Database');
 		await seq.sync({
@@ -90,6 +81,20 @@ logger.info(`Port ${port} chosen`);
 			username: 'hafeez'
 		}
 	});
+
+}
+
+// tslint:disable:no-floating-promises
+(async(): Promise<void> => {
+	try {
+		logger.info('Authenticating with database');
+		await seq.authenticate();
+	} catch (err) {
+		logger.error(`Cannot authenticate with database: ${err}`);
+		process.exit(1);
+	}
+
+	//await reset();
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {
