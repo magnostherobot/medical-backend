@@ -13,6 +13,7 @@ import { uuid } from '../../uuid'
 
 // Various constants for placing files and defining tiles
 const baseDirname: string = '/cs/scratch/cjd24/0701-extraction';
+const extensionBinariesDir: string = __dirname + `/../../../ext/bin/`;
 const extractionDirectory: string = `${baseDirname}/`;
 const outputImageData: string = `${baseDirname}-processed/`;
 const outputImageDirectory: string = `${baseDirname}-processed/data/`;
@@ -530,8 +531,8 @@ const zoomTier: (
 				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs + 1].file} `;
 			}
 
-			let outputFileName: string =`${outputImageData}tmp/${uuid.generate()}.png`
-			shell.exec(`vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`)
+			let outputFileName: string =`${outputImageData}tmp/${uuid.generate()}.png`;
+			shell.exec(`${extensionBinariesDir}vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
 
 			// Rescale and push to file
 			await sharp(outputFileName)
@@ -614,12 +615,14 @@ const extrapolateDimension: (
 				y_offset: ys,
 				width: tileSize,
 				height: tileSize,
-				file: `img-${filecounter++}.png`
+				file: `img-${filecounter}.png`
 			});
 			const sortedSegments: Segment[][] =
 				orderSegments(findRelatedTiles(filteredDataBlocks, desired));
 
-			await extractAndStitchChunks(sortedSegments, desired);
+				(await extractAndStitchChunks(sortedSegments, desired))
+				.toFile(`${outputImageDirectory}img-${filecounter++}`);
+
 			process.stdout.write(">");
 			finalCZIJson.total_files++;
 		}
@@ -647,6 +650,7 @@ const extrapolateDimension: (
 		}; Begin computing zoom tiers...\n`);
 
 	const retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
+	writeJSONToFile(`${outputImageData}stageMap-${cVal}-${0}`, retHeightMap);
 	for (let stage: number = 1; stage < Math.log2(maxZoom); stage++) {
 		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
 		await zoomTier(retHeightMap[stage - 1])
@@ -704,7 +708,11 @@ const createSupportedViewsObject: () => void = (): void => {
 
 	// Cleanup and create "smart" supported views object without whole metadata
 	cleanSupportedViews(supportedViews);
-	supportedViews.scalable_image.metadata = {};
+	supportedViews.scalable_image.metadata = {
+		tile_size: tileSize,
+		max_zoom: maxZoom,
+		tile_overlap: tileOverlap
+	};
 	writeJSONToFile(
 		`${outputImageData}supported_views_minus_xml.json`, supportedViews);
 };
