@@ -5,11 +5,29 @@ import { default as User } from './User';
 
 import { FileTypeName, mimes } from '../../files';
 
+/*
+ * attributes:
+ * 	- nameInternal
+ *  - fullPathInternal
+ * 	- uuid
+ * 	- type
+ *  - size
+ * 	- parentFolderId
+ *  - containedFilesInternal
+ * 	- creatorName
+ *  - creator
+ *  - rootFolderOf
+ *  - uploadDate
+ *  - modifyDate
+ *  - status
+ *  - metadataInternal
+*/
+
 @Table
 export default class File extends Model<File> {
 	@AllowNull
 	@Column
-	private nameInternal!: string;
+	public nameInternal!: string;
 
 	@AllowNull
 	@Column
@@ -67,10 +85,14 @@ export default class File extends Model<File> {
 
 	public set name(name: string) {
 		this.nameInternal = name;
-		this.fullPathInternal = this.fullPathInternal.substring(
-			0,
-			this.fullPathInternal.lastIndexOf('/') + 1
-		) + this.name;
+		if (this.fullPathInternal) {
+			this.fullPathInternal = this.fullPathInternal.substring(
+				0,
+				this.fullPathInternal.lastIndexOf('/') + 1
+			) + this.name;
+		} else {
+			this.fullPathInternal = this.name;
+		}
 	}
 
 	public get fullPath(): string {

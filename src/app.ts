@@ -43,6 +43,7 @@ class App {
 		logger.debug('Constructing router');
 		this.logEnabled = enableLog;
 		this.express = ex();
+		this.cors();
 		this.express.use(
 			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
 				logger.info(`Connection from ${req.ip} requesting ${req.url}`);
@@ -66,6 +67,22 @@ class App {
 			}
 		);
 		this.errorware();
+	}
+
+	/**
+	 * Enables Cross-Origin for the server.
+	 */
+	public cors(): void {
+		this.express.use((
+			req: ex.Request, res: ex.Response, next: ex.NextFunction
+		): void => {
+			res.header('Access-Control-Allow-Origin', '*');
+			res.header(
+				'Access-Control-Allow-Headers',
+				'Origin, X-Requested-With, Content-Type, Accept'
+			);
+			next();
+		});
 	}
 
 	/**
@@ -114,8 +131,8 @@ class App {
 		this.express.use('/cs3099group-be-4', FileRouter);
 		this.express.use('/cs3099group-be-4', authRouter);
 		this.express.use('/', defRouter);
-		this.express.use((req: ex.Request, res: ex.Response, 
-			next: ex.NextFunction): void => {
+		this.express.use(
+			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
 			if (Object.keys(res.locals).length === 0) {
 				res.status(404)
 			.json({

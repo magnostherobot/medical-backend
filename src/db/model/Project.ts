@@ -36,6 +36,10 @@ export default class Project extends Model<Project> {
 		return this.rootFolderInternal;
 	}
 
+	public get properties(): object {
+		return this;
+	}
+
 	public get metadata(): {
 		public_metadata?: Metadata;
 		private_metadata?: Metadata;
