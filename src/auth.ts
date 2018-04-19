@@ -193,8 +193,8 @@ export const unauthorisedErr: Errorware =
 	if (isUnauthorizedError(err)) {
 		return next(new RequestError(
 			err.status,
-			err.code,
-			err.message
+			'not_authorised',
+			'user does not have correct authorisation for task'
 		));
 	}
 	next(err);
@@ -210,7 +210,8 @@ export const unauthorisedErr: Errorware =
  */
 export const isAdmin: Middleware =
 (req: Request, res: Response, next: NextFunction): void => {
-	const admin: boolean = req.user.object.userGroups
+	// tslint:disable-next-line:no-non-null-assertion
+	const admin: boolean = req!.user!.object!.userGroups!
 		.some((x: UserGroup): boolean => x.name === 'admin');
 
 	if (!admin) {

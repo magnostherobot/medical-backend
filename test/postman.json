@@ -1,0 +1,267 @@
+{
+	"info": {
+		"name": "JH",
+		"_postman_id": "323a3189-bd95-4f51-b985-d2ca626300ec",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "authorised",
+			"description": null,
+			"item": [
+				{
+					"name": "/projects",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/log",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/log",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"log"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/_supported_protocols",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/_supported_protocols_",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"_supported_protocols_"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/project_roles",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/project_roles",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"project_roles"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "/oauth/token",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "7cbb2980-4092-4675-af5e-cfcbd1c00b81",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "7ce27395-de92-457b-97cc-7728824c821d",
+						"type": "text/javascript",
+						"exec": [
+							"let res = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"access_token\", res.access_token);",
+							"postman.setEnvironmentVariable(\"refresh_token\", res.refresh_token);"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"description": "",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{dummy_admin_username}}",
+							"description": "",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{dummy_admin_pass}}",
+							"description": "",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{host}}/{{endpoint}}/oauth/token",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"{{endpoint}}",
+						"oauth",
+						"token"
+					]
+				},
+				"description": "wefrwrbjk;"
+			},
+			"response": []
+		}
+	]
+}

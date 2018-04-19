@@ -1,0 +1,245 @@
+{
+	"variables": [],
+	"info": {
+		"name": "JH",
+		"_postman_id": "d9fad1ce-92af-fc2c-ff74-074fc681c7ee",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "authorised",
+			"description": "",
+			"item": [
+				{
+					"name": "/projects",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects",
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/log",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/log",
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/_supported_protocols",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/_supported_protocols_",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/project_roles",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/project_roles",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files_by_id",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files_by_id/d124ef49-e9e3-4794-bf50-76f40797b5d5",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pres",
+									"description": "",
+									"type": "file",
+									"src": "triangle_down_black.png"
+								}
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/path/to/image.png",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvYmplY3QiOnsidXNlcm5hbWUiOiJoYWZlZXoiLCJwYXNzd29yZEludGVybmFsIjpudWxsLCJjcmVhdGlvbkRhdGUiOiIyMDE4LTA0LTE2VDEyOjA1OjUyLjQ2N1oiLCJ1cGRhdGVkQXQiOiIyMDE4LTA0LTE2VDEyOjA1OjUyLjQ2N1oiLCJ1c2VyR3JvdXBzIjpbeyJpZCI6MSwibmFtZSI6ImxvZ2dpbmciLCJjYW5DcmVhdGVVc2VycyI6bnVsbCwiY2FuRGVsZXRlVXNlcnMiOm51bGwsImNhbkVkaXRVc2VycyI6bnVsbCwiY2FuQ3JlYXRlUHJvamVjdHMiOm51bGwsImNhbkRlbGV0ZVByb2plY3RzIjpudWxsLCJjYW5FZGl0UHJvamVjdHMiOm51bGwsImNhbkFjY2Vzc0xvZ3MiOnRydWUsImlzSW50ZXJuYWwiOmZhbHNlLCJkZXNjcmlwdGlvbiI6IkFsbG93cyBQb3N0IHRvIExvZyIsIlVzZXJIYXNQcml2aWxlZ2UiOnsidXNlcm5hbWUiOiJoYWZlZXoiLCJwcml2aWxlZ2VJZCI6MX19LHsiaWQiOjIsIm5hbWUiOiJhZG1pbiIsImNhbkNyZWF0ZVVzZXJzIjp0cnVlLCJjYW5EZWxldGVVc2VycyI6dHJ1ZSwiY2FuRWRpdFVzZXJzIjp0cnVlLCJjYW5DcmVhdGVQcm9qZWN0cyI6dHJ1ZSwiY2FuRGVsZXRlUHJvamVjdHMiOnRydWUsImNhbkVkaXRQcm9qZWN0cyI6dHJ1ZSwiY2FuQWNjZXNzTG9ncyI6bnVsbCwiaXNJbnRlcm5hbCI6ZmFsc2UsImRlc2NyaXB0aW9uIjoiU3lzdGVtcyBhZG1pbiIsIlVzZXJIYXNQcml2aWxlZ2UiOnsidXNlcm5hbWUiOiJoYWZlZXoiLCJwcml2aWxlZ2VJZCI6Mn19XSwicHJvamVjdHMiOltdfSwiaWF0IjoxNTIzODgwMzU2LCJleHAiOjE1MjM5MDE5NTZ9.LrRWCzjBQmPtEkthmPJvVdl6XsYqA4Myqw-VFHMbQ8o",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "triangle",
+									"description": "",
+									"type": "file",
+									"src": "triangle_down_black.png"
+								}
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/",
+					"request": {
+						"url": "{{host}}/",
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "/oauth/token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"let res = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"access_token\", res.access_token);",
+							"postman.setEnvironmentVariable(\"refresh_token\", res.refresh_token);"
+						]
+					}
+				}
+			],
+			"request": {
+				"url": "{{host}}/{{endpoint}}/oauth/token",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "password",
+							"description": "",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "{{dummy_admin_username}}",
+							"description": "",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{dummy_admin_pass}}",
+							"description": "",
+							"type": "text"
+						}
+					]
+				},
+				"description": "wefrwrbjk;"
+			},
+			"response": []
+		}
+	]
+}

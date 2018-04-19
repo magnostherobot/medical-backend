@@ -6,15 +6,12 @@ import { UserFullInfo, default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
 import { NextFunction, Request, Response, Router } from 'express';
-
 import { RequestError } from './errors/errorware';
-import { files } from './files';
+import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, deleteFile, truncateFile, saveFile } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
 
-// TODO: figure this out
-const BASE_FILE_STORAGE: string = 'TODO: figure this out';
 
 /**
  * The type of an Express middleware callback.
@@ -32,8 +29,10 @@ export type Middleware =
  *     "required": array(string)
  * })
  */
-const getProtocols: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProtocols: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Fetching supported protocols');
 	res.locals.data = {
 		supported: [],
 		required: [
@@ -60,10 +59,13 @@ const getProtocols: Middleware =
  *     "value": anything
  * })
  */
-const postLog: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const postLog: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	res.locals.modified = true;
+	logger.debug('Adding forwarded log');
 	if (!req.user.hasPrivilege('logging')) {
-		next(new RequestError(400, 'invalid_privilege'));
+		next(new RequestError(401, 'invalid_privilege'));
 		return;
 	} else if (!logger.isEnabled()) {
 		next(new RequestError(501, 'logging_not_enabled'));
@@ -100,11 +102,19 @@ const postLog: Middleware =
  *     "timestamp": string
  * })
  */
-const getLog: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getLog: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Fetching log');
+	res.locals.modified = true;
 	if (!req.user.hasPrivilege('admin')) {
-		next(new RequestError(400, 'invalid_privilege'));
+		next(new RequestError(401, 'invalid_privilege'));
 	}
+	/* tslint:disable */ 
+	if(!req.params.level) req.params.level = 'info';
+	if(!req.params.before) req.params.before = new Date();
+	if(!req.params.after) req.params.after = new Date(0);
+	/* tslint:enable */
 	res.locals.data = logger.fetch(
 		req.params.level, {
 			before: new Date(req.params.before),
@@ -135,8 +145,10 @@ const getLog: Middleware =
  *     "value": alternative([string, integer, boolean])
  * })
  */
-const getProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing server properties');
 	res.locals.data = serverConfig;
 	next();
 };
@@ -153,8 +165,11 @@ const getProperties: Middleware =
  *     "value": alternative([string, integer, boolean])
  * })
  */
-const postProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const postProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Editing server properties');
+	res.locals.modified = true;
 	for (const newProp of req.body) {
 		const prop: Property | undefined = serverConfig.find(
 			(p: Property): boolean => p.id === newProp.id
@@ -188,8 +203,10 @@ const postProperties: Middleware =
  *     "internal": boolean
  * })
  */
-const getUserPrivileges: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getUserPrivileges: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Listing all user privileges');
 	const usergroups: UserGroup[] = await UserGroup.findAll();
 	res.locals.data = usergroups.map(
 		(ug: UserGroup) => ug.getPrivilege()
@@ -220,6 +237,7 @@ const getUserPrivileges: Middleware =
 const getUsers: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	logger.debug('Listing all registered users');
 	const users: User[] = await User.findAll({
 		include: [
 			UserGroup,
@@ -240,8 +258,15 @@ const getUsers: Middleware = async(
 /**
  * Expose additional configuration options for individual users
  */
-const getUserProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getUserProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing additional properties for a user');
+	res.locals.modified = true;
+	if (res.locals.user == null) {
+		next(new RequestError(404, 'user_not_found'));
+		return;
+	}
 	res.locals.data = res.locals.user.properties;
 	next();
 };
@@ -266,9 +291,12 @@ const getUserProperties: Middleware =
  *     "private_admin_metadata": metadata
  * }
  */
-const getUsername: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
-	if (res.locals.user === null) {
+const getUsername: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug(`Listing user ${res.locals.user}`);
+	res.locals.modified = true;
+	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
 	}
@@ -276,8 +304,10 @@ const getUsername: Middleware =
 	next();
 };
 
-const getCurUser: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getCurUser: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Listing current user');
 	res.locals.data = req.user.fullInfo;
 	next();
 };
@@ -300,8 +330,11 @@ const getCurUser: Middleware =
  *     "private_admin_metadata": not_present
  * }
  */
-const postCurUser: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postCurUser: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Editing current user');
+	res.locals.modified = true;
 	try {
 		await req.user.updateInfo(req.body);
 		await req.user.save();
@@ -328,18 +361,24 @@ const postCurUser: Middleware =
  *     "private_admin_metadata": optional(metadata)
  * }
  */
-const postUsername: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postUsername: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
+	res.locals.modified = true;
 	if (user == null) {
+		logger.debug('Adding new user');
 		user = new User({
 			username: req.params.username,
 			password: req.params.password
 		});
 	} else {
+		logger.debug('Editing user');
 		user.password = req.params.password;
 	}
-	user.metadata = req.body;
+	if (req.body) {
+		user.metadata = req.body;
+	}
 	next();
 };
 
@@ -354,8 +393,11 @@ const postUsername: Middleware =
  *     "internal": boolean
  * })
  */
-const getProjectRoles: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjectRoles: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	res.locals.modified = true;
+	logger.debug('Listing available project roles');
 	const roles: ContributorGroup[] = await ContributorGroup.findAll();
 	res.locals.data = roles.filter(
 		(cg: ContributorGroup): boolean => !cg.isInternal
@@ -382,8 +424,11 @@ const getProjectRoles: Middleware =
  *     "admin_metadata": optional(metadata)
  * })
  */
-const getProjects: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjects: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Listing all projects');
+	res.locals.modified = true;
 	const projects: Project[] = await Project.findAll({
 		include: [
 			User
@@ -412,8 +457,11 @@ const getProjects: Middleware =
  *     "admin_metadata": optional(metadata)
  * }
  */
-const getProjectName: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const getProjectName: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	logger.debug('Getting project properties');
+	res.locals.modified = true;
 	const project: Project | null = res.locals.project;
 	if (project == null) {
 		return next(new RequestError(404, 'project_not_found'));
@@ -436,20 +484,32 @@ const getProjectName: Middleware =
  *     "admin_metadata": optional(metadata)
  * }
  */
-const postProjectName: Middleware =
-	async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+const postProjectName: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
 	let project: Project | null = res.locals.project;
+	res.locals.modified = true;
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
+		logger.debug('Adding new project');
 		const file: File = new File({
-			mimetype: 'inode/directory'
+			uuid: uuid.generate(),
+			mimetype: 'inode/directory',
+			parentFolderId: rootPathId
 		});
+		file.name = '';	// Leave blank as discussed
 		promise = file.save();
+		createProjectFolder(req.params.project_name);
+
 		project = new Project({
 			name: req.params.project_name,
 			rootFolder: file
 		});
+		project.rootFolderId = file.uuid;
+	} else {
+		logger.debug('Updating project properties');
 	}
+
 	project.metadata = req.body;
 	// tslint:disable-next-line:await-promise
 	await promise;
@@ -460,8 +520,11 @@ const postProjectName: Middleware =
 /**
  * additional configuration options for individual projects
  */
-const getProjectProperties: Middleware =
-	(req: Request, res: Response, next: NextFunction): void => {
+const getProjectProperties: Middleware = (
+	req: Request, res: Response, next: NextFunction
+): void => {
+	logger.debug('Getting project properties');
+	res.locals.modified = true;
 	if (res.locals.project == null) {
 		next(new RequestError(404, 'project_not_found'));
 	} else {
@@ -473,53 +536,195 @@ const getProjectProperties: Middleware =
 /**
  * GET a File.
  */
-const getFilePath: Middleware =	async(
+const getFile: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+	logger.debug(`Getting file in ${req.query.view} view`);
 	const file: File | null = res.locals.file;
-	const project: Project | null = res.locals.project;
 	if (file == null) {
 		return next(new RequestError(404, 'file_not_found'));
-	} else if (project == null) {
-		return next(new RequestError(404, 'project_not_found'));
 	}
-	res.locals.function = res.sendFile;
-	res.locals.data =
-		`${BASE_FILE_STORAGE}/${res.locals.project.name}/${file.uuid}`;
+	const project: Project = res.locals.project;
+	const view: View = views[req.query.view || 'meta'];
+	// TODO return 400 for unsuported views
+	// TODO raw view accepts extra query params offset and length
+	res.locals.function = view.getResponseFunction(req, res);
+	res.locals.data = view.getResponseData(file, project, req.query);
 	next();
 };
 
 /**
  * GET a File.
  */
-const getFileId: Middleware =
-	(req: Request, res: Response, next: NextFunction): void =>  {
-	const file: File | null = res.locals.file;
-	if (file === null) {
-		next(new RequestError(404, 'file_not_found'));
-		return;
+const getFilePath: Middleware = getFile;
+
+/**
+ * GET a File.
+ */
+const getFileId: Middleware = getFile;
+
+/**
+ * Checks the parameters for file posting
+ */
+namespace qH {
+	export const hasAction: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action ? true : false);
 	}
-	res.locals.function = res.sendFile;
-	res.locals.data = files.path(req.params.id, res.locals.project.name);
-	next();
-};
+	export const setsMetadata: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'set_metadata' ? true : false);
+	}
+	export const mksDir: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'mkdir' ? true : false);
+	}
+	export const deletes: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'delete' ? true : false);
+	}
+	export const moves: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'move' ? true : false);
+	}
+	export const copys: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.action && req.query.action == 'copy' ? true : false);
+	}
+	export const overwrites: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.overwrite ? req.query.overwrite : false);
+	}
+	export const offset: ((req: Request) => number) = (req: Request): number => {
+		return (req.query.offset ? req.query.offset : 0);
+	}
+	export const truncates: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.truncate ? req.query.truncate : false);
+	}
+	export const isFinal: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (req.query.final ? req.query.final : false);
+	}
+	export const nothingSet: ((req: Request) => boolean) = (req: Request): boolean => {
+		return (!hasAction(req) && !overwrites(req) && !truncates(req) && !isFinal(req));
+	}
+}
 
 /**
  * Post a File. / delete / move / etc
  */
-const postFilePath: Middleware =
-	(req: Request, res: Response, next: NextFunction): void =>  {
-	if (res.locals.file != null) {
+/* tslint:disable */
+const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
+	logger.debug(`Receiving file ${res.locals.path}`);
+	console.log(req.file);
+	// req.query.action: set_metadata, mkdir, delete, move, copy
+	// req.query.overwrite (bool)
+	// req.query.offset (int)
+	// req.query.truncate (bool)
+	// req.query.final (bool)
+
+	// Return 404 when one of these actions is attempted on non-existing file
+	if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
+		logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
+		next(new RequestError(404, 'file_not_found'));
+	}
+
+	// Return 400 when one of these actions is attempted on existing file
+	if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
+		logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
 		next(new RequestError(400, 'file_exists'));
 	}
-	const file: File = new File({
-		uuid: uuid.generate(),
-		name: res.locals.filename,
-		parentFolder: res.locals.parentFolder
-	});
-	req.pipe(files.writableStream(file.uuid, res.locals.project.name));
+
+	// Sets final if requested
+	if (res.locals.file && qH.isFinal(req)) {
+		res.locals.file.status = 'final';
+	}
+
+	// Sets Metadata if requested
+	if(qH.setsMetadata(req)){
+		res.locals.file.metadata = req.body;
+		await res.locals.file.save();
+		next();
+	}
+
+	// Deletes File if requested
+	if(qH.deletes(req)){
+		logger.info(`File ${res.locals.file.name} will be deleted`)
+		deleteFile(res.locals.file.uuid, res.locals.project.name);
+		await res.locals.file.destroy();
+		next();
+	}
+
+	// Moves File if requested
+	if(qH.moves(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented'));
+	}
+
+	// Copies File if requested
+	if(qH.copys(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented'));
+	}
+
+	// Overwrite data but not truncate
+	// eg. OOOONNNNNNOOOO (O = old data, N = new data)
+	if(qH.overwrites(req) && !qH.truncates(req)){
+		// TODO
+		next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
+	}
+
+	// Create File or Folder if file doesn't exist
+	if (res.locals.file == null){
+		// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+		let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
+			: res.locals.path.split(res.locals.deepestFolderName)[1];
+
+		// Loop the part of the path that doesn't exist yet and create all the folders
+		while((remainingPath.match(/\//g) || []).length > 1){
+			// If there are more subfolders that dont exist, then create them
+			const subFolder: string = remainingPath.split("/")[1]
+			logger.debug(`Adding subfolder \'${subFolder}\'`);
+			const dir: File = new File({
+				uuid: uuid.generate(),
+				mimetype: 'inode/directory',
+				nameInternal: subFolder
+			});
+			await dir.save();
+
+			// update parent directory of new directory
+			if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
+				logger.debug("adding file to folder failed!")
+				next(new RequestError(500, 'Adding file to folder failed'))
+			}
+			// update vars
+			remainingPath = remainingPath.split(subFolder)[1]
+			res.locals.deepestFolderName = subFolder;
+			res.locals.deepestFolderId = dir.uuid;
+		}
+
+		logger.debug(`Writing file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
+		res.locals.file = new File({
+			uuid: uuid.generate(),
+			nameInternal: res.locals.filename
+		});
+		res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
+
+		await res.locals.file.save();
+
+		// update parent directory of new directory
+		if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
+			logger.debug("adding file to folder failed!")
+			next(new RequestError(500, 'Adding file to folder failed'))
+		}
+	}
+
+	// Move temp file to proper location (if not directory)
+	if(!qH.mksDir(req)){
+		saveFile(req.file.originalname, res.locals.project.name, res.locals.file.uuid, qH.offset(req));
+	}
+
+	// Sets final if requested
+	if (qH.isFinal(req)) {
+		res.locals.file.status = 'final';
+	}
+	
 	next();
+	
 };
+/* tslint:enable */
 
 export class FileRouter {
 	public router: Router;
@@ -537,6 +742,8 @@ export class FileRouter {
 	 * endpoints.
 	 */
 	public init(): void {
+		this.precondition();
+
 		// General
 		this.router.get ('/_supported_protocols_',					   getProtocols);
 		this.router.get ('/log',						                     getLog);
@@ -559,13 +766,161 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:id',          postFilePath);
+		this.router.post('/projects/:project_name/files/:path',
+			upload.single('userfile'), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
+	}
+
+	/**
+	 * Introduces variable-preconditioning middleware to the Express app.
+	 *
+	 * These middleware functions pre-process Express' matching variables
+	 * in routes (e.g. `:project_name`).
+	 * If an entity cannot be found in the database, the corresponding
+	 * value is set to `null` instead.
+	 */
+	private precondition(): void {
+		logger.debug('Adding parameter preconditioning to router');
+		// Fetch a user from their name:
+		this.router.param(
+			'username',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				name: string
+			): Promise<void> => {
+				logger.debug(`Searching for user ${name}`);
+				const user: User | null = await User.findOne({
+					include: [{all: true}],
+					where: {
+						username: name
+					}
+				});
+				if (user == null) {
+					return next(new RequestError(404, 'user_not_found'));
+				} else {
+					res.locals.user = user;
+				}
+				next();
+			}
+		);
+
+		// Fetch a project from its name:
+		this.router.param(
+			'project_name',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				projectName: string
+			): Promise<void> => {
+				res.locals.project = await Project.findOne({
+					include: [
+						User
+					],
+					where: {
+						name: projectName
+					}
+				});
+				next();
+			}
+		);
+
+		// Fetch a file from its path:
+		this.router.param(
+			'path',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				filename: string
+			): Promise<void> => {
+				// Vars we assign here:
+				//  - res.locals.deepestFolderName (...Id): deepest existing folder in path
+				//  - res.locals.path: requested path (using "/")
+				//  - res.locals.filename: requested file name (may be '')
+				//  - res.locals.file: actual file object if it exists
+				// Vars arleady assigned:
+				//  - res.locals.project: requested project object
+
+				// Replace + with /
+				res.locals.path = filename.replace(/\+/g, '/');
+				logger.debug(`Searching for path \'${res.locals.path}\'`);
+				// Split path into parts
+				const fileNames: string[] = res.locals.path.split('/');
+				res.locals.filename = (fileNames.length > 0) ?
+					fileNames[fileNames.length - 1] : '';
+				logger.debug(`Searching for file \'${res.locals.filename}\'`);
+				const project: Project | null = res.locals.project;
+				if (project == null) {
+					// Project should have been found by previous precondition
+					logger.debug('Project was not found: skipping finding file');
+					return next(new RequestError(404, 'project_not_found'));
+				}
+				let curDir: File | null = project.rootFolder;
+				res.locals.deepestFolderId = curDir.uuid;
+				res.locals.deepestFolderName = curDir.name;
+				let i: number = 0;
+				// Loop through the path and find the deepest folder that exists.
+				// 		Also find the file if possible.
+				while (curDir && i < fileNames.length) {
+					logger.debug(`Searching for \'${fileNames[i]}\'`);
+					const fileOrNull: File | null = await File.findOne({
+						include: [{all: true}],
+						where: {
+							nameInternal: fileNames[i],
+							parentFolderId: curDir.uuid
+						}
+					});
+					if (fileOrNull == null) {
+						logger.debug(`Sub-file \'${fileNames[i]}\' not found in DB`);
+						return next();
+					}
+
+					if (i < fileNames.length - 1) {
+						// Found next subdirectory
+						logger.debug(`Found Sub-folder \'${fileOrNull.name}\'`);
+						res.locals.deepestFolderId = fileOrNull.uuid;
+						res.locals.deepestFolderName = fileOrNull.name;
+					} else {
+						// Found actual file
+						logger.debug(`Found file \'${fileOrNull.name}\'`);
+						res.locals.file = fileOrNull;
+					}
+					curDir = fileOrNull;
+					i++;
+				}
+
+				next();
+			}
+		);
+
+		// Fetch a file from its UUID:
+		this.router.param(
+			'id',
+			async(
+				req: Request, res: Response, next: NextFunction,
+				fileId: string
+			): Promise<void> => {
+				logger.info(`parsing id ${fileId}`);
+				const file: File | null = await File.findOne({
+					include: [{all: true}],
+					where: {
+						uuid: fileId
+					}
+				});
+				res.locals.file = file;
+				if (file) {
+					res.locals.filename = file.name;
+					res.locals.deepestFolderId = file.parentFolderId;
+					if (file.parentFolder) {
+						res.locals.deepestFolderName = file.parentFolder.name;
+					} else {
+						logger.debug('parentfolder not set!');
+					}
+				}
+				next();
+			}
+		);
 	}
 }
 
 // Create the FileRouter, and export its configured Express.Router
 const fileRoutes: FileRouter = new FileRouter();
-fileRoutes.init();
 
 export default fileRoutes.router;

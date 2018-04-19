@@ -21,3 +21,6 @@ logs/
 
 # Typedoc-generated documentation
 docs/
+
+# project files
+files/*

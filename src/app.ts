@@ -1,10 +1,10 @@
 import * as bodyParser from 'body-parser';
 import * as ex from 'express';
 import * as expressJwt from 'express-jwt';
-import * as logger from 'morgan';
 import * as passport from 'passport';
 
 import { default as authRouter, unauthorisedErr } from './auth';
+import { logger } from './logger';
 
 import { RequestError, errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
@@ -24,7 +24,7 @@ import { default as UserGroup } from './db/model/UserGroup';
  */
 class App {
 	/**
-	 * The Express app used throught the server.
+	 * The Express app used throughout the server.
 	 */
 	public express: ex.Express;
 
@@ -40,29 +40,59 @@ class App {
 	 *   server.
 	 */
 	public constructor(enableLog: boolean) {
+		logger.debug('Constructing router');
 		this.logEnabled = enableLog;
 		this.express = ex();
-		this.precondition();
+		this.cors();
+		this.express.use(
+			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
+				logger.info(`Connection from ${req.ip} requesting ${req.url}`);
+				next();
+			}
+		);
 		this.middleware();
 		this.mountRoutes();
 		this.express.use(
 			async(req: ex.Request, res: ex.Response, next: ex.NextFunction):
 			Promise<void> => {
-				res.json({
-					status: 'success',
-					data: await res.locals.data
-				});
+				if (res.locals.function) {
+					res.locals.function.bind(res)(res.locals.data);
+				} else {
+					res.json({
+						status: 'success',
+						data: await res.locals.data
+					});
+				}
+				logger.success(`Responded to ${req.ip}`);
 			}
 		);
 		this.errorware();
 	}
 
 	/**
+	 * Enables Cross-Origin for the server.
+	 */
+	public cors(): void {
+		this.express.use((
+			req: ex.Request, res: ex.Response, next: ex.NextFunction
+		): void => {
+			res.header('Access-Control-Allow-Origin', '*');
+			res.header(
+				'Access-Control-Allow-Headers',
+				'Origin, X-Requested-With, Content-Type, Accept'
+			);
+			next();
+		});
+	}
+
+	/**
 	 * Configures regular Express middleware.
 	 */
 	private middleware(): void {
+		logger.debug('Loading basic middleware');
 		this.express.use(expressJwt({secret: 'Mr Secret'})
 			.unless({path: [
+				'/',
 				'/cs3099group-be-4/oauth/token',
 				'/cs3099group-be-4/_supported_protocols_'
 			] })
@@ -83,9 +113,6 @@ class App {
 			}
 			next();
 		});
-		if (this.logEnabled) {
-			this.express.use(logger('combined'));
-		}
 		this.express.use(bodyParser.json());
 		this.express.use(bodyParser.urlencoded({ extended: false }));
 	}
@@ -101,17 +128,22 @@ class App {
 				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
-		defRouter.get('/*', (req: ex.Request, res: ex.Response): void => {
-			res.status(404)
+		this.express.use('/cs3099group-be-4', FileRouter);
+		this.express.use('/cs3099group-be-4', authRouter);
+		this.express.use('/', defRouter);
+		this.express.use(
+			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
+			if (Object.keys(res.locals).length === 0) {
+				res.status(404)
 			.json({
 				status: 'error',
 				error : 'invalid_route',
 				error_description: 'Endpoints start from /cs3099group-be-4/'
 			});
+			} else {
+				next();
+			}
 		});
-		this.express.use('/cs3099group-be-4', FileRouter);
-		this.express.use('/cs3099group-be-4', authRouter);
-		this.express.use('/', defRouter);
 	}
 
 	/**
@@ -120,126 +152,6 @@ class App {
 	private errorware(): void {
 		this.express.use(unauthorisedErr);
 		this.express.use(errorHandler);
-	}
-
-	/**
-	 * Introduces variable-preconditioning middleware to the Express app.
-	 *
-	 * These middleware functions pre-process Express' matching variables
-	 * in routes (e.g. `:project_name`).
-	 * If an entity cannot be found in the database, the corresponding
-	 * value is set to `null` instead.
-	 */
-	private precondition(): void {
-		// Fetch a user from their name:
-		this.express.param(
-			'username',
-			async(
-				req: ex.Request, res: ex.Response, next: ex.NextFunction,
-				name: string
-			): Promise<void> => {
-				const user: User | null = await User.findOne({
-					where: {
-						username: name
-					}
-				});
-				if (user === null) {
-					return next(new RequestError(404, 'user_not_found'));
-				} else {
-					res.locals.user = user;
-				}
-				next();
-			}
-		);
-
-		// Fetch a project from its name:
-		this.express.param(
-			'project_name',
-			async(
-				req: ex.Request, res: ex.Response, next: ex.NextFunction,
-				project: string
-			): Promise<void> => {
-				res.locals.project = await Project.findOne({
-					where: {
-						name: project
-					}
-				});
-				next();
-			}
-		);
-
-		// Fetch a file from its path:
-		this.express.param(
-			'file',
-			async(
-				req: ex.Request, res: ex.Response, next: ex.NextFunction,
-				filename: string
-			): Promise<void> => {
-				const fileNames: string[] = req.params.path.split('/');
-				const project: Project | null = res.locals.project;
-				if (project === null) {
-					next(new RequestError(404, 'project_not_found'));
-					return;
-				}
-				let file: File = project.rootFolder;
-				// TODO Rewrite using sub-queries instead of repeated queries.
-				while (fileNames.length > 2) {
-					const fileOrNull: File | null = await File.findOne({
-						where: {
-							name: fileNames[0],
-							parentFolder: file
-						}
-					});
-					if (fileOrNull === null) {
-						return next();
-					} else {
-						file = fileOrNull;
-					}
-					fileNames.splice(0, 1);
-				}
-				const parentFolder: File | null = await File.findOne({
-					include: [
-						{ model: File, as: 'containedFiles' }
-					],
-					where: {
-						parentFolder: file,
-						name: fileNames[0]
-					}
-				});
-				if (parentFolder === null) {
-					return next();
-				}
-				res.locals.parentFolder = parentFolder;
-				const tFile: File | undefined = parentFolder.containedFiles.find(
-					(f: File): boolean => f.name === fileNames[1]
-				);
-				res.locals.file = tFile;
-				res.locals.filename = fileNames[1];
-				next();
-			}
-		);
-
-		// Fetch a file from its UUID:
-		this.express.param(
-			'id',
-			async(
-				req: ex.Request, res: ex.Response, next: ex.NextFunction,
-				fileId: string
-			): Promise<void> => {
-				const file: File | null = await File.findOne({
-					where: {
-						uuid: fileId
-					}
-				});
-				if (file === null) {
-					next(new RequestError(404, 'file_not_found'));
-					return;
-				} else {
-					res.locals.file = file;
-				}
-				next();
-			}
-		);
 	}
 }
 
@@ -250,5 +162,5 @@ export default new App(true).express;
  */
 // tslint:disable-next-line:variable-name
 export const TestApp: () => ex.Express = (): ex.Express => {
-	return new App(false).express;
+	return new App(true).express;
 };

@@ -30,6 +30,7 @@ describe('Type Checking:', () => {
 		types.anything(1).should.be.true;
 		types.anything('string').should.be.true;
 		types.anything(false).should.be.true;
+		types.anything([]).should.be.true;
 	});
 	it('accepts null', () => {
 		types.anything(null).should.be.true;
