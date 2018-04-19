@@ -169,7 +169,7 @@ export const views: {
 		getResponseData: async(
 			file: File, project: Project, query: Query
 		): Promise<object> => {
-			return readableStream(file.name, project.name, query);
+			return readableStream(file.uuid, project.name, query);
 		},
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return res.send;

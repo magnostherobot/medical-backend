@@ -548,7 +548,7 @@ const getFile: Middleware = async(
 	const view: View = views[req.query.view || 'meta'];
 	// TODO return 400 for unsuported views
 	// TODO raw view accepts extra query params offset and length
-	res.locals.function = view.getResponseFunction(req, res); 
+	res.locals.function = view.getResponseFunction(req, res);
 	res.locals.data = view.getResponseData(file, project, req.query);
 	next();
 };
@@ -831,9 +831,6 @@ export class FileRouter {
 				//  - res.locals.file: actual file object if it exists
 				// Vars arleady assigned:
 				//  - res.locals.project: requested project object
-
-				//console.log(`req.file.filename: ${req.file}`)
-				console.log(req.file)
 
 				// Replace + with /
 				res.locals.path = filename.replace(/\+/g, '/');
