@@ -88,15 +88,31 @@ export default class Project extends Model<Project> {
 		return;
 	}
 
-	public getAccessLevel(user: User): ContributorGroup {
-		throw new Error(`unimplemented, ${this}`);
+	public async getAccessLevel(user: User): Promise<String[]> {
+		const ujps: UserJoinsProject[] | null = await UserJoinsProject.findAll({
+			include: [ ContributorGroup],
+			where: {
+				username: user.username,
+				projectName: this.name
+			}
+		})
+		const people: String[] = ujps.map((ujp: UserJoinsProject): String => { 
+			if(ujp.contributorGroup != undefined){
+				console.log(ujp.contributorGroupName)
+				return ujp.contributorGroupName
+			}
+			else{
+				throw new Error(`unimplemented, ${this}`);
+			}
+		})
+		//console.log(people);
+		return await people;
 	}
 
 	public getUserInfo(user: User): UserInfo {
 		return {
 			username: user.username,
-			access_level: this.getAccessLevel(user)
-				.toString()
+			access_level: this.getAccessLevel(user).toString()
 		};
 	}
 

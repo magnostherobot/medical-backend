@@ -14,6 +14,7 @@ import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
 import UserHasPrivilege from './db/model/UserHasPrivilege';
 import { Contains } from 'sequelize-typescript';
+import UserJoinsProject from './db/model/UserJoinsProject';
 
 // TODO: figure this out
 const BASE_FILE_STORAGE: string = 'TODO: figure this out';
@@ -382,7 +383,9 @@ const postUsername: Middleware = async(
 					name: req.body.privileges
 				}
 			})
-			user.password = req.params.password;
+			if(user.password != null){
+				user.password = req.params.password;
+			}
 			if (req.body) {
 				user.metadata = req.body;
 			}
@@ -537,25 +540,73 @@ const postProjectName: Middleware = async(
 	let project: Project | null = res.locals.project;
 	res.locals.modified = true;
 	let promise: PromiseLike<File> | null = null;
-	if (project == null) {
+
+	if( req.query.action === 'update'){
 		logger.debug('Adding new project');
-		const file: File = new File({
-			uuid: uuid.generate(),
-			mimetype: 'inode/directory'
-		});
-		promise = file.save();
-		project = new Project({
-			name: req.params.project_name,
-			rootFolder: file
-		});
-	} else {
-		logger.debug('Updating project properties');
+		if(project != null){
+			project.metadata = req.body;
+			await project.save()
+		}
+		else{
+			next(new RequestError(400, 'project_not_found'));
+		}
+
 	}
-	project.metadata = req.body;
-	// tslint:disable-next-line:await-promise
-	await promise;
-	await project.save();
-	next();
+	else if( req.query.action === 'delete'){
+		if(project != null){
+			project.destroy()
+		}
+		else{
+			next(new RequestError(400, 'project_not_found'));
+		}
+	}
+	else if( req.query.action === 'update_grant'){
+		
+	}
+	else{
+		if(project == null){
+			logger.debug('Adding new project');
+			const file: File = new File({
+				uuid: uuid.generate(),
+				mimetype: 'inode/directory'
+			});
+			promise = file.save();
+			project = new Project({
+				name: req.params.project_name,
+				rootFolder: file
+			});
+			const owner: ContributorGroup | null = await ContributorGroup.findOne({
+				include: [{all: true}],
+				where: {
+					name: 'projectOwner'
+				}
+			})
+			//console.log(owner);
+
+			project.metadata = req.body;
+			// tslint:disable-next-line:await-promise
+			await promise;
+			await project.save()
+			const contribute: UserJoinsProject = new UserJoinsProject({
+				username: req.user.username,
+				projectName: req.params.project_name,
+				contributorGroupName: 'projectOwner'
+
+			})
+			contribute.save()
+
+			console.log(contribute.contributorGroupName);
+			
+			// if (owner != undefined){
+			// 	await contribute.$set('contributorGroupId', [owner]);
+			// }
+		}
+		else{
+			next(new RequestError(400, 'project_already_exists'));
+		}
+	}
+
+	next()
 };
 
 /**
