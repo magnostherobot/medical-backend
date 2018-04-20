@@ -2,7 +2,7 @@ import { CZIHeightMap, CZITile,
 	WholeCZIHierarchy } from '../types/customPyramidIndex';
 import { Dimension, Segment } from '../types/cziBinaryTypings';
 import * as fs from 'fs';
-import { SupportedViews, TileBounds } from '../types/helperCZITypes';
+import { SupportedViews, TileBounds, checkForOutputDirectories, writeJSONToFile, execpaths } from '../types/helpers';
 // import { logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
@@ -13,7 +13,6 @@ import { uuid } from '../../uuid'
 
 // Various constants for placing files and defining tiles
 const baseDirname: string = '/cs/scratch/cjd24/0701-extraction';
-const extensionBinariesDir: string = __dirname + `/../../../ext/bin/`;
 const extractionDirectory: string = `${baseDirname}/`;
 const outputImageData: string = `${baseDirname}-processed/`;
 const outputImageDirectory: string = `${baseDirname}-processed/data/`;
@@ -189,9 +188,9 @@ const findRegionToExtract: (
  * into a new image
  */
  const extractAndStitchChunks: (
- 	segments: Segment[][], desiredRegion: TileBounds
+ 	segments: Segment[][], desiredRegion: TileBounds, tmp: number
  ) => Promise<SharpInstance> = async(
- 	segments: Segment[][], desiredRegion: TileBounds
+ 	segments: Segment[][], desiredRegion: TileBounds, tmp: number
  ): Promise<SharpInstance> => {
 
     // Create a buffer for the rows part of raw image data
@@ -254,17 +253,18 @@ const findRegionToExtract: (
 		findRegionToExtract(segments[0][0], desiredRegion);
 	// Check if the inital row needs to be extended to support further rows
 	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
-		finalImage = await finalImage.background({
-			r: 0,
-			g: 0,
-			b: 0,
-			alpha: 0
-		}).extend({
-			top: 0,
-			left: 0,
-			bottom: (tileSize - (bufferBound.bottom - bufferBound.top)),
-			right: 0
-		});
+		finalImage = await finalImage
+							.background({
+								r: 0,
+								g: 0,
+								b: 0,
+								alpha: 0
+							}).extend({
+								top: 0,
+								left: 0,
+								bottom: (tileSize - (bufferBound.bottom - bufferBound.top)),
+								right: 0
+							});
 	}
 	// For all further rows in the image, combine it with the previous rows' data
 	for (let index: number = 1; index < segments.length; index++) {
@@ -274,8 +274,16 @@ const findRegionToExtract: (
 	}
 
 	// Return the finalised image.
-	return finalImage;
-};
+	return sharp(Buffer.alloc(1,1), {
+		create: {
+			width: tileSize,
+			height: tileSize,
+			channels: 4,
+			background: { r: 0, g: 0, b: 0, alpha: 0 }
+		}
+	}).overlayWith(await finalImage.toBuffer())
+	// .toFile("/cs/home/cjd24/Documents/current/groupPractical/project-code/src/conversion/czi/test1.png");
+}
 
 /**
  * Used to remove obtuse JSON data,
@@ -532,7 +540,8 @@ const zoomTier: (
 			}
 
 			let outputFileName: string =`${outputImageData}tmp/${uuid.generate()}.png`;
-			shell.exec(`${extensionBinariesDir}vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
+//			console.log(quadrents);
+			shell.exec(`${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
 
 			// Rescale and push to file
 			await sharp(outputFileName)
@@ -601,7 +610,8 @@ const extrapolateDimension: (
 	for (; ys < totalSizeY;) {
 		timing = process.hrtime();
 		const cziRow: CZITile[] = [];
-		process.stdout.write(`${Math.ceil(totalSizeX/tileSize)} : `);
+		let rowProgBar: string = `${Math.ceil(totalSizeX/tileSize)} : `;
+		let rowProgCount: number = 0;
 		for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
 			const desired: TileBounds = new TileBounds(
 				xs - tileOverlap,
@@ -620,10 +630,12 @@ const extrapolateDimension: (
 			const sortedSegments: Segment[][] =
 				orderSegments(findRelatedTiles(filteredDataBlocks, desired));
 
-				(await extractAndStitchChunks(sortedSegments, desired))
-				.toFile(`${outputImageDirectory}img-${filecounter++}`);
+			(await extractAndStitchChunks(sortedSegments, desired, filecounter))
+			.toFile(`${outputImageDirectory}img-${filecounter++}.png`);
+// shell.exec(`${execpaths} vips addalpha "${outputImageDirectory}img-${filecounter}" "${outputImageDirectory}img-${filecounter++}"`);
 
-			process.stdout.write(">");
+			rowProgBar += ">"; rowProgCount++;
+			process.stdout.write(`\r${rowProgBar} ${rowProgCount}`);
 			finalCZIJson.total_files++;
 		}
 		baseCZIHeightMap.plane.push(cziRow);
@@ -651,7 +663,7 @@ const extrapolateDimension: (
 
 	const retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
 	writeJSONToFile(`${outputImageData}stageMap-${cVal}-${0}`, retHeightMap);
-	for (let stage: number = 1; stage < Math.log2(maxZoom); stage++) {
+	for (let stage: number = 1; stage <= Math.log2(maxZoom); stage++) {
 		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
 		await zoomTier(retHeightMap[stage - 1])
 		.then((v: CZIHeightMap) => {
@@ -666,35 +678,6 @@ const extrapolateDimension: (
 	return retHeightMap;
 };
 
-/**
- * function used to ensure that the directories required have been created
- */
-const checkForOutputDirectories: (directories: string[]) => void = (
-	directories: string[]
-): void => {
-	for (const dir of directories) {
-		if (!fs.existsSync(`${dir}`)) {
-			fs.mkdirSync(`${dir}`);
-		}
-	}
-};
-
-/**
- * Write given JSON object to given filepath
- */
-const writeJSONToFile: (filePath: string, obj: object) =>
-	void = (filePath: string, obj: object): void => {
-		fs.writeFile(
-			filePath,
-			JSON.stringify(obj, null, 2),
-			(err: Error) => {
-				if (err) {
-					console.error(err.message);
-					throw err;
-				}
-			}
-		);
-	};
 
 /**
  * used to write the supported views object to file both in total and "cleaned"
@@ -787,17 +770,16 @@ main();
 // async function main2() {
 //
 // 	let layout: WholeCZIHierarchy = require(`${outputImageData}layout.json`);
-// 	filecounter = 5530;
 //
 // 	for (let stage:number = 1; stage < Math.sqrt(maxZoom); stage++) {
 // 		await zoomTier(layout.c_values[0].height_map[stage - 1])
 // 				.then((v: CZIHeightMap) =>
 // 					{
-// 		        		writeJSONToFile(`${outputImageData}stageMap-${stage}.json`, v);
+// 						writeJSONToFile(`${outputImageData}stageMap-${stage}.json`, v);
 // 						return;
 // 					}
 // 				);
 // 	}
 // }
 //
-// main2().then();
+// main2().then().catch(e => console.log(e));

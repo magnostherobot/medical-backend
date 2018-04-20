@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p ./ext/bin
+
 git clone https://github.com/glencoesoftware/jxrlib.git
 cd ./jxrlib/
 mkdir build

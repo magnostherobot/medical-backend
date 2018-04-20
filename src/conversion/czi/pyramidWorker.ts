@@ -1,5 +1,5 @@
 import { CZIHeightMap, CZITile, CZITileRequest } from '../types/customPyramidIndex';
-import { TileBounds } from '../types/helperCZITypes';
+import { TileBounds, execpaths } from '../types/helpers';
 import * as sharp from 'sharp';
 import { isTileRelated } from './tileExtraction';
 import { uuid } from '../../uuid'
@@ -44,7 +44,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	}
 
 	let outputFileName: string =`${imageDir}/tmp/${uuid.generate()}.png`
-	require('shelljs').exec(`vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${imageTier.plane[0].length}`)
+	require('shelljs').exec(`${execpaths} vips arrayjoin "${involvedTiles}" ${outputFileName} --across ${imageTier.plane[0].length}`)
 
 	let extractionRegion = new TileBounds(
 		desiredRegion.left - imageTier.plane[0][0].width,

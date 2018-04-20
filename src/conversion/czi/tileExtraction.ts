@@ -1,4 +1,4 @@
-import { TileBounds } from '../types/helperCZITypes';
+import { TileBounds } from '../types/helpers';
 
 export const isTileRelated: Function = function(origCoords: TileBounds, desired: TileBounds): boolean {
 
