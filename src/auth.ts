@@ -211,7 +211,7 @@ export const unauthorisedErr: Errorware =
 export const isAdmin: Middleware =
 (req: Request, res: Response, next: NextFunction): void => {
 	// tslint:disable-next-line:no-non-null-assertion
-	const admin: boolean = req!.user!.object!.userGroups!
+	const admin: boolean = req.user.object.userGroups
 		.some((x: UserGroup): boolean => x.name === 'admin');
 
 	if (!admin) {
