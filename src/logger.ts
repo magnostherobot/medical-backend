@@ -3,7 +3,7 @@
 import * as colors from 'colors/safe';
 import * as winston from 'winston';
 
-import { files } from './files';
+import { logPath } from './files';
 import { QueryOptions } from 'sequelize';
 
 type Colour = (s: string) => string;
@@ -138,12 +138,12 @@ const consoleTransport: winston.TransportInstance =
 const basicFileTransport: winston.TransportInstance =
 	new winston.transports.File({
 	name: 'basicFileTransport',
-	level: 'info',
+	level: 'debug',
 	label: 'Basic File Transport',
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('basic'),
+	filename: './logs/general/basic', //logPath('basic'),
 	maxSize: 1000000,
 	maxFiles: 100,
 	stream: undefined,
@@ -170,7 +170,7 @@ const criticalFileTransport: winston.TransportInstance =
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('critical'),
+	filename: './logs/general/critical', //logPath('critical'),
 	maxSize: 1000000,
 	maxFiles: 10,
 	stream: undefined,
@@ -193,12 +193,12 @@ const criticalFileTransport: winston.TransportInstance =
 const queryFileTransport: winston.TransportInstance =
 	new winston.transports.File({
 	name: 'queryFileTransport',
-	level: 'info',
+	level: 'debug',
 	label: 'Query Logs',
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('queries'),
+	filename: './logs/general/queries', //logPath('queries'),
 	maxSize: 1000000,
 	maxFiles: 100,
 	stream: undefined,
@@ -271,7 +271,7 @@ interface LogItem {
 	timestamp: string;
 }
 
-/* tslint:disable */ 
+/* tslint:disable */
 const fetchLogs2: (level?: LogLevel, params?: FetchParams) => Promise<LogItem[]> = (level?: LogLevel, params: FetchParams = {}): Promise<LogItem[]> => {
 	const options: winston.QueryOptions = {
 		from: params.after,

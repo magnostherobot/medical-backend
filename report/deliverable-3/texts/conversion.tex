@@ -1,0 +1,135 @@
+\section{File Conversion}
+One of the most key pieces of functionality for the backend groups is the facilitation of the agnosticity of
+original file formats to the end user. No matter the original upload format, backend groups should all be
+capable of returning files in standard file formats.
+These specific ``standards'' were not hard-defined by the specification, however as part of our whole year
+protocol, it was decided that \emph{JSON} would be used for file meta-information, as well as the
+main structure of all responses from a backend server. \emph{PNG} was decided upon as the standard file format
+for all images, since it is very widely supported and has other favourable properties we would like to
+take advantage of.
+
+\subsection{Dealing with Images}
+The nature of the file formats that we were expected to abstract over however turned out to be significantly
+more challenging than was initially perceived. The file formats of `Leica' and `Zeiss' are widely used in the
+medical field (the department we are providing this service for), however almost nowhere else. Upon looking
+into this more closely, it was found that the Zeiss file format is very proprietary and licensed.
+
+This means that in order to even gain access to simply read the documentation you must fill in your details
+and make an application for the documentation~\cite{zeissLicence}. Part of the agreement for this documentation is that you are
+not allowed to share it with anyone else; you are allowed to write software to \emph{deconstruct} them; you
+are strictly \emph{not} allowed to write any software to construct them.
+
+The documentation gives a description of the various ``segments'' of binary that can appear in the file, and
+attempts to assist you in the method to read them. Given the large nature of the file size of a Zeiss, it makes
+sense for them to be designed to be `streamable', which they are --- allowing you to read smaller chunks at a
+time rather than loading the whole object into memory simultaneously.
+
+After reading the specification in great detail, it was clear that it was extremely specialised and has
+the potential to nest a variety of other file types within itself, as well as have many fields missing
+--- as they are optional --- making it quite complex to interpret. In addition to this, the major difficulty
+came from the fact that the base file is a proprietary binary file, which also contains things such as 128bit
+unsigned integers. This fact, coupled with the substantial file sizes made the choice for languages to deal
+with them limited to a systems programming language. Since I had most experience in `C99', then this seemed
+the only realistic possibility.
+
+\subsubsection{Extraction of Zeiss Within `C'}
+One major consideration was that --- due to the sheer file size of many of these images --- we would need
+to store them on the local \file{/cs/scratch} drive of the lab machines: they are simply too
+large to store either on our host servers statically, let alone when working on extracting and expanding the
+thousands of smaller files within them.
+
+With this in mind, and closely comparing the
+`C' code against the rough documentation licensed to me, the structures possible within a Zeiss file were
+slowly built up.
+
+Methods were written to print out the contents of various structures as progress was made, in
+order to ensure that the offsets for file streaming were continually at the correct locations and the data we
+were parsing out of the file was as expected. To this effect, testing of the extraction was run continually
+in the standard `C' approach of a couple lines at a time before re-compilation, along with using flags such as
+`\verb|--pedantic|' in order to try to catch as many errors as possible. Occasionally \verb|valgrind| was also
+run on this extraction code, since significant chunks of memory are allocated and freed during the
+extraction process. \verb|valgrind| reports that there are no memory leaks at all --- even
+on the larger 12Gb \file{.czi} files.
+
+\subsubsection{Converting Extracted Files}
+Once the files/metadata/attachments had been successfully extracted from the target file, multiple issues were
+discovered.
+\begin{itemize}
+	\item The container format for the image segments was in \emph{JPEG-XR}. This is another proprietary
+		file format, which does not appear to be supported by anything at all, other than Microsoft's own software.
+		There is also extremely limited library support, especially for non-Windows platforms.
+		Fortunately, a C++-written \file{.jxr} decoder was found, and could
+		be compiled on the destination machine. Enough of the executable is able to be compiled before any problems
+		occur, and this decoder can be copied into the relative path for our own C source.
+	\item The library for decoding JXR's is only
+		capable of conversion to \emph{BMP} or \emph{TIFF}, which is not our desired format. Therefore an additional step of
+		converting the `JXR' to `TIFF', and then to `PNG' using the `imagemagick' command line tools like \verb|convert|
+		became necessary.
+		This is an annoying overhead, which is unfortunately unavoidable.
+	\item By simply extracting every image tile found within the JXR tile, we found that
+		there were also tiles found at non 1:1 zoom levels, which was wasteful to deal with, since we will be building
+		a custom image pyramid anyway. This issue was mitigated by adding some logic to only extract the tile to disk if
+		it was determined to have a 1:1 scaling and thus be on the base layer.
+	\item In a similar fashion to the previous issue, it also became apparent that there were many tiles in the
+		base layer which were of non-standard sizes, with some having tiny slivers as they came to edges etc.
+		The only solution to make these tiles appear on a nice grid of $n^2$ sizes, was to iterate over the fragmented
+		canvas and stitch together the portions we want.
+\end{itemize}
+
+In order to complete the conversion side of things, it seemed appropriate to move away from C programming, and
+even away from the scripts that were being using to control the C, to something like \emph{Python}.
+The thought process behind this decision is the fact that Python supports multithreading --- which for something
+as parallel as multiple image conversions seemed extremely advantageous. The code to do this section is fairly
+small, but absolutely crucial to the overall pipeline of Zeiss format support.
+
+\subsubsection{Stitching Base Tiles}
+Once we finally had all of the base tiles in a 1:1 scale and a format that was easier to deal with, the first task
+was to figure out how to build up our own grid across the mismatch of sizes of existing base tiles.\\
+The tile dimensions decided on were 1024:1024. The reason for this, is that it is large enough to contain a
+reasonable amount of information, without being so large that our server could provide or clients could load in
+a timely manner.
+
+In order to do this stitching process, a decision was required as to the package to manage the image operations.
+After a vast amount of searching and comparisons, the selection was made for \emph{Sharp}~\cite{sharp}. The reason for
+this, was that it appeared to be the single library which was capable of all of the different kinds of image
+processing jobs we expected to be doing. Another key reason is the fact that it is known in advance that a very
+large number of images will need to be processed here, so performance is critical. Sharp appears to perform
+very significantly better than its competitors~\cite{sharpPerformance}. Finally, it has typing
+support to work with our environment.
+
+With this set, high level logic was written to check various image bounds for related base tiles to a specific
+region request. Regions were then selected out, sorted by x and y offsets, then relevant chunks chopped out of
+them and stitched together into a coherent region of our selected size.
+
+\subsubsection{Building Up Hierarchy of Zoom Levels}
+These finalised base layer tiles are written to disk in an output directory and details about their creation
+are recorded in a new data structure which will map out the pyramid style hierarchy of the tiles.
+A small example of these final titles are shown on the cover page of our Report for interest as they are
+legitimate generations in a format we would like.
+
+Now that the base layer exists, gaining the rest of the tile zoom levels, should be fairly simple --- by moving
+up to the next power of two (2048) and collecting 4 images together then scaling this back down to 1024 pixels.
+This process can be repeated for each level of zoom we would like to raise to. This will massively speed up
+the process of searching through base tiles and stitching many together if we pre-process all of the intermediate
+layers. Since most HCI groups are using OpenSeaDragon (which requests things in scales of powers
+of two~\cite{openseadragon}), our approach should be a very fast performer with the trade off of larger up-front processing time.\\
+Indexing into this pyramid will be fast with each request too, as they will be separated by `C' value, which is
+one of the image's layering options, then by zoom level.
+
+\subsection{Leica \& Other Formats}
+As Zeiss is such a difficult and mammoth file format almost all of my time was spent dealing with purely this,
+and it is still not even complete yet. However having looked quickly into Leica, there appears to be
+library support, which may make life easier, along with the fact the internal structure appears to be similar to
+a BigTiff. More progress on this format will take place for the next deliverable.
+
+As for other image formats such as JPEG, TIFF etc. These are standard formats and so will be trivial to
+convert to our required standard of PNG so is not a significant point of progress currently.
+
+\subsection{Non image formats (\file{.csv} etc.)}
+As for non image formats such as \file{.csv}, it has been decided that the backend should only be responsible of hosting these
+files, since there is no way that a backend server could possibly predict what the file should be processed into.
+Additionally, there are also many cases where an end-user may wish to deliberately store something in a format
+which a backend server checking legitimacy of the file would complain about incorrectly.
+
+The team hasn't really looked into things such as Excel (\file{.xlsx}) files, however again, pre-emptively looking, there seems to
+be fairly wide library support for things like this, so it was not a major concern for this deliverable.

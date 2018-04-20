@@ -1,0 +1,38 @@
+\section{Logging}
+Server logging has now been formalised: the functionality is imported into
+a file and can then be used to log messages at the selection of urgencies
+specified in Protocol BE01~\cite{protocol}.
+
+These outputs have many configuration options, which ideally will be
+incorporated into a global configuration handler in future development.
+
+\subsection{Standard Logging}
+By default, the standard logger logs to three places:
+\begin{enumerate}
+	\item Colourised, human-readable messages are printed to the console.
+		Any error- or critical-level messages are printed through stderr.
+	\item More verbose JSON editions of messages are written to a basic
+		logfile.
+	\item Critical-level messages are additionally written to an extra
+		logfile.
+\end{enumerate}
+
+\subsection{SQL Query Logging}
+A separate logger has been designed for logging the output of
+Sequelize~\cite{sequelize}. Since Protocol BE01 does not specify that they
+should be retreivable, the output queries can be stored with less associated
+metadata. In addition, Sequelize can output the total required time to
+process the query, which is stored in the log for future use as profiling
+data.
+
+\subsection{Motivation}
+Since basic server functionality has been implemented, the errors produced
+will likely be caused by difficult-to-debug problems, such as edge-cases or
+data races. With a verbose and thorough logging system, these problems
+should be much easier to detect and rectify.
+
+In addition, Protocol BE01~\cite{protocol} requires of the backend support
+for receiving and storing logs from other services. The introduction of a
+well-implemented logging system abstracts this from the common use-case of
+logging while keeping powerful functionality of forwarding and fetching logs
+available for when it is needed.
