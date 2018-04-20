@@ -32,12 +32,20 @@ const readableStream: (filename: string, projectName: string, { offset, length }
 	return fs.createReadStream(path(filename, projectName), options);
 };
 
-const logPath: (type: string, projectName?: string) => string = (
+export function logPath (type: string, projectName?: string){
+	return projectName
+		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
+		: `${LOG_BASE_DIRECTORY}/general/${type}`;
+}
+
+/*
+export const logPath: (type: string, projectName?: string) => string = (
 	type: string, projectName?: string): string => {
 	return projectName
 		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;
 };
+*/
 
 let storage = Multer.diskStorage({
 	destination: function (req, file, cb) {

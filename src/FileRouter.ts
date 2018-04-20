@@ -5,13 +5,13 @@ import { ProjectFullInfo, default as Project } from './db/model/Project';
 import { UserFullInfo, default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
-import { NextFunction, Request, Response, Router } from 'express';
 import { RequestError } from './errors/errorware';
-import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, deleteFile, truncateFile, saveFile } from './files';
+import { NextFunction, Request, Response, Router } from 'express';
+import { View, addSubFileToFolder, createProjectFolder, deleteFile, rootPathId,
+	saveFile, upload, views } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
-
 
 /**
  * The type of an Express middleware callback.
@@ -110,7 +110,7 @@ const getLog: Middleware = (
 	if (!req.user.hasPrivilege('admin')) {
 		next(new RequestError(401, 'invalid_privilege'));
 	}
-	/* tslint:disable */ 
+	/* tslint:disable */
 	if(!req.params.level) req.params.level = 'info';
 	if(!req.params.before) req.params.before = new Date();
 	if(!req.params.after) req.params.after = new Date(0);
@@ -189,6 +189,7 @@ const postProperties: Middleware = (
 			return;
 		}
 	}
+	logger.debug('Posted Properties successfully');
 	next();
 };
 
@@ -566,41 +567,25 @@ const getFileId: Middleware = getFile;
 /**
  * Checks the parameters for file posting
  */
-namespace qH {
-	export const hasAction: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action ? true : false);
-	}
-	export const setsMetadata: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'set_metadata' ? true : false);
-	}
-	export const mksDir: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'mkdir' ? true : false);
-	}
-	export const deletes: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'delete' ? true : false);
-	}
-	export const moves: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'move' ? true : false);
-	}
-	export const copys: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'copy' ? true : false);
-	}
-	export const overwrites: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.overwrite ? req.query.overwrite : false);
-	}
-	export const offset: ((req: Request) => number) = (req: Request): number => {
-		return (req.query.offset ? req.query.offset : 0);
-	}
-	export const truncates: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.truncate ? req.query.truncate : false);
-	}
-	export const isFinal: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.final ? req.query.final : false);
-	}
-	export const nothingSet: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (!hasAction(req) && !overwrites(req) && !truncates(req) && !isFinal(req));
-	}
-}
+const qH: {
+	[key: string]: Function;
+} = {
+	hasAction: (req: Request): boolean => !!req.query.action,
+	setsMetadata: (req: Request): boolean =>
+		req.query.action === 'set_metadata',
+	mksDir: (req: Request): boolean => req.query.action === 'mkdir',
+	deletes: (req: Request): boolean => req.query.action === 'delete',
+	moves: (req: Request): boolean => req.query.action === 'move',
+	copys: (req: Request): boolean => req.query.action === 'copy',
+	overwrites: (req: Request): boolean => !!req.query.overwrite,
+	offset: (req: Request): number =>
+		req.query.offset ? req.query.offset : 0,
+	truncates: (req: Request): boolean => !!req.query.truncate,
+	isFinal: (req: Request): boolean => !!req.query.final,
+	nothingSet: (req: Request): boolean =>
+		!qH.hasAction(req) && !qH.overwrites(req) &&
+		!qH.truncates(req) && !qH.isFinal(req)
+};
 
 /**
  * Post a File. / delete / move / etc
@@ -629,7 +614,8 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 
 	// Sets final if requested
 	if (res.locals.file && qH.isFinal(req)) {
-		res.locals.file.status = 'final';
+		res.locals.file.status = 'preprocessing';
+		// start file conversion
 	}
 
 	// Sets Metadata if requested
@@ -720,9 +706,9 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 	if (qH.isFinal(req)) {
 		res.locals.file.status = 'final';
 	}
-	
+
 	next();
-	
+
 };
 /* tslint:enable */
 
@@ -766,7 +752,8 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:path',
+		this.router.post(
+			'/projects/:project_name/files/:path',
 			upload.single('userfile'), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}

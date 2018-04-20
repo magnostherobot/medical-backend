@@ -94,16 +94,19 @@ const completeProtocol: MochaForEachInput[] = [
 			required: array(types.string)
 	}, 200],
 	['get', '/log', array({
+		user: optional(types.string),
 		component: types.string,
 		level: alternative([
+			'debug',
 			'info',
 			'security',
 			'warning',
 			'error',
-			'critical'
+			'critical',
+			'success'
 		]),
-		value: types.anything,
-		username: types.string,
+		message: types.anything,
+		label: optional(types.string),
 		timestamp: types.string
 	}), 200],
 	['post', '/log', [{
@@ -116,22 +119,23 @@ const completeProtocol: MochaForEachInput[] = [
 		display: optional(match({
 			category: types.string,
 			group: types.string,
-			display_name: types.string,
+			displayName: types.string,
 			description: types.string
 		})),
-		read_only: types.boolean,
+		readOnly: types.boolean,
 		type: alternative([
 			'string',
 			'integer',
 			'boolean'
 		]),
-		value: alternative([
+		valueInternal: alternative([
 			types.string,
 			types.integer,
 			types.boolean
 		])
 	}), 200],
-	['post', '/properties?action=update', null, 200],
+	['post', '/properties?action=update',
+		[{id: 'new_prop', value: 'some_value'}], 200],
 	['get', '/user_privileges', array({
 		privilege: types.string,
 		description: types.string,
@@ -139,8 +143,8 @@ const completeProtocol: MochaForEachInput[] = [
 	}), 200],
 	['get', '/users', array({
 		username: types.string,
-		privileges: types.array(types.string),
-		projects: types.array({
+		privileges: array(types.string),
+		projects: array({
 			project_name: types.string,
 			access_level: types.string
 		}),
@@ -168,8 +172,8 @@ const completeProtocol: MochaForEachInput[] = [
 	}, 200],
 	['get', '/current_user', {
 		username: types.string,
-		privileges: types.array(types.string),
-		projects: types.array({
+		privileges: array(types.string),
+		projects: array({
 			project_name: types.string,
 			access_level: types.string
 		}),
@@ -186,7 +190,7 @@ const completeProtocol: MochaForEachInput[] = [
 	}), 200],
 	['get', '/projects', array({
 		project_name: types.string,
-		users: types.array({
+		users: array({
 			username: types.string,
 			access_level: types.string
 		}),
@@ -206,8 +210,8 @@ const completeProtocol: MochaForEachInput[] = [
 	}, 200],
 	['post', '/projects/mocky', null, 200],
 	['get', '/projects/mocky/properties', null, 200],
-	['get', '/projects/mocky/files/example/path', null, 200],
-	['post', '/projects/mocky/files/some_file?action=overwrite', {}, 200],
+	['post', '/projects/mocky/files/folder+some_file?action=overwrite', {}, 200],
+	['get',  '/projects/mocky/files/folder+some_file', null, 200],
 	['get', '/projects/mocky/files_by_id/file1', null, 200]
 ];
 

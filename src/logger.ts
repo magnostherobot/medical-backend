@@ -3,7 +3,7 @@
 import * as colors from 'colors/safe';
 import * as winston from 'winston';
 
-import { files } from './files';
+import { logPath } from './files';
 import { QueryOptions } from 'sequelize';
 
 type Colour = (s: string) => string;
@@ -143,7 +143,7 @@ const basicFileTransport: winston.TransportInstance =
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('basic'),
+	filename: './logs/general/basic', //logPath('basic'),
 	maxSize: 1000000,
 	maxFiles: 100,
 	stream: undefined,
@@ -170,7 +170,7 @@ const criticalFileTransport: winston.TransportInstance =
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('critical'),
+	filename: './logs/general/critical', //logPath('critical'),
 	maxSize: 1000000,
 	maxFiles: 10,
 	stream: undefined,
@@ -198,7 +198,7 @@ const queryFileTransport: winston.TransportInstance =
 	silent: false,
 	colorize: false,
 	timestamp: true,
-	filename: files.logPath('queries'),
+	filename: './logs/general/queries', //logPath('queries'),
 	maxSize: 1000000,
 	maxFiles: 100,
 	stream: undefined,

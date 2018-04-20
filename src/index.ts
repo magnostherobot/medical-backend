@@ -7,8 +7,8 @@ logger.info('Importing server logic');
 import { default as app } from './app';
 
 logger.info('Importing database ORM');
+import { createRootFolder, rootPathId } from './files';
 import { default as seq } from './db/orm';
-import { View, files, views, rootPathId, createRootFolder } from './files';
 
 import { default as File } from './db/model/File';
 import { default as User } from './db/model/User';
@@ -62,7 +62,6 @@ async function reset(): Promise<void> {
 
 	await logging.save();
 	await admin.save();
-
 
 	logger.info('Adding admin user');
 	const root: User = new User({
