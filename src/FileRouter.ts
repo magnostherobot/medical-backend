@@ -14,6 +14,7 @@ import { uuid } from './uuid';
 import UserHasPrivilege from './db/model/UserHasPrivilege';
 import { Contains } from 'sequelize-typescript';
 import UserJoinsProject from './db/model/UserJoinsProject';
+import { appendFileSync } from 'fs';
 
 
 /**
@@ -481,9 +482,9 @@ const getProjects: Middleware = async(
 			User
 		]
 	});
-	res.locals.data = projects.map(
-		(p: Project): ProjectFullInfo => p.fullInfo
-	);
+	res.locals.data = Promise.all(projects.map(
+		(p: Project): Promise<ProjectFullInfo> => p.getFullInfo()
+	));
 	next();
 };
 
@@ -513,7 +514,7 @@ const getProjectName: Middleware = async(
 	if (project == null) {
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
-		res.locals.data = project.fullInfo;
+		res.locals.data = await project.getFullInfo();
 		next();
 	}
 };

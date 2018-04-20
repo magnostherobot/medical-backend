@@ -100,41 +100,39 @@ export default class Project extends Model<Project> {
 				projectName: this.name
 			}
 		})
-		const people: String[] = ujps.map((ujp: UserJoinsProject): String => { 
+		const people: String[] = await ujps.map((ujp: UserJoinsProject): String => { 
 			if(ujp.contributorGroup != undefined){
-				console.log(ujp.contributorGroupName)
 				return ujp.contributorGroupName
 			}
 			else{
 				throw new Error(`unimplemented, ${this}`);
 			}
 		})
-		//console.log(people);
-		return await people;
+		return people;
 	}
 
-	public getUserInfo(user: User): UserInfo {
+	public async getUserInfo(user: User): Promise<UserInfo> {
 		return {
 			username: user.username,
-			access_level: this.getAccessLevel(user).toString()
+			access_level: (await this.getAccessLevel(user)).join()
 		};
 	}
 
-	public get fullInfo(): ProjectFullInfo {
+	public async getFullInfo(): Promise<ProjectFullInfo> {
 		if (this.contributors === undefined) {
 			throw new Error('contributors undefined');
 		}
+		//console.log(await this.getUserInfo(this.contributors[0]))
 		return {
 			project_name: this.name,
-			users: this.contributors
-			.map((u: User): UserInfo => this.getUserInfo(u)),
+			users: await Promise.all(this.contributors
+			.map( (u: User): Promise<UserInfo> => this.getUserInfo(u))),
 			public_metadata: {
 				creation_date: this.creationDate
 			},
-			// TODO: Check if we have anything to use these for yet?
 			private_metadata: {},
 			admin_metadata: {}
-		};
+		}
 	}
 }
 
