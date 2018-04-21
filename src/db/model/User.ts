@@ -5,6 +5,8 @@ import { BelongsToMany, Column, CreatedAt, DataType, HasMany,
 import { default as UserGroup } from './UserGroup';
 import { default as UserHasPrivilege } from './UserHasPrivilege';
 import { default as UserJoinsProject } from './UserJoinsProject';
+import ContributorGroup from './ContributorGroup';
+import { truncateFile } from '../../files';
 
 @Table
 export default class User extends Model<User> {
@@ -105,8 +107,10 @@ export default class User extends Model<User> {
 	}
 
 	// TODO implement
-	public getAccessLevel(project: Project): string {
-		throw new Error(`unimplemented, ${this}`);
+	public async getAccessLevel(project: Project): Promise<string> {
+		
+		return (await project.getAccessLevel(this)).join()
+		
 	}
 
 	public hasPrivilege(privilege: string): boolean {
@@ -118,14 +122,14 @@ export default class User extends Model<User> {
 		);
 	}
 
-	public getProjectInfo(project: Project): ProjectInfo {
+	public async getProjectInfo(project: Project): Promise<ProjectInfo> {
 		return {
 			project_name: project.name,
-			access_level: this.getAccessLevel(project)
+			access_level: await this.getAccessLevel(project)
 		};
 	}
 
-	public get fullInfo(): UserFullInfo {
+	public async getFullInfo(): Promise<UserFullInfo> {
 		// FIXME: Fetch these things if they aren't already present
 		if (this.userGroups === undefined) {
 			this.userGroups = [];
@@ -137,8 +141,8 @@ export default class User extends Model<User> {
 			privileges: this.userGroups!
 				.filter((ug: UserGroup): boolean => ug.name !== null)
 				.map((ug: UserGroup): string => ug.name as string),
-			projects : this.projects!.map(
-				(p: Project): ProjectInfo => this.getProjectInfo(p)
+			projects : await Promise.all( this.projects!.map(
+				(p: Project): Promise<ProjectInfo> => this.getProjectInfo(p))
 			),
 			// TODO: Check if we have anything to use these for yet?
 			public_user_metadata: {},

@@ -248,14 +248,14 @@ const getUsers: Middleware = async(
 			Project
 		]
 	});
-	res.locals.data = users.map((u: User): UserFullInfo => {
-		const info: UserFullInfo = u.fullInfo;
-		if (!req.user.hasPrivilege('admin')) {
-			delete info.private_user_metadata;
-			delete info.private_admin_metadata;
-		}
+	res.locals.data = Promise.all(users.map((u: User): Promise<UserFullInfo> => {
+		const info: Promise<UserFullInfo> = u.getFullInfo();
 		return info;
-	});
+	}));
+	if (!req.user.hasPrivilege('admin')) {
+		await delete res.locals.data.private_user_metadata;
+		await delete res.locals.data.private_admin_metadata;
+	}
 	next();
 };
 
@@ -295,24 +295,25 @@ const getUserProperties: Middleware = (
  *     "private_admin_metadata": metadata
  * }
  */
-const getUsername: Middleware = (
+const getUsername: Middleware = async (
 	req: Request, res: Response, next: NextFunction
-): void => {
+): Promise<void> => {
 	logger.debug(`Listing user ${res.locals.user}`);
 	res.locals.modified = true;
 	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
 	}
-	res.locals.data = res.locals.user.fullInfo;
+	res.locals.data = await res.locals.user.getFullInfo();
+	console.log(await res.locals.user.hasPrivilege("standardUser"))
 	next();
 };
 
-const getCurUser: Middleware = (
+const getCurUser: Middleware = async(
 	req: Request, res: Response, next: NextFunction
-): void => {
+): Promise<void> => {
 	logger.debug('Listing current user');
-	res.locals.data = req.user.fullInfo;
+	res.locals.data = await req.user.getFullInfo();
 	next();
 };
 
@@ -370,7 +371,6 @@ const postUsername: Middleware = async(
 ): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
 	res.locals.modified = true;
-
 	
 	if( req.query.action === 'update'){
 		if (user!= null){
@@ -559,7 +559,36 @@ const postProjectName: Middleware = async(
 		}
 	}
 	else if( req.query.action === 'update_grant'){
-		
+		if (project == null){
+			next(new RequestError(400, 'project_not_found'));
+		}
+		else{
+				let ujp: UserJoinsProject | null = await UserJoinsProject.findOne({
+					include: [{all:true}],
+					where: {
+						username: req.body.username,
+						projectName: project.name
+					}
+				})
+				if(ujp != null){
+					await ujp.destroy();
+				}
+			
+			if(req.body.access_level != 'none'){
+				try{
+					let ujp: UserJoinsProject = new UserJoinsProject({
+						username: req.body.username,
+						projectName: project.name,
+						contributorGroupName: req.body.access_level
+					})
+					await ujp.save();
+				}
+				catch(err){
+					next(new RequestError(400, 'invalid_access_level'));
+				}
+			}
+			
+		}
 	}
 	else{
 		if(project == null){
@@ -889,7 +918,7 @@ export class FileRouter {
 					}
 				});
 				if (user == null) {
-					return next(new RequestError(404, 'user_not_found'));
+					//return next(new RequestError(404, 'user_not_found'));
 				} else {
 					res.locals.user = user;
 				}
