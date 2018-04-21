@@ -7,7 +7,7 @@ import { uuid } from '../../uuid'
 import { logger } from '../../logger';
 
 // CHANGE ME FOR TESTING!!!!!
-const input: string = "test.tiff"
+const input: string = "diseessse1.scn"
 const baseDirname: string = '/cs/scratch/cjd24/tifers/';
 
 
@@ -81,7 +81,7 @@ const crunchLeica: () => Promise<string> = async (): Promise<string> => {
 				overlap: tileOverlap,
 				layout: "dz"
 			})
-			.toFile(`${output}output.dzi`);
+			.toFile(`${output}output`);
 		logger.success(`Finalised output of ${input} as .dzi`);
 		return `${output}output.dzi`;
 	}

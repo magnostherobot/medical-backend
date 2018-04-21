@@ -729,7 +729,9 @@ const createSupportedViewsObject: () => void = (): void => {
 	parseExtractedXML(`${extractionDirectory}FILE-META-1.xml`);
 
 	// Create the total supported Views object
-	writeJSONToFile(`${outputImageData}supported_views.json`, supportedViews);
+    // !!!!! This line was removed in order to reduce the output file size and
+    // !!!!! increase the usability by only giving the striped down version
+	// writeJSONToFile(`${outputImageData}supported_views.json`, supportedViews);
 
 	// Cleanup and create "smart" supported views object without whole metadata
 	cleanSupportedViews(supportedViews);
@@ -739,7 +741,7 @@ const createSupportedViewsObject: () => void = (): void => {
 		tile_overlap: tileOverlap
 	};
 	writeJSONToFile(
-		`${outputImageData}supported_views_minus_xml.json`, supportedViews);
+		`${outputImageData}supported_views.json`, supportedViews);
 };
 
 /**
