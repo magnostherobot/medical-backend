@@ -715,7 +715,7 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 			// Extract the base tiles and build up custom pyramid data
 			await extrapolateDimension(
 				Number.parseInt(cval.channel_id, 10),
-				supportedViews.scalable_image.channels.length * Math.log2(maxZoom),
+				supportedViews.scalable_image.channels.length * Math.log2(maxZoom * 2),
 				maxZoom
 			).then((v: CZIHeightMap[]) => {
 				// On success, add the new heightmap to the final json data block
