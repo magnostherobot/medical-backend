@@ -116,7 +116,8 @@ export default class File extends Model<File> {
 	}
 
 	public get metadata(): Metadata {
-		return JSON.parse(this.metadataInternal) || INITIAL_METADATA;
+		return !!(this.metadataInternal) ? JSON.parse(this.metadataInternal) 
+		: INITIAL_METADATA;
 	}
 
 	public set metadata(md: Metadata) {
@@ -128,6 +129,10 @@ export default class File extends Model<File> {
 		if (newMD.version !== oldMD.version + 1) {
 			throw new RequestError(400, 'invalid_request');
 		}
+		this.metadataInternal = JSON.stringify(newMD);
+	}
+	public setMetadataInternal(md: Metadata): void {
+		this.metadataInternal = JSON.stringify(md);
 	}
 
 	public set mimetype(mime: string) {

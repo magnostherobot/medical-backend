@@ -93,7 +93,7 @@ async function reset(): Promise<void> {
 		process.exit(1);
 	}
 
-	//await reset();
+	await reset();
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {
