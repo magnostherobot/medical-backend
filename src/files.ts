@@ -80,6 +80,10 @@ export const path: (file: string, project: string, view?: ViewName) => string =
 	(file: string, project: string, view: ViewName = 'raw'): string =>
 		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/${view}`;
 
+export const pathNoView: (file: string, project: string) => string =
+	(file: string, project: string): string =>
+		`${CONTENT_BASE_DIRECTORY}/${project}/${file}`;
+
 export const tempPath: (file: string, project: string) => string = (
 	file: string
 ): string =>
@@ -98,7 +102,7 @@ export const saveFile: (filename: string, projectname: string, fileId: string, o
 	let rStream = fs.createReadStream(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
 	let wStream = fs.createWriteStream(path(fileId, projectname), {'flags':'a'});
 	rStream.pipe(wStream).on('finish', async() => {
-		await fs.remove(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
+		fs.remove(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
 	}).on('error', (err: any) => {
 		logger.error(`Error while saving file to proper location: ${err}`);
 	});
@@ -115,6 +119,38 @@ export const truncateFile: (fileId: string, projectName: string, newLength: numb
 	// get the file descriptor of the file to be truncated
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	await fs.ftruncate(fd, newLength);
+}
+
+export const copyFile: (projName: string, fromId: string, toId: string, move?: boolean) 
+	=> Promise<void> = async(projName: string, fromId: string, toId: string, move?: boolean): Promise<void> => {
+	// ensure to path exists
+	fs.ensureDirSync(pathNoView(toId, projName));
+	const fromDir: string = pathNoView(fromId, projName);
+	const toDir: string = pathNoView(toId, projName);
+	// loop all views in file
+	fs.readdir(fromDir, (err: any, files: string[]) => {
+		if(err){
+			logger.error(`Error while copying file: ${err}`);
+		} else {
+			files.forEach((file: string, index: number) => {
+				const fromPathFull = fromDir + "/" + file;
+				const toPathFull = toDir + "/" + file;
+				fs.ensureFileSync(toPathFull);
+				// open streams to transfer data
+				let rStream = fs.createReadStream(fromPathFull);
+				let wStream = fs.createWriteStream(toPathFull);
+				rStream.pipe(wStream).on('finish', async() => {
+					if(!!move){
+						await fs.remove(fromPathFull);
+					}
+					console.log(`copy success of file from \'${fromPathFull}\' to \'${toPathFull}\'`)
+				}).on('error', (err: any) => {
+					logger.error(`Error while copying file: ${err}`);
+				});
+			})
+		}
+	});
+	
 }
 
 export const files: {

@@ -7,8 +7,8 @@ import { default as UserGroup } from './db/model/UserGroup';
 
 import { RequestError } from './errors/errorware';
 import { NextFunction, Request, Response, Router } from 'express';
-import { View, addSubFileToFolder, createProjectFolder, deleteFile, rootPathId,
-	saveFile, upload, views } from './files';
+import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
+	rootPathId, saveFile, upload, views } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -572,7 +572,6 @@ const getFileFromPath: (req: Request, res: Response) => Promise<void> = async(
 	res.locals.filename = fileNames.length > 0
 		?  fileNames[fileNames.length - 1]
 		: '';
-	logger.debug(`Searching for file '${res.locals.filename}'`);
 	const project: Project | null = res.locals.project;
 	if (project == null) {
 		// Project should have been found by previous precondition
@@ -682,6 +681,7 @@ const qH: {
 /**
  * Post a File. / delete / move / etc
  */
+/* tslint:disable */
 const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
 	try {
 		await getFileFromPath(req, res);
@@ -696,12 +696,14 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 		if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
 			logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
 			next(new RequestError(404, 'file_not_found'));
+			return;
 		}
 
 		// Return 400 when one of these actions is attempted on existing file
 		if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
 			logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
 			next(new RequestError(400, 'file_exists'));
+			return;
 		}
 
 		// Sets final if requested
@@ -715,6 +717,7 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 			res.locals.file.metadata = req.body;
 			await res.locals.file.save();
 			next();
+			return;
 		}
 
 		// Deletes File if requested
@@ -723,29 +726,83 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 			deleteFile(res.locals.file.uuid, res.locals.project.name);
 			await res.locals.file.destroy();
 			next();
+			return;
 		}
 
 		// Moves File if requested
 		if(qH.moves(req)){
-			// TODO
-			next(new RequestError(500, 'not_implemented'));
+			if(!req.body.path){
+				logger.debug(`copying by uuid not implimented`);
+				next(new RequestError(500, "copy_to_path_only"));
+				return;
+			}
+			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
+			// new File object
+			let promise: PromiseLike<File> | null = null;
+	
+			const newFile: File = new File({
+				uuid: uuid.generate(),
+				type: res.locals.file.type,
+				status: res.locals.file.status,
+				creatorName: res.locals.file.creatorName,
+				createdAt: res.locals.file.createdAt,
+				modifyDate: res.locals.file.modifyDate
+			});
+			newFile.setMetadataInternal(res.locals.file.metadata);
+			newFile.fullPath = req.body.path;
+			newFile.parentFolderId = res.locals.parentFolderId;
+			await newFile.save();
+			const oldUUID: string = res.locals.file.uuid;
+			await res.locals.file.destroy();
+			copyFile(res.locals.project.name, res.locals.file.uuid, oldUUID, true);
+			next();
+			return;
 		}
 
 		// Copies File if requested
 		if(qH.copys(req)){
-			// TODO
-			next(new RequestError(500, 'not_implemented'));
+			if(!req.body.path){
+				logger.debug(`copying by uuid not implimented`);
+				next(new RequestError(500, "copy_to_path_only"));
+				return;
+			}
+			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
+			// new File object
+			let promise: PromiseLike<File> | null = null;
+	
+			const newFile: File = new File({
+				uuid: uuid.generate(),
+				type: res.locals.file.type,
+				status: res.locals.file.status,
+				creatorName: res.locals.file.creatorName,
+				createdAt: res.locals.file.createdAt,
+				modifyDate: res.locals.file.modifyDate
+			});
+			newFile.setMetadataInternal(res.locals.file.metadata);
+			newFile.fullPath = req.body.path;
+			newFile.parentFolderId = res.locals.parentFolderId;
+			await newFile.save();
+			copyFile(res.locals.project.name, res.locals.file.uuid, newFile.uuid);
+			next();
+			return;
 		}
 
 		// Overwrite data but not truncate
 		// eg. OOOONNNNNNOOOO (O = old data, N = new data)
 		if(qH.overwrites(req) && !qH.truncates(req)){
-			// TODO
+			logger.info(`overwriting without truncating not supported`);
 			next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
+			return;
 		}
 
 		// Create File or Folder if file doesn't exist
 		if (res.locals.file == null){
+			// Guarding against stupid Postman
+			if(!qH.mksDir(req) && !req.file){
+				logger.debug("No file attached. Sending 400");
+				next(new RequestError(400, 'no_file_attached'));
+			}
+
 			// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
 			let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
 				: res.locals.path.split(res.locals.deepestFolderName)[1];
@@ -787,7 +844,6 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 					: 'uploading'
 			});
 			res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
-			console.log(req.file.mimetype);
 
 			await res.locals.file.save();
 
@@ -795,6 +851,7 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 			if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
 				logger.debug("adding file to folder failed!")
 				next(new RequestError(500, 'Adding file to folder failed'))
+				return;
 			}
 		}
 
@@ -814,6 +871,7 @@ const postFilePath: Middleware = async(req: Request, res: Response, next: NextFu
 		next(e);
 	}
 };
+/* tslint:enable */
 
 export class FileRouter {
 	public router: Router;
