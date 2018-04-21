@@ -1,1 +1,17 @@
 \section{File Management}
+File handling was one of the last unimplemented parts of our server. Integration testing proved essential for ensuring full functionality according to the agreed protocol. File upload and download involved overcoming a range of challenges which arose as additional features were implemented. 
+\subsection{Directory Structure}
+File storage on the server-side consists of two parts - storage of physical data on the file-system and storage of meta-data in the database. 
+
+The directory structure inside projects consists on a purely conceptual level in the database, as directories are stored entirely as entities in postgres. On the file-system, files are stored in the folder ``files'' which contains a folder named after the project which contains folders named after the file-uuid. This last folder contains all the `views of that file as well as the original upload. The ``raw'' view contains the original data. If tabular data is uploaded, the server recognises this and will start conversion into the ``tabular '' view.
+
+The directory structure, although not obvious to users viewing files through a file-viewer on the server, is always enforced to connecting clients. 
+
+\subsection{File Upload}
+When uploading files to the server, a POST request may be issued to *endpoint* ensuring that the headers *headers* are set. Once this request arrives at the server the node library `multer' automatically saves the data to a temporary directory called ``files-temp''. 
+
+Next a precondition function is called which parses the path from the request and attempts to find the file given the directory structure. Any part of the path that does not yet exist is created. At this stage the desired action is determined, as we allow for the copying, deleting, moving, truncating, overwriting and writing from an offset. Furthermore large files may be chunked, thus data is added incrementally to the file. The final chunk has the `final' parameter set to true, thus indicating that file-upload is complete.
+
+Once the file status is set to `final', which is done when the corresponding parameter is set on file-upload, file conversion is initiated. File conversion runs asynchronously separate from the node server. Once file conversion is done, the file status in the database will change to `ready'.
+
+\subsection{File Download}
