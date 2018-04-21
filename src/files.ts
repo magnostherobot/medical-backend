@@ -3,6 +3,8 @@ import * as fs from 'fs-extra';
 import { logger } from './logger';
 import * as Multer from 'multer';
 
+import * as parse from 'csv-parse';
+import * as stringify from 'csv-stringify';
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
 
@@ -21,8 +23,11 @@ export const INITIAL_METADATA: Metadata = {
 	namespaces: {}
 };
 
-/* tslint:disable */
-const writableStream: (filename: string, projectName: string) => fs.WriteStream = (filename: string, projectName: string): fs.WriteStream => {
+const writableStream: (
+	filename: string, projectName: string
+) => fs.WriteStream = (
+	filename: string, projectName: string
+): fs.WriteStream => {
 	return fs.createWriteStream(path(filename, projectName));
 };
 
@@ -31,29 +36,36 @@ interface RawSize {
 	length: number;
 }
 
-const readableStream: (filename: string, projectName: string, { offset, length }?: Partial<RawSize>) => fs.ReadStream
-	= (filename: string, projectName: string, { offset, length }: Partial<RawSize> = { offset: undefined, length: undefined }): fs.ReadStream => {
+interface TabularParameters {
+	rowstart: number;
+	rowcount: number;
+	cols: string[];
+}
+
+interface Query extends Partial<RawSize>, Partial<TabularParameters> {
+	children?: boolean;
+}
+
+const readableStream: (
+	filename: string, projectName: string, { offset, length }?: Query
+) => fs.ReadStream = (
+	filename: string, projectName: string, { offset, length }: Query =
+		{ offset: undefined, length: undefined }
+): fs.ReadStream => {
 	const options: object = {
-		start: offset? offset: 0,
-		end: offset && length? offset + length: undefined
+		start: offset ? offset : 0,
+		end: offset && length ? offset + length : undefined
 	};
 	return fs.createReadStream(path(filename, projectName), options);
 };
 
-export function logPath (type: string, projectName?: string){
-	return projectName
-		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
-		: `${LOG_BASE_DIRECTORY}/general/${type}`;
-}
-
-/*
 export const logPath: (type: string, projectName?: string) => string = (
-	type: string, projectName?: string): string => {
+	type: string, projectName?: string
+): string => {
 	return projectName
 		? `${LOG_BASE_DIRECTORY}/projects/${projectName}/${type}`
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;
 };
-*/
 
 let storage = Multer.diskStorage({
 	destination: function (req, file, cb) {
@@ -115,7 +127,7 @@ export const files: {
 	logPath
 };
 
-export type ViewName = 'raw' | 'meta';
+export type ViewName = 'raw' | 'meta' | 'tabular';
 
 interface Query extends Partial<RawSize> {
 	include_children?: boolean;
@@ -215,10 +227,34 @@ export const views: {
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return null;
 		}
+	},
+	tabular: {
+		getContents: (file: File): object => {
+			return {
+				// columns:
+				// rows:
+			};
+		},
+		getResponseData: async(
+			file: File, project: Project, query: Query
+		): Promise<object> => {
+			return readableStream(file.name, project.name, query)
+				.pipe(parse({
+					columns: true,
+					from: query.rowstart,
+					to: (query.rowstart && query.rowcount)
+						? query.rowstart + query.rowcount
+						: undefined
+				})).pipe(stringify({
+				}));
+		},
+		getResponseFunction: (req: Request, res: Response): Function | null => {
+			return (stream: fs.ReadStream) => stream.pipe(res);
+		}
 	}
 };
 
-export type FileTypeName = 'generic' | 'directory';
+export type FileTypeName = 'generic' | 'directory' | 'tabular';
 
 export interface FileType {
 	supportedViews: ViewName[];
@@ -235,6 +271,11 @@ const fileTypes: {
 	directory: {
 		supportedViews: [
 			'meta'
+		]
+	},
+	tabular: {
+		supportedViews: [
+			'raw', 'meta', 'tabular'
 		]
 	}
 };
@@ -255,7 +296,8 @@ class MimeTypeMap extends Map<string, string> {
 }
 
 export const mimes: MimeTypeMap = new MimeTypeMap([
-	[ 'inode/directory', 'directory' ]
+	[ 'inode/directory', 'directory' ],
+	[ 'text/csv',        'tabular'   ]
 ]);
 
 export const rootPathId: string = '0';
@@ -280,11 +322,13 @@ export const addSubFileToFolder: (parentId: string, subFileId: string) => Promis
 	logger.debug(`adding file ${subFileId} to directory ${parentId}`)
 	// Fetch parent and subFile object from database
 	const parent: File | null = await File.findOne({
+		include: [{all: true}],
 		where: {
 			uuid: parentId
 		}
 	});
 	const file: File | null = await File.findOne({
+		include: [{all: true}],
 		where: {
 			uuid: subFileId
 		}
@@ -292,8 +336,6 @@ export const addSubFileToFolder: (parentId: string, subFileId: string) => Promis
 	if(!parent || !file){
 		return false;
 	}
-	// update both objects
-	// parent.containedFiles.push(file);
 	parent.$add('containedFilesInternal', file);
 
 	return true;
