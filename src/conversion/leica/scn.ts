@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
-import { SupportedViews, TileBounds, writeJSONToFile, checkForOutputDirectories } from '../types/helpers';
+import { SupportedViews, TileBounds, writeJSONToFile, checkForOutputDirectories, execpaths } from '../types/helpers';
 import { uuid } from '../../uuid'
 import { logger } from '../../logger';
 
@@ -14,13 +14,12 @@ const baseDirname: string = '/cs/scratch/cjd24/tifers/';
 
 // Various constants for placing files and defining tiles
 const extensionBinariesDir: string = __dirname + `/../../../ext/bin/`;
-const execpaths: string = `PATH="$PATH:${extensionBinariesDir}" LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${extensionBinariesDir}../lib/" `;
 
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 512;
 
 
-const crunchLeica: () => void = async (): Promise<void> => {
+const crunchLeica: () => Promise<string> = async (): Promise<string> => {
 
 	try {
 		let output: string =`${baseDirname}${uuid.generate()}/`;
@@ -84,17 +83,13 @@ const crunchLeica: () => void = async (): Promise<void> => {
 			})
 			.toFile(`${output}output.dzi`);
 		logger.success(`Finalised output of ${input} as .dzi`);
+		return `${output}output.dzi`;
 	}
 	catch (err) {
 		logger.failure(`Lecia conversion failed with error: ${err}`)
+		return `Lecia conversion failed with error: ${err}`;
 	}
 };
 
-/**
- * Main function used to call the rest of the relevant code to crunch a CZI
- * extraction.
- */
-const main: () => void = (): void => {
-	crunchLeica();
-};
-main();
+
+crunchLeica().then((ret:string) => console.log(ret));
