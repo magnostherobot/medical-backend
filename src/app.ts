@@ -57,7 +57,7 @@ class App {
 			async(req: ex.Request, res: ex.Response, next: ex.NextFunction):
 			Promise<void> => {
 				if (res.locals.function) {
-					res.locals.function.bind(res)(res.locals.data);
+					res.locals.function.bind(res)(await res.locals.data);
 				} else {
 					res.json({
 						status: 'success',

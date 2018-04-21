@@ -5,7 +5,9 @@ export {
 	exact,
 	optional,
 	alternative,
-	array
+	array,
+	match,
+	metadata
 } from './options';
 
 export {
