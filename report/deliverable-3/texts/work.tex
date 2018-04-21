@@ -9,4 +9,30 @@ Looking back on the tasks set out from the initial specifications we are very sa
 \item[Allow conversion of images and tabular data] Our current system allows fluent transition between czi input files and tiled png output *todo*. Tabular data is handled in csv format, giving the server a good understanding of the data.
 \item[Robustness to user input] A reasonable attempt was made to catch out invalid input and close collaboration with the HCI groups ensured a distribution of responsibility for the preservation of dependencies and cleaning of user input.
 \item[Ensure compatibility between groups] A common api was decided by the student body to ensure seamless communication between systems. As part of our testing we integrated with several other HCI and ML groups. 
+\item[Follow an agreed protocol for intergroup communication] We implemented the entire protocol \url{https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md}
+\end{description}
+
+\subsection{Endpoints}
+\begin{description}
+\item[get  '/_supported_protocols_'] Returns the supported protocols
+\item[get  '/log'] Allows retreiving of logs (requires admin privileges)
+\item[post '/log'] Allows viewing of logs (requires logging permission)
+\item[get  '/properties'] Returns the server configuration
+\item[post '/properties'] Allows changing of the server configuration
+\item[get  '/user_privileges'] Returns all available privileges
+\item[get  '/users'] Returns all users 
+\item[get  '/users/:username'] Returns information on a specific user
+\item[post '/users/:username'] Allows adding of users and changing of user information
+\item[get  '/users/:username/properties'] Returns additional configuration options on a specific user
+\item[get  '/current_user'] Returns information of the authenticated user
+\item[post '/current_user'] Allows changing of information for the authenticated user
+\item[get  '/project_roles'] Returns all project roles
+\item[get  '/projects'] Returns all projects
+\item[get  '/projects/:project_name'] Returns information of a specific project
+\item[post '/projects/:project_name'] Allows changing of information of a specific project
+\item[get  '/projects/:project_name/properties'] Returns additional configuration options of a specific project
+\item[get  '/projects/:project_name/files/'] Returns all files and folders at the base level of the project (non-recursive)
+\item[get  '/projects/:project_name/files/:path'] Returns a file
+\item[post '/projects/:project_name/files/:path'] Uploads a file
+\item[get  '/projects/:project_name/files_by_id/:id'] Returns a file
 \end{description}
