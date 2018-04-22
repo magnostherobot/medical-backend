@@ -33,4 +33,4 @@
 \contentsline {subsection}{\numberline {9.3}Calum Duff}{10}{subsection.9.3}
 \contentsline {subsection}{\numberline {9.4}Johannes Weck}{10}{subsection.9.4}
 \contentsline {subsection}{\numberline {9.5}Hafeez Abdul-Rehaman}{10}{subsection.9.5}
-\contentsline {section}{\numberline {A}Scrum Board Images}{11}{appendix.A}
+\contentsline {section}{\numberline {A}Scrum Board Images}{12}{appendix.A}
