@@ -1,0 +1,73 @@
+This is BibTeX, Version 0.99d (TeX Live 2016)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: main.aux
+The style file: plain.bst
+Database file #1: biblio.bib
+Warning--to sort, need author or key in zeissLicence
+Warning--to sort, need author or key in sharp
+Warning--to sort, need author or key in sharpPerformance
+Warning--to sort, need author or key in openseadragon
+Warning--to sort, need author or key in protocol
+Warning--to sort, need author or key in sequelize
+Warning--to sort, need author or key in strongloop
+Warning--to sort, need author or key in pm2
+Warning--to sort, need author or key in forever
+Warning--to sort, need author or key in mocha-each
+Warning--to sort, need author or key in @types
+Warning--to sort, need author or key in tslint
+Warning--to sort, need author or key in yarn
+Warning--to sort, need author or key in typescript
+Warning--to sort, need author or key in sequelize-typescript
+Warning--to sort, need author or key in postgres
+Warning--to sort, need author or key in mocha
+Warning--to sort, need author or key in chai
+Warning--to sort, need author or key in chai-http
+Warning--to sort, need author or key in express
+Warning--to sort, need author or key in passport
+Warning--to sort, need author or key in passport-local
+Warning--to sort, need author or key in morgan
+Warning--to sort, need author or key in typedoc
+Warning--to sort, need author or key in xlsx
+Warning--to sort, need author or key in docker
+You've used 26 entries,
+            2118 wiz_defined-function locations,
+            597 strings with 5770 characters,
+and the built_in function-call counts, 4422 in all, are:
+= -- 450
+> -- 26
+< -- 0
++ -- 26
+- -- 0
+* -- 140
+:= -- 513
+add.period$ -- 78
+call.type$ -- 26
+change.case$ -- 78
+chr.to.int$ -- 0
+cite$ -- 52
+duplicate$ -- 182
+empty$ -- 599
+format.name$ -- 0
+if$ -- 1101
+int.to.chr$ -- 0
+int.to.str$ -- 26
+missing$ -- 0
+newline$ -- 133
+num.names$ -- 0
+pop$ -- 244
+preamble$ -- 1
+purify$ -- 52
+quote$ -- 0
+skip$ -- 137
+stack$ -- 0
+substring$ -- 130
+swap$ -- 26
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 104
+warning$ -- 26
+while$ -- 0
+width$ -- 28
+write$ -- 244
+(There were 26 warnings)

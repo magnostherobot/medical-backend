@@ -349,16 +349,20 @@ export const rootPathFile: File | null = null;
 
 export const createRootFolder: () => Promise<void> = async(
 ): Promise<void> => {
-	if (!(await fs.access(CONTENT_BASE_DIRECTORY))) {
+	try {
 		await fs.mkdir(CONTENT_BASE_DIRECTORY);
+	} catch (e) {
+		logger.warn(`error when creating base folder: ${e}`);
 	}
 };
 
 export const createProjectFolder: (name: string) => Promise<void> = async(
 	projName: string
 ): Promise<void> => {
-	if (!(await fs.access(CONTENT_BASE_DIRECTORY + '/' + projName))) {
+	try {
 		await fs.mkdir(CONTENT_BASE_DIRECTORY + '/' + projName);
+	} catch (e) {
+		logger.warn(`error when creating folder for project ${projName}: ${e}`);
 	}
 };
 

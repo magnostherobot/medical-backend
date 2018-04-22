@@ -18,7 +18,7 @@
     "_lint": "tslint -p './tsconfig.json' -c './tslint.json'",
     "lint": "yarn _lint --fix --force './src/**/*.ts'",
     "lint:tests": "yarn _lint --fix --force './test/**/*.ts'",
-	"serve": "pm2 start ecosystem.config.js",
+	"serve": "pm2 restart ecosystem.config.js",
 	"console": "pm2 monit"
   },
   "repository": {
