@@ -9,7 +9,7 @@ import * as bodyParser from 'body-parser';
 import { RequestError } from './errors/errorware';
 import { NextFunction, Request, Response, Router } from 'express';
 import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
-	saveFile, views } from './files';
+	saveFile, views, preprocess } from './files';
 import { appendFileSync } from 'fs';
 import { logger } from './logger';
 import { mimetype } from './mimetype';
@@ -921,7 +921,7 @@ const postFilePath: Middleware = async(
 						if (req.query.final) {
 							res.locals.file.status = 'preprocessing';
 							await res.locals.file.save();
-							// Start file preprocesssing
+							preprocess(res.locals.file, res.locals.project);
 						}
 					} else {
 						logger.warn('overwriting without truncating not supported');
@@ -965,7 +965,7 @@ const postFilePath: Middleware = async(
 				// Sets final if requested
 				if (qH.isFinal(req)) {
 					res.locals.file.status = 'preprocessing';
-					// TODO Start file preprocessing
+					preprocess(res.locals.file, res.locals.project);
 				}
 			}
 			await res.locals.file.save();

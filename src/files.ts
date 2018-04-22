@@ -66,16 +66,21 @@ interface Query extends
 }
 
 const readableStream: (
-	filename: string, projectName: string, { offset, length }?: Query
+	filename: string,
+	projectName: string,
+	{ offset, length }?: Query,
+	view?: ViewName
 ) => fs.ReadStream = (
-	filename: string, projectName: string, { offset, length }: Query =
-		{ offset: undefined, length: undefined }
+	filename: string,
+	projectName: string,
+	{ offset, length }: Query = { offset: undefined, length: undefined },
+	view: ViewName = 'raw'
 ): fs.ReadStream => {
 	const options: object = {
 		start: offset ? offset : 0,
 		end: offset && length ? offset + length : undefined
 	};
-	return fs.createReadStream(path(filename, projectName), options);
+	return fs.createReadStream(path(filename, projectName, view), options);
 };
 
 export const logPath: (type: string, projectName?: string) => string = (
@@ -89,6 +94,10 @@ export const logPath: (type: string, projectName?: string) => string = (
 export const path: (file: string, project: string, view?: ViewName) => string =
 	(file: string, project: string, view: ViewName = 'raw'): string =>
 		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/${view}`;
+
+export const originalPath: (file: string, project: string) => string =
+	(file: string, project: string): string =>
+		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/ORIGINAL`;
 
 export const pathNoView: (file: string, project: string) => string =
 	(file: string, project: string): string =>
@@ -182,6 +191,8 @@ export interface View {
 	getResponseData: (file: File, project: Project, query: Query) =>
 		Promise<object>;
 	getResponseFunction: (req: Request, res: Response) => Function | null;
+	preprocess: (original: string, space: string) =>
+		Promise<void>;
 }
 
 interface MetaResponseData {
@@ -260,7 +271,11 @@ export const views: {
 			return readableStream(file.uuid, project.name, query);
 		},
 		getResponseFunction: (req: Request, res: Response): Function | null => {
-			return (stream: fs.ReadStream) => stream.pipe(res);
+			return (rStream: fs.ReadStream): fs.ReadStream =>
+				rStream.pipe(res as any);
+		},
+		preprocess: async(original: string, space: string): Promise<void> => {
+			return;
 		}
 	},
 	meta: {
@@ -270,6 +285,9 @@ export const views: {
 		getResponseData: metaGetResponseData,
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return null;
+		},
+		preprocess: async(original: string, space: string): Promise<void> => {
+			return;
 		}
 	},
 	tabular: {
@@ -294,6 +312,9 @@ export const views: {
 		},
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return (stream: fs.ReadStream) => stream.pipe(res);
+		},
+		preprocess: async(original: string, space: string): Promise<void> => {
+			return;
 		}
 	}
 };
@@ -322,6 +343,23 @@ const fileTypes: {
 			'raw', 'meta', 'tabular'
 		]
 	}
+};
+
+export const preprocess: (
+	file: File, project: Project
+) => Promise<void> = async(
+	file: File, project: Project
+): Promise<void> => {
+	const promises: Promise<void>[] = [];
+	for (const view of fileTypes[file.type].supportedViews) {
+		promises.push(views[view].preprocess(
+			originalPath(file.uuid, project.name),
+			path(file.uuid, project.name, view)
+		));
+	}
+	await Promise.all(promises);
+	file.status = 'ready';
+	await file.save();
 };
 
 class MimeTypeMap extends Map<string, string> {
