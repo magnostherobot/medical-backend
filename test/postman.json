@@ -1,45 +1,87 @@
 {
+	"variables": [],
 	"info": {
 		"name": "JH",
-		"_postman_id": "323a3189-bd95-4f51-b985-d2ca626300ec",
+		"_postman_id": "d9fad1ce-92af-fc2c-ff74-074fc681c7ee",
 		"description": "",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
 	},
 	"item": [
 		{
 			"name": "authorised",
-			"description": null,
+			"description": "",
 			"item": [
 				{
-					"name": "/projects",
+					"name": "/projects/",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [
-							{
-								"key": "",
-								"value": "",
-								"disabled": true
-							}
-						],
-						"body": {},
 						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects",
+							"raw": "{{host}}/{{endpoint}}/projects/other?action=create",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"{{endpoint}}",
-								"projects"
+								"projects",
+								"other"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userfile",
+									"description": "",
+									"type": "file",
+									"src": "checker_black.jpg"
+								}
 							]
 						},
 						"description": ""
@@ -47,18 +89,105 @@
 					"response": []
 				},
 				{
-					"name": "/log",
+					"name": "/projects/abc/files copy",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file?action=move",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}",
+								"files",
+								"file"
+							],
+							"query": [
 								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
+									"key": "action",
+									"value": "move",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"path\": \"newFile\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pres",
+									"value": "",
+									"description": "",
+									"type": "file"
 								}
 							]
 						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/log",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/log",
 						"method": "GET",
 						"header": [
 							{
@@ -67,16 +196,9 @@
 								"disabled": true
 							}
 						],
-						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/log",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"log"
-							]
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
@@ -85,28 +207,17 @@
 				{
 					"name": "/_supported_protocols",
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
+						"url": "{{host}}/{{endpoint}}/_supported_protocols_",
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
 								"disabled": true
 							}
 						],
 						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/_supported_protocols_",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"_supported_protocols_"
-							]
-						},
 						"description": ""
 					},
 					"response": []
@@ -114,33 +225,65 @@
 				{
 					"name": "/project_roles",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
+						"url": "{{host}}/{{endpoint}}/project_roles",
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
 								"disabled": true
 							}
 						],
 						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/project_roles",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"project_roles"
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/project_roles copy",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files_by_id",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files_by_id/d124ef49-e9e3-4794-bf50-76f40797b5d5",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pres",
+									"value": "",
+									"description": "",
+									"type": "file"
+								}
 							]
 						},
 						"description": ""
@@ -148,39 +291,53 @@
 					"response": []
 				},
 				{
-					"name": "/projects/",
+					"name": "/",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
+						"url": "{{host}}/",
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/ copy",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/json"
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
 							}
 						],
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
-						},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"projects",
-								"{{dummy_project}}"
-							]
 						},
 						"description": ""
 					},
@@ -192,19 +349,8 @@
 			"name": "/oauth/token",
 			"event": [
 				{
-					"listen": "prerequest",
-					"script": {
-						"id": "7cbb2980-4092-4675-af5e-cfcbd1c00b81",
-						"type": "text/javascript",
-						"exec": [
-							""
-						]
-					}
-				},
-				{
 					"listen": "test",
 					"script": {
-						"id": "7ce27395-de92-457b-97cc-7728824c821d",
 						"type": "text/javascript",
 						"exec": [
 							"let res = JSON.parse(responseBody);",
@@ -215,9 +361,7 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
+				"url": "{{host}}/{{endpoint}}/oauth/token",
 				"method": "POST",
 				"header": [
 					{
@@ -246,17 +390,6 @@
 							"description": "",
 							"type": "text"
 						}
-					]
-				},
-				"url": {
-					"raw": "{{host}}/{{endpoint}}/oauth/token",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"{{endpoint}}",
-						"oauth",
-						"token"
 					]
 				},
 				"description": "wefrwrbjk;"
