@@ -13,26 +13,33 @@ Looking back on the tasks set out from the initial specifications we are very sa
 \end{description}
 
 \subsection{Endpoints}
+as specified by the agreed protocol
 \begin{description}
-\item[get  /\_supported\_protocols\_] Returns the supported protocols
-\item[get  /log] Allows retreiving of logs (requires admin privileges)
-\item[post /log] Allows viewing of logs (requires logging permission)
-\item[get  /properties] Returns the server configuration
-\item[post /properties] Allows changing of the server configuration
-\item[get  /user\_privileges] Returns all available privileges
-\item[get  /users] Returns all users 
-\item[get  /users/:username] Returns information on a specific user
-\item[post /users/:username] Allows adding of users and changing of user information
-\item[get  /users/:username/properties] Returns additional configuration options on a specific user
-\item[get  /current\_user] Returns information of the authenticated user
-\item[post /current\_user] Allows changing of information for the authenticated user
-\item[get  /project\_roles] Returns all project roles
-\item[get  /projects] Returns all projects
-\item[get  /projects/:project\_name] Returns information of a specific project
-\item[post /projects/:project\_name] Allows changing of information of a specific project
-\item[get  /projects/:project\_name/properties] Returns additional configuration options of a specific project
-\item[get  /projects/:project\_name/files/] Returns all files and folders at the base level of the project (non-recursive)
-\item[get  /projects/:project\_name/files/:path] Returns a file
-\item[post /projects/:project\_name/files/:path] Uploads a file
-\item[get  /projects/:project\_name/files\_by\_id/:id] Returns a file
+\item[post	/oauth/token] Allows authentication, issuing a token.
+\item[get	/\_supported\_protocols\_] Returns the supported protocols
+\item[get	/log] Allows retreiving of logs (requires admin privileges)\\
+optional url parameters: \texttt{before=<datetime>\&after=<datetime>\&level=<level>} 
+\item[post	/log] Allows viewing of logs (requires logging permission)
+\item[get	/properties] Returns the server configuration
+\item[post	/properties] Allows changing of the server configuration
+\item[get	/user\_privileges] Returns all available privileges
+\item[get	/users] Returns all users 
+\item[get	/users/:username] Returns information on a specific user
+\item[post 	/users/:username] Allows adding, deleting and changing of user (information)\\
+url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{action=delete}
+\item[get	/users/:username/properties] Returns additional configuration options on a specific user
+\item[get	/current\_user] Returns information of the authenticated user
+\item[post	/current\_user] Allows changing of information for the authenticated user
+\item[get	/project\_roles] Returns all project roles
+\item[get	/projects] Returns all projects
+\item[get	/projects/:project\_name] Returns information of a specific project
+\item[post	/projects/:project\_name] Allows changing of information of a specific project\\
+url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{action=delete}
+\item[get	/projects/:project\_name/properties] Returns additional configuration options of a specific project
+\item[get	/projects/:project\_name/files/] Returns all files and folders at the base level of the project (non-recursive)
+\item[get	/projects/:project\_name/files/:path] Returns a file\\
+optional url parameters: (default) \texttt{view=meta} or \texttt{raw} or other views depending on the file type
+\item[post	/projects/:project\_name/files/:path] Uploads a file\\
+optional url parameters: \texttt{action=set\_metadata, mkdir, delete, move, copy}, \texttt{overwrite=true, false}, \texttt{offset=int}, \texttt{truncate= true, false} and \texttt{final=true, false}
+\item[get	/projects/:project\_name/files\_by\_id/:id] Returns a file
 \end{description}
