@@ -14,9 +14,8 @@
 \contentsline {subsection}{\numberline {4.3}Non image formats (\texttt {.csv} etc.)}{7}{subsection.4.3}
 \contentsline {section}{\numberline {5}File Management}{7}{section.5}
 \contentsline {subsection}{\numberline {5.1}Directory Structure}{7}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}File Upload}{7}{subsection.5.2}
-\contentsline {subsection}{\numberline {5.3}File Download}{7}{subsection.5.3}
-\contentsline {section}{\numberline {6}Testing}{8}{section.6}
+\contentsline {subsection}{\numberline {5.2}File Upload and Download}{7}{subsection.5.2}
+\contentsline {section}{\numberline {6}Testing}{7}{section.6}
 \contentsline {subsection}{\numberline {6.1}Using Mocha and Postman}{8}{subsection.6.1}
 \contentsline {subsection}{\numberline {6.2}Integration Testing}{8}{subsection.6.2}
 \contentsline {subsubsection}{\numberline {6.2.1}CORS}{8}{subsubsection.6.2.1}
@@ -26,7 +25,7 @@
 \contentsline {subsection}{\numberline {7.3}Process Limitations}{9}{subsection.7.3}
 \contentsline {subsection}{\numberline {7.4}Heroku Hosting}{9}{subsection.7.4}
 \contentsline {subsection}{\numberline {7.5}External System Hosting}{9}{subsection.7.5}
-\contentsline {section}{\numberline {8}Conclusion}{9}{section.8}
+\contentsline {section}{\numberline {8}Conclusion}{10}{section.8}
 \contentsline {subsection}{\numberline {8.1}Future Development}{10}{subsection.8.1}
 \contentsline {section}{\numberline {9}Individual Contributions}{10}{section.9}
 \contentsline {subsection}{\numberline {9.1}Tom Harley}{10}{subsection.9.1}
@@ -34,4 +33,4 @@
 \contentsline {subsection}{\numberline {9.3}Calum Duff}{10}{subsection.9.3}
 \contentsline {subsection}{\numberline {9.4}Johannes Weck}{10}{subsection.9.4}
 \contentsline {subsection}{\numberline {9.5}Hafeez Abdul-Rehaman}{10}{subsection.9.5}
-\contentsline {section}{\numberline {A}Scrum Board Images}{12}{appendix.A}
+\contentsline {section}{\numberline {A}Scrum Board Images}{11}{appendix.A}

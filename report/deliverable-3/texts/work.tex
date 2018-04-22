@@ -37,7 +37,9 @@ url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{acti
 url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{action=delete}
 \item[get	/projects/:project\_name/properties] Returns additional configuration options of a specific project
 \item[get	/projects/:project\_name/files/] Returns all files and folders at the base level of the project (non-recursive)
-\item[get	/projects/:project\_name/files/:path] Returns a file
-\item[post	/projects/:project\_name/files/:path] Uploads a file
+\item[get	/projects/:project\_name/files/:path] Returns a file\\
+optional url parameters: (default) \texttt{view=meta} or \texttt{raw} or other views depending on the file type
+\item[post	/projects/:project\_name/files/:path] Uploads a file\\
+optional url parameters: \texttt{action=set\_metadata, mkdir, delete, move, copy}, \texttt{overwrite=true, false}, \texttt{offset=int}, \texttt{truncate= true, false} and \texttt{final=true, false}
 \item[get	/projects/:project\_name/files\_by\_id/:id] Returns a file
 \end{description}
