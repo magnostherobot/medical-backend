@@ -1,0 +1,134 @@
+\begin{thebibliography}{10}
+
+\bibitem{zeissLicence}
+Apply for zeiss licence.
+\newblock
+  https://www.zeiss.com/microscopy/int/products/microscope-software/czi/czi-download.html.
+\newblock Accessed: 2018-03-06.
+
+\bibitem{chai}
+Chai assertion library.
+\newblock http://chaijs.com/api/bdd/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{chai-http}
+Chai http.
+\newblock http://chaijs.com/plugins/chai-http/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{forever}
+foreverjs.
+\newblock https://github.com/foreverjs/forever.
+\newblock Accessed: 2018-03-07.
+
+\bibitem{xlsx}
+js-xlsx.
+\newblock https://github.com/sheetjs/js-xlsx.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{mocha}
+Mocha.
+\newblock https://mochajs.org/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{mocha-each}
+mocha-each.
+\newblock https://github.com/ryym/mocha-each.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{morgan}
+morgan.
+\newblock https://github.com/expressjs/morgan.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{openseadragon}
+Openseaddragon.
+\newblock https://openseadragon.github.io/docs/.
+\newblock Accessed: 2019-03-07.
+
+\bibitem{passport}
+Passport.
+\newblock http://www.passportjs.org/docs/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{passport-local}
+passport-local.
+\newblock https://github.com/jaredhanson/passport-local.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{pm2}
+pm2.
+\newblock http://pm2.keymetrics.io/.
+\newblock Accessed: 2018-03-07.
+
+\bibitem{sequelize}
+Sequelize.
+\newblock http://docs.sequelizejs.com/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{sequelize-typescript}
+sequelize-typescript.
+\newblock https://github.com/RobinBuschmann/sequelize-typescript.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{sharp}
+sharp.
+\newblock https://github.com/lovell/sharp.
+\newblock Accessed: 2018-03-06.
+
+\bibitem{sharpPerformance}
+Sharp performance.
+\newblock http://sharp.pixelplumbing.com/en/stable/performance/.
+\newblock Accessed: 2018-03-06.
+
+\bibitem{typedoc}
+Typedoc.
+\newblock http://typedoc.org/guides/usage/.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{yarn}
+Yarn.
+\newblock https://yarnpkg.com/en/docs.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{docker}
+Docker hub.
+\newblock https://hub.docker.com/, 2016.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{tslint}
+Tslint.
+\newblock https://palantir.github.io/tslint/, 2016.
+\newblock Accessed: 2018-03-01.
+
+\bibitem{@types}
+Definitelytyped.
+\newblock http://definitelytyped.org/, 2017.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{express}
+Express 4.x.
+\newblock https://expressjs.com/en/4x/api.html, 2017.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{typescript}
+Typescript.
+\newblock https://www.typescriptlang.org/docs/home.html, 2017.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{protocol}
+Cs3099jh2017 protocol.
+\newblock https://github.com/CS3099JH2017/cs3099jh/tree/master/protocols, 2018.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{postgres}
+Postresql.
+\newblock https://www.postgresql.org/docs/, 2018.
+\newblock Accessed: 2018-03-02.
+
+\bibitem{strongloop}
+Strongloop.
+\newblock https://strongloop.com/, 2018.
+\newblock Accessed: 2018-03-07.
+
+\end{thebibliography}

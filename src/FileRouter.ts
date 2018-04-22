@@ -171,7 +171,7 @@ const postProperties: Middleware = (
 	logger.debug('Editing server properties');
 	res.locals.modified = true;
 	for (const newProp of req.body) {
-		const prop: Property | undefined = serverConfig.find(
+		let prop: Property | undefined = serverConfig.find(
 			(p: Property): boolean => p.id === newProp.id
 		);
 		if (prop === undefined) {
@@ -183,6 +183,7 @@ const postProperties: Middleware = (
 		}
 		try {
 			prop.value = newProp.value;
+
 		} catch (err) {
 			// FIXME: Assuming it's a value-type error, but it might not be!
 			next(new RequestError(400, 'invalid_property_value', undefined, newProp.id));
@@ -968,6 +969,7 @@ export class FileRouter {
 						name: projectName
 					}
 				});
+				console.log("here")
 				next();
 			}
 		);

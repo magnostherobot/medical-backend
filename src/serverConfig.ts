@@ -82,7 +82,7 @@ export class Property {
 	}
 
 	public set value(value: Value) {
-		if (!this.readOnly) {
+		if (this.readOnly) {
 			throw new Error('this property is read-only');
 		} else if (!types[this.type](value)) {
 			throw new Error(`value ${value} is not of type ${this.type}`);
