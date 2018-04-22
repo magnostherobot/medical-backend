@@ -169,7 +169,7 @@ export default class User extends Model<User> {
 		}
 		return {
 			username : this.username,
-			privileges: this.userGroups!
+			privileges: this.userGroups
 				.filter((ug: UserGroup): boolean => ug.name !== null)
 				.map((ug: UserGroup): string => ug.name as string),
 			projects : await Promise.all( this.projects!.map(

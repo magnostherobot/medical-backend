@@ -1,4 +1,5 @@
 import * as bodyParser from 'body-parser';
+import { cors } from './cors';
 import * as ex from 'express';
 import * as expressJwt from 'express-jwt';
 import * as passport from 'passport';
@@ -6,7 +7,7 @@ import * as passport from 'passport';
 import { default as authRouter, unauthorisedErr } from './auth';
 import { logger } from './logger';
 
-import { RequestError, errorHandler } from './errors/errorware';
+import { errorHandler } from './errors/errorware';
 import FileRouter from './FileRouter';
 
 import { default as File } from './db/model/File';
@@ -43,7 +44,7 @@ class App {
 		logger.debug('Constructing router');
 		this.logEnabled = enableLog;
 		this.express = ex();
-		this.cors();
+		this.express.use(cors());
 		this.express.use(
 			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
 				logger.info(`Connection from ${req.ip} requesting ${req.url}`);
@@ -56,7 +57,7 @@ class App {
 			async(req: ex.Request, res: ex.Response, next: ex.NextFunction):
 			Promise<void> => {
 				if (res.locals.function) {
-					res.locals.function.bind(res)(res.locals.data);
+					res.locals.function.bind(res)(await res.locals.data);
 				} else {
 					res.json({
 						status: 'success',
@@ -67,23 +68,6 @@ class App {
 			}
 		);
 		this.errorware();
-	}
-
-	/**
-	 * Enables Cross-Origin for the server.
-	 */
-	public cors(): void {
-		this.express.use((
-			req: ex.Request, res: ex.Response, next: ex.NextFunction
-		): void => {
-			res.header('Access-Control-Allow-Origin', '*');
-			res.header(
-				'Access-Control-Allow-Headers',
-				'Origin, X-Requested-With, Content-Type, Accept'
-			);
-			res.header('Access-Control-Allow-Methods', '*');
-			next();
-		});
 	}
 
 	/**

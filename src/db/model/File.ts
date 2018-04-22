@@ -3,7 +3,9 @@ import { AllowNull, BelongsTo, Column, CreatedAt, DataType, ForeignKey, HasMany,
 		HasOne, Model, PrimaryKey, Table, UpdatedAt } from 'sequelize-typescript';
 import { default as User } from './User';
 
-import { FileTypeName, mimes } from '../../files';
+import { RequestError } from '../../errors';
+import { FileTypeName, INITIAL_METADATA, Metadata, mimes } from '../../files';
+import { match, metadata } from '../../matcher';
 
 /*
  * attributes:
@@ -11,7 +13,6 @@ import { FileTypeName, mimes } from '../../files';
  *  - fullPathInternal
  * 	- uuid
  * 	- type
- *  - size
  * 	- parentFolderId
  *  - containedFilesInternal
  * 	- creatorName
@@ -31,7 +32,7 @@ export default class File extends Model<File> {
 
 	@AllowNull
 	@Column
-	private fullPathInternal!: string;
+	public fullPathInternal!: string;
 
 	@PrimaryKey
 	@Column
@@ -39,9 +40,6 @@ export default class File extends Model<File> {
 
 	@Column(DataType.TEXT)
 	public type!: FileTypeName;
-
-	@Column
-	public size!: number;
 
 	@ForeignKey(() => File)
 	@AllowNull
@@ -117,12 +115,24 @@ export default class File extends Model<File> {
 		this.containedFilesInternal = files;
 	}
 
-	public get metadata(): object {
-		return JSON.parse(this.metadataInternal);
+	public get metadata(): Metadata {
+		return !!(this.metadataInternal) ? JSON.parse(this.metadataInternal) 
+		: INITIAL_METADATA;
 	}
 
-	public set metadata(metadata: object) {
-		this.metadataInternal = JSON.stringify(metadata);
+	public set metadata(md: Metadata) {
+		const oldMD: Metadata = this.metadata;
+		const newMD: Metadata = md;
+		if (!match(metadata, newMD)) {
+			throw new RequestError(400, 'invalid_request');
+		}
+		if (newMD.version !== oldMD.version + 1) {
+			throw new RequestError(400, 'invalid_request');
+		}
+		this.metadataInternal = JSON.stringify(newMD);
+	}
+	public setMetadataInternal(md: Metadata): void {
+		this.metadataInternal = JSON.stringify(md);
 	}
 
 	public set mimetype(mime: string) {

@@ -1,9 +1,10 @@
 \section{Testing}
-Tests do not currently run on the gitlab server, as the postgres integration with the docker gitlab-ci is still missing. This means any tests run automatically when pushing will fail. \par
-When running integration tests locally, please make sure the postgres server is up and running on localhost.
-\subsection{Structure}
-Testing files were restructured for a more organised and professional approach. All test files end in ``*.\(<\)context\(>\).test.ts'' and were moved to the ``test'' directory. At this moment, ``\(<\)context\(>\)'' includes ``unit'' and ``routes''. Further, they were categorised into \textit{integration} and \textit{unit} tests and moved into corresponding sub-directories.  \par
-Apart from making test files easier to find, this new structure also allowed us to run specific tests independently to isolate failures and quickly rerun individual tests. For example \texttt{yarn test:routes:auth} runs all authentication tests.
+Testing was a key process in the development of the final product just as it was in previous submissions. Testing was particular important to determine whether the final system meets the requirements initially set. As well as testing each module individually, further tests were done upon completing the system through integration with the front-end and machine learning systems.
+
+
+\subsection{Using Mocha}
+The JavaScript framework Mocha was still used in the testing process for modules and 
+%tbc...
 \subsection{Integration Testing}
 \texttt{yarn test:routes}
 This category of tests targeted the interplay of different server components as it tested server endpoints (routes) rather than internal functions. We aimed to test all routes for responses of success, and various degrees of failure. \par

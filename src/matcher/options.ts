@@ -89,6 +89,12 @@ export const array = (template: TemplateValue, values?: Value[]) => {
 };
 
 // tslint:disable-next-line:typedef
+export const metadata = exact({
+	version: types.integer,
+	namespaces: {}
+});
+
+// tslint:disable-next-line:typedef
 const options = {
 	match,
 	exact,

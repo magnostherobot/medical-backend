@@ -5,9 +5,10 @@ import { ProjectFullInfo, default as Project } from './db/model/Project';
 import { UserFullInfo, default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
 
-import { NextFunction, Request, Response, Router } from 'express';
 import { RequestError } from './errors/errorware';
-import { addSubFileToFolder, View, files, views, rootPathId, createProjectFolder, upload, deleteFile, truncateFile, saveFile } from './files';
+import { NextFunction, Request, Response, Router } from 'express';
+import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
+	rootPathId, saveFile, upload, views } from './files';
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
@@ -15,7 +16,6 @@ import UserHasPrivilege from './db/model/UserHasPrivilege';
 import { Contains } from 'sequelize-typescript';
 import UserJoinsProject from './db/model/UserJoinsProject';
 import { appendFileSync } from 'fs';
-
 
 /**
  * The type of an Express middleware callback.
@@ -114,7 +114,7 @@ const getLog: Middleware = (
 	if (!req.user.hasPrivilege('admin')) {
 		next(new RequestError(401, 'invalid_privilege'));
 	}
-	/* tslint:disable */ 
+	/* tslint:disable */
 	if(!req.params.level) req.params.level = 'info';
 	if(!req.params.before) req.params.before = new Date();
 	if(!req.params.after) req.params.after = new Date(0);
@@ -172,7 +172,7 @@ const getProperties: Middleware = (
 const postProperties: Middleware = (
 	req: Request, res: Response, next: NextFunction
 ): void => {
-	console.log('Editing server properties');
+	logger.debug('Editing server properties');
 	res.locals.modified = true;
 	for (const newProp of req.body) {
 		const prop: Property | undefined = serverConfig.find(
@@ -193,7 +193,7 @@ const postProperties: Middleware = (
 			return;
 		}
 	}
-	console.log("Posted Properties successfully");
+	logger.debug('Posted Properties successfully');
 	next();
 };
 
@@ -597,11 +597,14 @@ const postProjectName: Middleware = async(
 				uuid: uuid.generate(),
 				mimetype: 'inode/directory'
 			});
+			file.name = '';
 			promise = file.save();
 			project = new Project({
 				name: req.params.project_name,
 				rootFolder: file
 			});
+		
+		createProjectFolder(req.params.project_name);
 
 			project.metadata = req.body;
 			// tslint:disable-next-line:await-promise
@@ -639,6 +642,87 @@ const getProjectProperties: Middleware = (
 	}
 };
 
+// Fetch a file from its path:
+const getFileFromPath: (req: Request, res: Response) => Promise<void> = async(
+	req: Request, res: Response
+): Promise<void> => {
+	// Vars we assign here:
+	//  - res.locals.deepestFolderName (...Id): deepest existing folder in path
+	//  - res.locals.path: requested path (using "/")
+	//  - res.locals.filename: requested file name (may be '')
+	//  - res.locals.file: actual file object if it exists
+	// Vars arleady assigned:
+	//  - res.locals.project: requested project object
+
+	const nth: (str: string, pat: string, n: number) => number = (
+		str: string, pat: string, num: number
+	): number => {
+		const l: number = str.length;
+		let j: number = -1;
+		let n: number = num;
+		while (n-- && j++ < l) {
+			j = str.indexOf(pat, j);
+			if (j < 0) {
+				break;
+			}
+		}
+		return j;
+	};
+
+	const path: string = req.path.substring(nth(req.path, '/', 4) + 1);
+
+	res.locals.path = path;
+	logger.debug(`Searching for path '${res.locals.path}'`);
+	// Split path into parts
+	const fileNames: string[] = res.locals.path.split('/')
+		.filter((s: string): boolean => s !== '');
+	res.locals.filename = fileNames.length > 0
+		?  fileNames[fileNames.length - 1]
+		: '';
+	const project: Project | null = res.locals.project;
+	if (project == null) {
+		// Project should have been found by previous precondition
+		logger.debug('Project was not found: skipping finding file');
+		throw new RequestError(404, 'project_not_found');
+	}
+	let curDir: File | null = project.rootFolder;
+	res.locals.deepestFolderId = curDir.uuid;
+	res.locals.deepestFolderName = curDir.name;
+	if (fileNames.length === 0) {
+		res.locals.file = curDir;
+	}
+	let i: number = 0;
+	// Loop through the path and find the deepest folder that exists.
+	// 		Also find the file if possible.
+	while (curDir && i < fileNames.length) {
+		logger.debug(`Searching for '${fileNames[i]}'`);
+		const fileOrNull: File | null = await File.findOne({
+			include: [{all: true}],
+			where: {
+				nameInternal: fileNames[i],
+				parentFolderId: curDir.uuid
+			}
+		});
+		if (fileOrNull == null) {
+			logger.debug(`Sub-file \'${fileNames[i]}\' not found in DB`);
+			return;
+		}
+
+		if (i < fileNames.length - 1) {
+			// Found next subdirectory
+			logger.debug(`Found Sub-folder \'${fileOrNull.name}\'`);
+			res.locals.deepestFolderId = fileOrNull.uuid;
+			res.locals.deepestFolderName = fileOrNull.name;
+		} else {
+			// Found actual file
+			logger.debug(`Found file \'${fileOrNull.name}\'`);
+			res.locals.file = fileOrNull;
+		}
+		curDir = fileOrNull;
+		i++;
+	}
+};
+
 /**
  * GET a File.
  */
@@ -652,7 +736,7 @@ const getFile: Middleware = async(
 	}
 	const project: Project = res.locals.project;
 	const view: View = views[req.query.view || 'meta'];
-	// TODO return 400 for unsuported views
+	// TODO return 400 for unsupported views
 	// TODO raw view accepts extra query params offset and length
 	res.locals.function = view.getResponseFunction(req, res);
 	res.locals.data = view.getResponseData(file, project, req.query);
@@ -662,7 +746,16 @@ const getFile: Middleware = async(
 /**
  * GET a File.
  */
-const getFilePath: Middleware = getFile;
+const getFilePath: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+	try {
+		await getFileFromPath(req, res);
+		await getFile(req, res, next);
+	} catch (e) {
+		next(e);
+	}
+};
 
 /**
  * GET a File.
@@ -672,164 +765,218 @@ const getFileId: Middleware = getFile;
 /**
  * Checks the parameters for file posting
  */
-namespace qH {
-	export const hasAction: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action ? true : false);
-	}
-	export const setsMetadata: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'set_metadata' ? true : false);
-	}
-	export const mksDir: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'mkdir' ? true : false);
-	}
-	export const deletes: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'delete' ? true : false);
-	}
-	export const moves: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'move' ? true : false);
-	}
-	export const copys: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.action && req.query.action == 'copy' ? true : false);
-	}
-	export const overwrites: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.overwrite ? req.query.overwrite : false);
-	}
-	export const offset: ((req: Request) => number) = (req: Request): number => {
-		return (req.query.offset ? req.query.offset : 0);
-	}
-	export const truncates: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.truncate ? req.query.truncate : false);
-	}
-	export const isFinal: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (req.query.final ? req.query.final : false);
-	}
-	export const nothingSet: ((req: Request) => boolean) = (req: Request): boolean => {
-		return (!hasAction(req) && !overwrites(req) && !truncates(req) && !isFinal(req));
-	}
-}
+const qH: {
+	[key: string]: Function;
+} = {
+	hasAction: (req: Request): boolean => !!req.query.action,
+	setsMetadata: (req: Request): boolean =>
+		req.query.action === 'set_metadata',
+	mksDir: (req: Request): boolean => req.query.action === 'mkdir',
+	deletes: (req: Request): boolean => req.query.action === 'delete',
+	moves: (req: Request): boolean => req.query.action === 'move',
+	copys: (req: Request): boolean => req.query.action === 'copy',
+	overwrites: (req: Request): boolean => !!req.query.overwrite,
+	offset: (req: Request): number =>
+		req.query.offset ? req.query.offset : 0,
+	truncates: (req: Request): boolean => !!req.query.truncate,
+	isFinal: (req: Request): boolean => !!req.query.final,
+	nothingSet: (req: Request): boolean =>
+		!qH.hasAction(req) && !qH.overwrites(req) &&
+		!qH.truncates(req) && !qH.isFinal(req)
+};
 
 /**
  * Post a File. / delete / move / etc
  */
 /* tslint:disable */
 const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
-	logger.debug(`Receiving file ${res.locals.path}`);
-	console.log(req.file);
-	// req.query.action: set_metadata, mkdir, delete, move, copy
-	// req.query.overwrite (bool)
-	// req.query.offset (int)
-	// req.query.truncate (bool)
-	// req.query.final (bool)
+	try {
+		await getFileFromPath(req, res);
+		logger.debug(`Receiving file ${res.locals.path}`);
+		// req.query.action: set_metadata, mkdir, delete, move, copy
+		// req.query.overwrite (bool)
+		// req.query.offset (int)
+		// req.query.truncate (bool)
+		// req.query.final (bool)
 
-	// Return 404 when one of these actions is attempted on non-existing file
-	if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
-		logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
-		next(new RequestError(404, 'file_not_found'));
-	}
+		// Return 404 when one of these actions is attempted on non-existing file
+		if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
+			logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
+			next(new RequestError(404, 'file_not_found'));
+			return;
+		}
 
-	// Return 400 when one of these actions is attempted on existing file
-	if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
-		logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
-		next(new RequestError(400, 'file_exists'));
-	}
+		// Return 400 when one of these actions is attempted on existing file
+		if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
+			logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
+			next(new RequestError(400, 'file_exists'));
+			return;
+		}
 
-	// Sets final if requested
-	if (res.locals.file && qH.isFinal(req)) {
-		res.locals.file.status = 'preprocessing';
-		// start file conversion
-	}
+		// Sets final if requested
+		if (res.locals.file && qH.isFinal(req)) {
+			res.locals.file.status = 'preprocessing';
+			// start file conversion
+		}
 
-	// Sets Metadata if requested
-	if(qH.setsMetadata(req)){
-		res.locals.file.metadata = req.body;
-		await res.locals.file.save();
-		next();
-	}
+		// Sets Metadata if requested
+		if(qH.setsMetadata(req)){
+			res.locals.file.metadata = req.body;
+			await res.locals.file.save();
+			next();
+			return;
+		}
 
-	// Deletes File if requested
-	if(qH.deletes(req)){
-		logger.info(`File ${res.locals.file.name} will be deleted`)
-		deleteFile(res.locals.file.uuid, res.locals.project.name);
-		await res.locals.file.destroy();
-		next();
-	}
+		// Deletes File if requested
+		if(qH.deletes(req)){
+			logger.info(`File ${res.locals.file.name} will be deleted`)
+			deleteFile(res.locals.file.uuid, res.locals.project.name);
+			await res.locals.file.destroy();
+			next();
+			return;
+		}
 
-	// Moves File if requested
-	if(qH.moves(req)){
-		// TODO
-		next(new RequestError(500, 'not_implemented'));
-	}
-
-	// Copies File if requested
-	if(qH.copys(req)){
-		// TODO
-		next(new RequestError(500, 'not_implemented'));
-	}
-
-	// Overwrite data but not truncate
-	// eg. OOOONNNNNNOOOO (O = old data, N = new data)
-	if(qH.overwrites(req) && !qH.truncates(req)){
-		// TODO
-		next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
-	}
-
-	// Create File or Folder if file doesn't exist
-	if (res.locals.file == null){
-		// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
-		let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
-			: res.locals.path.split(res.locals.deepestFolderName)[1];
-
-		// Loop the part of the path that doesn't exist yet and create all the folders
-		while((remainingPath.match(/\//g) || []).length > 1){
-			// If there are more subfolders that dont exist, then create them
-			const subFolder: string = remainingPath.split("/")[1]
-			logger.debug(`Adding subfolder \'${subFolder}\'`);
-			const dir: File = new File({
+		// Moves File if requested
+		if(qH.moves(req)){
+			if(!req.body.path){
+				logger.debug(`copying by uuid not implimented`);
+				next(new RequestError(500, "copy_to_path_only"));
+				return;
+			}
+			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
+			// new File object
+			let promise: PromiseLike<File> | null = null;
+	
+			const newFile: File = new File({
 				uuid: uuid.generate(),
-				mimetype: 'inode/directory',
-				nameInternal: subFolder
+				type: res.locals.file.type,
+				status: res.locals.file.status,
+				creatorName: res.locals.file.creatorName,
+				createdAt: res.locals.file.createdAt,
+				modifyDate: res.locals.file.modifyDate
 			});
-			await dir.save();
+			newFile.setMetadataInternal(res.locals.file.metadata);
+			newFile.fullPath = req.body.path;
+			newFile.parentFolderId = res.locals.parentFolderId;
+			await newFile.save();
+			const oldUUID: string = res.locals.file.uuid;
+			await res.locals.file.destroy();
+			copyFile(res.locals.project.name, res.locals.file.uuid, oldUUID, true);
+			next();
+			return;
+		}
+
+		// Copies File if requested
+		if(qH.copys(req)){
+			if(!req.body.path){
+				logger.debug(`copying by uuid not implimented`);
+				next(new RequestError(500, "copy_to_path_only"));
+				return;
+			}
+			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
+			// new File object
+			let promise: PromiseLike<File> | null = null;
+	
+			const newFile: File = new File({
+				uuid: uuid.generate(),
+				type: res.locals.file.type,
+				status: res.locals.file.status,
+				creatorName: res.locals.file.creatorName,
+				createdAt: res.locals.file.createdAt,
+				modifyDate: res.locals.file.modifyDate
+			});
+			newFile.setMetadataInternal(res.locals.file.metadata);
+			newFile.fullPath = req.body.path;
+			newFile.parentFolderId = res.locals.parentFolderId;
+			await newFile.save();
+			copyFile(res.locals.project.name, res.locals.file.uuid, newFile.uuid);
+			next();
+			return;
+		}
+
+		// Overwrite data but not truncate
+		// eg. OOOONNNNNNOOOO (O = old data, N = new data)
+		if(qH.overwrites(req) && !qH.truncates(req)){
+			logger.info(`overwriting without truncating not supported`);
+			next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
+			return;
+		}
+
+		// Create File or Folder if file doesn't exist
+		if (res.locals.file == null){
+			// Guarding against stupid Postman
+			if(!qH.mksDir(req) && !req.file){
+				logger.debug("No file attached. Sending 400");
+				next(new RequestError(400, 'no_file_attached'));
+			}
+
+			// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+			let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
+				: res.locals.path.split(res.locals.deepestFolderName)[1];
+
+			let curPath: string = res.locals.deepestFolderName;
+			// Loop the part of the path that doesn't exist yet and create all the folders
+			while((remainingPath.match(/\//g) || []).length > 1){
+				// If there are more subfolders that dont exist, then create them
+				const subFolder: string = remainingPath.split("/")[1]
+				curPath += subFolder;
+				logger.debug(`Adding subfolder \'${subFolder}\'`);
+				const dir: File = new File({
+					uuid: uuid.generate(),
+					type: 'directory',
+					status: 'ready',
+					fullPathInternal: curPath,
+					nameInternal: subFolder
+				});
+				await dir.save();
+				curPath += '/';
+				// update parent directory of new directory
+				if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
+					logger.debug("adding file to folder failed!")
+					next(new RequestError(500, 'Adding file to folder failed'))
+				}
+				// update vars
+				remainingPath = remainingPath.split(subFolder)[1]
+				res.locals.deepestFolderName = subFolder;
+				res.locals.deepestFolderId = dir.uuid;
+			}
+
+			logger.debug(`Writing file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
+			res.locals.file = new File({
+				uuid: uuid.generate(),
+				nameInternal: res.locals.filename,
+				fullPathInternal: res.locals.path,
+				status: req.query.final
+					? 'ready'
+					: 'uploading'
+			});
+			res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
+
+			await res.locals.file.save();
 
 			// update parent directory of new directory
-			if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
+			if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
 				logger.debug("adding file to folder failed!")
 				next(new RequestError(500, 'Adding file to folder failed'))
+				return;
 			}
-			// update vars
-			remainingPath = remainingPath.split(subFolder)[1]
-			res.locals.deepestFolderName = subFolder;
-			res.locals.deepestFolderId = dir.uuid;
 		}
 
-		logger.debug(`Writing file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
-		res.locals.file = new File({
-			uuid: uuid.generate(),
-			nameInternal: res.locals.filename
-		});
-		res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
-
-		await res.locals.file.save();
-
-		// update parent directory of new directory
-		if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
-			logger.debug("adding file to folder failed!")
-			next(new RequestError(500, 'Adding file to folder failed'))
+		// Move temp file to proper location (if not directory)
+		if(!qH.mksDir(req)){
+			saveFile(req.file.originalname, res.locals.project.name, res.locals.file.uuid, qH.offset(req));
 		}
-	}
 
-	// Move temp file to proper location (if not directory)
-	if(!qH.mksDir(req)){
-		saveFile(req.file.originalname, res.locals.project.name, res.locals.file.uuid, qH.offset(req));
-	}
+		// Sets final if requested
+		if (qH.isFinal(req)) {
+			res.locals.file.status = 'final';
+		}
 
-	// Sets final if requested
-	if (qH.isFinal(req)) {
-		res.locals.file.status = 'final';
+		next();
+
+	} catch (e) {
+		next(e);
 	}
-	
-	next();
-	
 };
 /* tslint:enable */
 
@@ -872,9 +1019,10 @@ export class FileRouter {
 		this.router.post('/projects/:project_name',                 postProjectName);
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
-		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
-		this.router.post('/projects/:project_name/files/:path',
-											upload.single('userfile'), postFilePath);
+		this.router.get ('/projects/:project_name/files/*',             getFilePath);
+		this.router.post(
+			'/projects/:project_name/files/*',
+			upload.single('userfile'), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 
@@ -920,79 +1068,13 @@ export class FileRouter {
 			): Promise<void> => {
 				res.locals.project = await Project.findOne({
 					include: [
-						User
+						User,
+						File
 					],
 					where: {
 						name: projectName
 					}
 				});
-				next();
-			}
-		);
-
-		// Fetch a file from its path:
-		this.router.param(
-			'path',
-			async(
-				req: Request, res: Response, next: NextFunction,
-				filename: string
-			): Promise<void> => {
-				// Vars we assign here:
-				//  - res.locals.deepestFolderName (...Id): deepest existing folder in path
-				//  - res.locals.path: requested path (using "/")
-				//  - res.locals.filename: requested file name (may be '')
-				//  - res.locals.file: actual file object if it exists
-				// Vars arleady assigned:
-				//  - res.locals.project: requested project object
-
-				// Replace + with /
-				res.locals.path = filename.replace(/\+/g, '/');
-				logger.debug(`Searching for path \'${res.locals.path}\'`);
-				// Split path into parts
-				const fileNames: string[] = res.locals.path.split('/');
-				res.locals.filename = (fileNames.length > 0) ?
-					fileNames[fileNames.length - 1] : '';
-				logger.debug(`Searching for file \'${res.locals.filename}\'`);
-				const project: Project | null = res.locals.project;
-				if (project == null) {
-					// Project should have been found by previous precondition
-					logger.debug('Project was not found: skipping finding file');
-					return next(new RequestError(404, 'project_not_found'));
-				}
-				let curDir: File | null = project.rootFolder;
-				res.locals.deepestFolderId = curDir.uuid;
-				res.locals.deepestFolderName = curDir.name;
-				let i: number = 0;
-				// Loop through the path and find the deepest folder that exists.
-				// 		Also find the file if possible.
-				while (curDir && i < fileNames.length) {
-					logger.debug(`Searching for \'${fileNames[i]}\'`);
-					const fileOrNull: File | null = await File.findOne({
-						include: [{all: true}],
-						where: {
-							nameInternal: fileNames[i],
-							parentFolderId: curDir.uuid
-						}
-					});
-					if (fileOrNull == null) {
-						logger.debug(`Sub-file \'${fileNames[i]}\' not found in DB`);
-						return next();
-					}
-
-					if (i < fileNames.length - 1) {
-						// Found next subdirectory
-						logger.debug(`Found Sub-folder \'${fileOrNull.name}\'`);
-						res.locals.deepestFolderId = fileOrNull.uuid;
-						res.locals.deepestFolderName = fileOrNull.name;
-					} else {
-						// Found actual file
-						logger.debug(`Found file \'${fileOrNull.name}\'`);
-						res.locals.file = fileOrNull;
-					}
-					curDir = fileOrNull;
-					i++;
-				}
-
 				next();
 			}
 		);

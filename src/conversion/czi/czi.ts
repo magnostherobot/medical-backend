@@ -2,11 +2,11 @@
 import * as fs from 'fs';
 import { logger } from '../../logger';
 import * as sharp from 'sharp';
-import * as parsexml from 'xml-parser';
 import { SharpInstance } from 'sharp';
+import * as parsexml from 'xml-parser';
 
 const extractionDirectory: string = '/cs/scratch/cjd24/0701-extraction/';
-const outputImageDirectory: string = '/cs/scratch/cjd24/0701-extraction-processed2/'
+const outputImageDirectory: string = '/cs/scratch/cjd24/0701-extraction-processed2/';
 const tileOverlap: number = 0;
 const tileSize: number = 1024;
 const maxZoom: number = 64;
@@ -61,7 +61,7 @@ interface SupportedViews {
 			units: string;
 		};
 		metadata?: {};
-	}
+	};
 }
 interface CZITile {
 	x_offset: number;
@@ -71,7 +71,7 @@ interface CZITile {
 	file: string;
 }
 interface CZIHeightMap {
-	zoom_level: number,
+	zoom_level: number;
 	plane: CZITile[][];
 }
 interface WholeCZIHierarchy {
@@ -217,7 +217,7 @@ const orderSegments: Function = function(segments: Segment[]): Segment[][] {
 
 const findRegionToExtract: Function = function(segment: Segment, desired: TileBounds): TileBounds {
 	const baseBounds: TileBounds = getOriginalTileBounds(segment);
-	let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
+	const chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
 
 	if (desired.left <= baseBounds.left) {
 		chunkToExtract.left = 0;
@@ -248,14 +248,14 @@ const findRegionToExtract: Function = function(segment: Segment, desired: TileBo
 
 const extractAndStitchChunks: Function = async function(segments: Segment[][], desiredRegion: TileBounds): Promise<SharpInstance> {
 
-	let tileVerticalBuffer: Buffer[] = [];
+	const tileVerticalBuffer: Buffer[] = [];
 
 	for (const segRow of segments) {
-		let tileRow: Buffer[] = [];
+		const tileRow: Buffer[] = [];
 		let chunkToExtract: TileBounds = new TileBounds(-1, -1, -1, -1);
 		for (const segCol of segRow) {
 			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
-			let data: Promise<Buffer> =
+			const data: Promise<Buffer> =
 				sharp(`${extractionDirectory}${segCol.Data.Data}`)
 				.extract({
 					left: chunkToExtract.left,
@@ -269,37 +269,34 @@ const extractAndStitchChunks: Function = async function(segments: Segment[][], d
 		}
 
 		let imageVerticalSlice: SharpInstance = sharp(tileRow[0]);
-		let bufferBound = findRegionToExtract(segRow[0], desiredRegion);
+		const bufferBound = findRegionToExtract(segRow[0], desiredRegion);
 		if ((bufferBound.right - bufferBound.left) < (tileSize - tileOverlap)) {
 			imageVerticalSlice = await imageVerticalSlice.extend(
-				{top:0, left:0, bottom:0, right: (tileSize - (bufferBound.right - bufferBound.left))});
+				{top: 0, left: 0, bottom: 0, right: (tileSize - (bufferBound.right - bufferBound.left))});
 		}
 		for (let index = 1; index < segRow.length; index++) {
 			imageVerticalSlice = await imageVerticalSlice
 				.overlayWith(tileRow[index],
-					{top: 0, left: (bufferBound.right - bufferBound.left) + ((index -1) * tileSize)});
+					            {top: 0, left: (bufferBound.right - bufferBound.left) + ((index - 1) * tileSize)});
 		}
 
 		tileVerticalBuffer.push(await imageVerticalSlice.toBuffer());
 	}
 
 	let finalImage: SharpInstance = sharp(tileVerticalBuffer[0]);
-	let bufferBound = findRegionToExtract(segments[0][0], desiredRegion);
+	const bufferBound = findRegionToExtract(segments[0][0], desiredRegion);
 	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
 		finalImage = await finalImage.extend(
-			{top:0, left:0, bottom: (tileSize - (bufferBound.bottom - bufferBound.top)), right: 0});
+			{top: 0, left: 0, bottom: (tileSize - (bufferBound.bottom - bufferBound.top)), right: 0});
 	}
 	for (let index = 1; index < segments.length; index++) {
 		finalImage = finalImage.overlayWith(
 			tileVerticalBuffer[index],
-			{top: getDimension(segments[index -1][0], 'Y').Size, left: 0});
+			{top: getDimension(segments[index - 1][0], 'Y').Size, left: 0});
 	}
 
 	return finalImage;
 };
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -308,7 +305,7 @@ const dataBlocks: Segment[] = require(`${extractionDirectory}outputjson.json`).c
 const inspect = require('util').inspect;
 const metaXML: parsexml.Document = parsexml(fs.readFileSync(`${extractionDirectory}FILE-META-1.xml`, 'utf8'));
 
-let supportedViews: SupportedViews = {scalable_image: {width: -1, height: -1, channels: [{channel_id: '-1', channel_name: ''}], metadata: metaXML}};
+const supportedViews: SupportedViews = {scalable_image: {width: -1, height: -1, channels: [{channel_id: '-1', channel_name: ''}], metadata: metaXML}};
 supportedViews.scalable_image.channels.pop();
 
 let totalSizeX: number = -1;
@@ -330,13 +327,13 @@ for (const child of metaXML.root.children) {
 								totalSizeY = Number.parseInt(property.content, 10);
 								supportedViews.scalable_image.height = totalSizeY;
 								continue;
-							} else if(property.name === 'Dimensions') {
+							} else if (property.name === 'Dimensions') {
 								for (const chan of property.children) {
 									if (chan.name === 'Channels') {
 										for (const channel of chan.children) {
 											supportedViews.scalable_image.channels.push(
 												{
-													channel_id: channel.attributes.Id.split(":")[1],
+													channel_id: channel.attributes.Id.split(':')[1],
 													channel_name: channel.attributes.Name,
 													metadata: channel.children
 												}
@@ -383,16 +380,15 @@ const filterC: Function = function(to: number): void {
 	);
 };
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Begin work on getting the new tiles all nice
 // Print out all of the related tiles to every new tile to be created.
 let filecoutner: number = 0;
 async function extrapolateDimension(cVal: number, totalCs: number, maxZoomLevel: number): Promise<CZIHeightMap[]> {
-	console.log(`Stage (${cVal + 1}/${totalCs}): Task(0/${Math.ceil(totalSizeY/tileSize)}): 0% complete.`)
+	console.log(`Stage (${cVal + 1}/${totalCs}): Task(0/${Math.ceil(totalSizeY / tileSize)}): 0% complete.`);
 	for (let ys: number = 0; ys < totalSizeY;) {
-		var timing = process.hrtime();
+		let timing = process.hrtime();
 		for (let xs: number = 0; xs < totalSizeX; xs += tileSize) {
 			const desired = new TileBounds (
 				xs - tileOverlap,
@@ -408,20 +404,19 @@ async function extrapolateDimension(cVal: number, totalCs: number, maxZoomLevel:
 		}
 		ys += tileSize;
 		timing = process.hrtime(timing);
-		console.log(`Stage (${cVal + 1}/${totalCs}): Task(${ys/tileSize}/${Math.ceil(totalSizeY/tileSize)}): ${Math.ceil(((ys/totalSizeY)*100) *100)/100}% complete. (${timing[0]} sec/iter)`);
+		console.log(`Stage (${cVal + 1}/${totalCs}): Task(${ys / tileSize}/${Math.ceil(totalSizeY / tileSize)}): ${Math.ceil(((ys / totalSizeY) * 100) * 100) / 100}% complete. (${timing[0]} sec/iter)`);
 	}
 	return [];
 }
 
-let finalCZIJson: WholeCZIHierarchy = {} as any;
+const finalCZIJson: WholeCZIHierarchy = {} as any;
 async function main(): Promise<void> {
 	for (const cval of supportedViews.scalable_image.channels) {
-		await extrapolateDimension(Number.parseInt(cval.channel_id, 10), supportedViews.scalable_image.channels.length, maxZoom).then(v =>
-			{
+		await extrapolateDimension(Number.parseInt(cval.channel_id, 10), supportedViews.scalable_image.channels.length, maxZoom).then((v) => {
 				finalCZIJson.c_values.push({channel_id: cval.channel_id, height_map: v});
 				console.log(`Completed Tier: ${cval.channel_id}`);
 				return;
-			}, err => {
+			},                                                                                                                           (err) => {
 				console.error(err);
 			}
 		);

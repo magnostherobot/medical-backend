@@ -1,5 +1,7 @@
 import { NextFunction,  Request, Response } from 'express';
 
+import { logger } from '../logger';
+
 /**
  * General error and error-handling logic for the middleware stack.
  */
@@ -115,10 +117,11 @@ export type Errorware =
 export const errorHandler: Errorware = (
 	err: Error, req: Request, res: Response, next: NextFunction
 ): void => {
+	logger.failure(`Responded to ${req.ip}`);
 	if (RequestError.is(err)) {
 		res.status(err.code)
 			.json(err.responseBlock());
 	} else {
-		res.send(err);
+		res.status(500).send(err.stack);
 	}
 };
