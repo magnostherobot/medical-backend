@@ -5,6 +5,10 @@ import { BelongsToMany, Column, CreatedAt, DataType, HasMany,
 import { default as UserGroup } from './UserGroup';
 import { default as UserHasPrivilege } from './UserHasPrivilege';
 import { default as UserJoinsProject } from './UserJoinsProject';
+import { RequestError } from '../../errors/errorware';
+
+import ContributorGroup from './ContributorGroup';
+import { truncateFile } from '../../files';
 
 @Table
 export default class User extends Model<User> {
@@ -13,7 +17,7 @@ export default class User extends Model<User> {
 	public username!: string;
 
 	@Column
-	private readonly passwordInternal!: string;
+	private passwordInternal!: string;
 
 	@BelongsToMany(() => UserGroup, () => UserHasPrivilege)
 	public userGroups?: UserGroup[];
@@ -104,28 +108,59 @@ export default class User extends Model<User> {
 		return;
 	}
 
-	// TODO implement
-	public getAccessLevel(project: Project): string {
-		throw new Error(`unimplemented, ${this}`);
-	}
-
 	public hasPrivilege(privilege: string): boolean {
 		if (this.userGroups === undefined) {
 			throw new Error('usergroups undefined');
 		}
-		return this.userGroups.some(
-			(ug: UserGroup): boolean => ug.name === privilege
-		);
+		if(this.userGroups.some((ug: UserGroup): boolean => ug.name == privilege)){
+			return true;
+		}
+		switch(privilege){
+			case 'canCreateUsers':
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canCreateUsers == true
+				);
+			case 'canDeleteUsers': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canDeleteUsers == true
+				);
+			case 'canEditUsers': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canEditUsers == true
+				);
+			case 'canCreateProjects': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canCreateProjects == true
+				);
+			case 'canDeleteProjects': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canDeleteProjects == true
+				);
+			case 'canEditProjects': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canEditProjects == true
+				);
+			case 'canAccessLogs': 
+				return this.userGroups.some(
+					(ug: UserGroup): boolean => ug.canAccessLogs == true
+				);	
+			default: 
+				throw new Error('privilege undefined');
+			}
 	}
 
-	public getProjectInfo(project: Project): ProjectInfo {
+	public async getAccessLevel(project: Project): Promise<string> {
+		return (await project.getAccessLevel(this)).join()
+	}
+
+	public async getProjectInfo(project: Project): Promise<ProjectInfo> {
 		return {
 			project_name: project.name,
-			access_level: this.getAccessLevel(project)
+			access_level: await this.getAccessLevel(project)
 		};
 	}
 
-	public get fullInfo(): UserFullInfo {
+	public async getFullInfo(): Promise<UserFullInfo> {
 		// FIXME: Fetch these things if they aren't already present
 		if (this.userGroups === undefined) {
 			this.userGroups = [];
@@ -137,8 +172,8 @@ export default class User extends Model<User> {
 			privileges: this.userGroups
 				.filter((ug: UserGroup): boolean => ug.name !== null)
 				.map((ug: UserGroup): string => ug.name as string),
-			projects : this.projects!.map(
-				(p: Project): ProjectInfo => this.getProjectInfo(p)
+			projects : await Promise.all( this.projects!.map(
+				(p: Project): Promise<ProjectInfo> => this.getProjectInfo(p))
 			),
 			// TODO: Check if we have anything to use these for yet?
 			public_user_metadata: {},
@@ -155,14 +190,17 @@ export default class User extends Model<User> {
 	}): void {
 		if (newInfo.password !== undefined) {
 			if (this.authenticate(newInfo.password.old)) {
-				this.password = newInfo.password.new;
+				this.passwordInternal = newInfo.password.new;
+			}
+			else{
+				throw new RequestError(400, 'invalid_password')
 			}
 		}
 	}
 
 	public authenticate(password: string): boolean {
 		// TODO use salting (and maybe even constant-time comparison?)
-		return password === this.password;
+		return password === this.passwordInternal;
 	}
 
 	public get password(): string {
@@ -171,7 +209,7 @@ export default class User extends Model<User> {
 
 	public set password(newPassword: string) {
 		// TODO use salting
-		this.password = newPassword;
+		this.passwordInternal = newPassword;
 	}
 }
 

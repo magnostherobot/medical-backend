@@ -12,6 +12,10 @@ import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
 import { logger } from './logger';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
+import UserHasPrivilege from './db/model/UserHasPrivilege';
+import { Contains } from 'sequelize-typescript';
+import UserJoinsProject from './db/model/UserJoinsProject';
+import { appendFileSync } from 'fs';
 
 /**
  * The type of an Express middleware callback.
@@ -246,14 +250,14 @@ const getUsers: Middleware = async(
 			Project
 		]
 	});
-	res.locals.data = users.map((u: User): UserFullInfo => {
-		const info: UserFullInfo = u.fullInfo;
-		if (!req.user.hasPrivilege('admin')) {
-			delete info.private_user_metadata;
-			delete info.private_admin_metadata;
-		}
+	res.locals.data = Promise.all(users.map((u: User): Promise<UserFullInfo> => {
+		const info: Promise<UserFullInfo> = u.getFullInfo();
 		return info;
-	});
+	}));
+	if (!req.user.hasPrivilege('admin')) {
+		await delete res.locals.data.private_user_metadata;
+		await delete res.locals.data.private_admin_metadata;
+	}
 	next();
 };
 
@@ -293,24 +297,24 @@ const getUserProperties: Middleware = (
  *     "private_admin_metadata": metadata
  * }
  */
-const getUsername: Middleware = (
+const getUsername: Middleware = async (
 	req: Request, res: Response, next: NextFunction
-): void => {
+): Promise<void> => {
 	logger.debug(`Listing user ${res.locals.user}`);
 	res.locals.modified = true;
 	if (res.locals.user == null) {
 		next(new RequestError(404, 'user_not_found'));
 		return;
 	}
-	res.locals.data = res.locals.user.fullInfo;
+	res.locals.data = await res.locals.user.getFullInfo();
 	next();
 };
 
-const getCurUser: Middleware = (
+const getCurUser: Middleware = async(
 	req: Request, res: Response, next: NextFunction
-): void => {
+): Promise<void> => {
 	logger.debug('Listing current user');
-	res.locals.data = req.user.fullInfo;
+	res.locals.data = await req.user.getFullInfo();
 	next();
 };
 
@@ -368,19 +372,65 @@ const postUsername: Middleware = async(
 ): Promise<void> => {
 	let user: User | null | undefined = res.locals.user;
 	res.locals.modified = true;
-	if (user == null) {
-		logger.debug('Adding new user');
-		user = new User({
-			username: req.params.username,
-			password: req.params.password
-		});
-	} else {
-		logger.debug('Editing user');
-		user.password = req.params.password;
+	
+	if( req.query.action === 'update'){
+		if (user!= null){
+			logger.debug('Editing user');
+			
+			if(req.body.password != null){
+				user.password = req.body.password;
+			}
+			if (req.body) {
+				user.metadata = req.body;
+			}
+			await user.save();
+			if(req.body.privileges != null){
+				const priv: UserGroup[] | null = await UserGroup.findAll({
+					include: [{all: true}],
+					where: {
+						name: req.body.privileges
+					}
+				})
+				await user.$set('userGroups', priv);
+			}
+		}
+		else{
+			next(new RequestError(404, 'user_not_found'));
+			return;
+		}
 	}
-	if (req.body) {
-		user.metadata = req.body;
+	else if( req.query.action === 'delete'){
+		logger.debug('Deleting a user');
+		if (user!= null){
+			await user.destroy();
+		}
+		else{
+			next(new RequestError(404, 'user_not_found'));
+			return;
+		}
 	}
+	else{
+		if (user == null) {
+			logger.debug('Adding new user');
+			const priv: UserGroup[] | null = await UserGroup.findAll({
+				include: [{all: true}],
+				where: {
+					name: req.body.privileges
+				}
+			})
+			user = new User({
+				username: req.params.username,
+				password: req.params.password,
+			});
+			await user.save();
+			await user.$set('userGroups', priv);
+		}
+		else{
+			next(new RequestError(400, 'user_already_exists'));
+			return;
+		}
+	}
+	await user.save();
 	next();
 };
 
@@ -436,9 +486,9 @@ const getProjects: Middleware = async(
 			User
 		]
 	});
-	res.locals.data = projects.map(
-		(p: Project): ProjectFullInfo => p.fullInfo
-	);
+	res.locals.data = Promise.all(projects.map(
+		(p: Project): Promise<ProjectFullInfo> => p.getFullInfo()
+	));
 	next();
 };
 
@@ -468,7 +518,7 @@ const getProjectName: Middleware = async(
 	if (project == null) {
 		return next(new RequestError(404, 'project_not_found'));
 	} else {
-		res.locals.data = project.fullInfo;
+		res.locals.data = await project.getFullInfo();
 		next();
 	}
 };
@@ -492,32 +542,89 @@ const postProjectName: Middleware = async(
 	let project: Project | null = res.locals.project;
 	res.locals.modified = true;
 	let promise: PromiseLike<File> | null = null;
-	if (project == null) {
+
+	if( req.query.action === 'update'){
 		logger.debug('Adding new project');
-		const file: File = new File({
-			uuid: uuid.generate(),
-			type: 'directory',
-			status: 'ready',
-			parentFolderId: rootPathId
-		});
-		file.name = '';	// Leave blank as discussed
-		promise = file.save();
+		if(project != null){
+			project.metadata = req.body;
+			await project.save()
+		}
+		else{
+			next(new RequestError(400, 'project_not_found'));
+		}
+	}
+	else if( req.query.action === 'delete'){
+		if(project != null){
+			project.destroy()
+		}
+		else{
+			next(new RequestError(400, 'project_not_found'));
+		}
+	}
+	else if( req.query.action === 'update_grant'){
+		if (project == null){
+			next(new RequestError(400, 'project_not_found'));
+		}
+		else{
+			let ujp: UserJoinsProject | null = await UserJoinsProject.findOne({
+				include: [{all:true}],
+				where: {
+					username: req.body.username,
+					projectName: project.name
+				}
+			})
+			if(ujp != null){
+				await ujp.destroy();
+			}
+			if(req.body.access_level != 'none'){
+				try{
+					let ujp: UserJoinsProject = new UserJoinsProject({
+						username: req.body.username,
+						projectName: project.name,
+						contributorGroupName: req.body.access_level
+					})
+					await ujp.save();
+				}
+				catch(err){
+					next(new RequestError(400, 'invalid_access_level'));
+				}
+			}
+		}
+	}
+	else{
+		if(project == null){
+			logger.debug('Adding new project');
+			const file: File = new File({
+				uuid: uuid.generate(),
+				mimetype: 'inode/directory'
+			});
+			file.name = '';
+			promise = file.save();
+			project = new Project({
+				name: req.params.project_name,
+				rootFolder: file
+			});
+		
 		createProjectFolder(req.params.project_name);
 
-		project = new Project({
-			name: req.params.project_name,
-			rootFolder: file
-		});
-		project.rootFolderId = file.uuid;
-	} else {
-		logger.debug('Updating project properties');
+			project.metadata = req.body;
+			// tslint:disable-next-line:await-promise
+			await promise;
+			await project.save()
+			const contribute: UserJoinsProject = new UserJoinsProject({
+				username: req.user.username,
+				projectName: req.params.project_name,
+				contributorGroupName: 'projectOwner'
+
+			})
+			contribute.save()
+		}
+		else{
+			next(new RequestError(400, 'project_already_exists'));
+		}
 	}
 
-	project.metadata = req.body;
-	// tslint:disable-next-line:await-promise
-	await promise;
-	await project.save();
-	next();
+	next()
 };
 
 /**
@@ -945,7 +1052,7 @@ export class FileRouter {
 					}
 				});
 				if (user == null) {
-					return next(new RequestError(404, 'user_not_found'));
+					//return next(new RequestError(404, 'user_not_found'));
 				} else {
 					res.locals.user = user;
 				}

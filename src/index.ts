@@ -16,6 +16,7 @@ import { default as seq } from './db/orm';
 import { default as File } from './db/model/File';
 import { default as User } from './db/model/User';
 import { default as UserGroup } from './db/model/UserGroup';
+import { default as ContributorGroup } from './db/model/ContributorGroup';
 
 const DEFAULT_PORT: number = 3000;
 
@@ -63,8 +64,78 @@ async function reset(): Promise<void> {
 		description: 'Allows Post to Log'
 	});
 
+	const userManagement: UserGroup = new UserGroup({
+		name: 'userManagement',
+		canCreateUsers: true,
+		canDeleteUsers: true,
+		canEditUsers: true,
+		isInternal: false,
+		description: 'Allows management of other users'
+	});
+
+	const projectAdmin: UserGroup = new UserGroup({
+		name: 'projectAdmin',
+		canDeleteProjects: true,
+		canEditProjects: true,
+		isInternal: false,
+		description: "Admin privileges on other projects "
+	})
+
+	const standardUser: UserGroup = new UserGroup({
+		name: 'standardUser',
+		canCreateProjects: true,
+		isInternal: true,
+		description: "Allows creation of new projects"
+	})
+
 	await logging.save();
 	await admin.save();
+	await userManagement.save();
+	await projectAdmin.save();
+	await standardUser.save();
+
+	const projectOwner: ContributorGroup = new ContributorGroup({
+		name: 'projectOwner',
+		canCreateFiles: true,
+		canAddUsers: true,
+		canRemoveUsers: true,
+		canDeleteFiles: true,
+		canDeleteProject: true,
+		canEditUserPermissions: true,
+		canViewFiles: true,
+		isInternal: false,
+		description: "Project Admin"
+	});
+
+	const standardProjectUser: ContributorGroup = new ContributorGroup({
+		name: 'standardProjectUser',
+		canCreateFiles: true,
+		canViewFiles: true,
+		isInternal: false,
+		description: "Allows working on a project"
+	});
+
+	const readOnlyProjectUser: ContributorGroup = new ContributorGroup({
+		name: 'readOnlyProjectUser',
+		canViewFiles: true,
+		isInternal: false,
+		description: "Allows viewing of files in a project "
+	})
+
+	const projectUserManagement: ContributorGroup = new ContributorGroup({
+		name: 'projectUserManagement',
+		canAddUsers: true,
+		canEditUserPermissions: true,
+		canRemoveUsers: true,
+		isInternal: false,
+		description: "Allows managament of users in a Project"
+	})
+
+	await projectOwner.save();
+	await standardProjectUser.save();
+	await readOnlyProjectUser.save()
+	await projectUserManagement.save()
+
 
 	logger.info('Adding admin user');
 	const root: User = new User({
