@@ -189,11 +189,10 @@ export default class User extends Model<User> {
 		private_user_metadata?: Metadata;
 	}): void {
 		if (newInfo.password !== undefined) {
-			if (this.authenticate(newInfo.password.old)) {
+			if (!this.authenticate(newInfo.password.old)) {
 				this.passwordInternal = newInfo.password.new;
-			}
-			else{
-				throw new RequestError(400, 'invalid_password')
+			} else {
+				throw new RequestError(400, 'invalid_password');
 			}
 		}
 	}

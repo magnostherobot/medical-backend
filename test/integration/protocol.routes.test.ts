@@ -103,7 +103,8 @@ const completeProtocol: MochaForEachInput[] = [
 			'warning',
 			'error',
 			'critical',
-			'success'
+			'success',
+			'failure'
 		]),
 		message: types.anything,
 		label: optional(types.string),
@@ -166,7 +167,8 @@ const completeProtocol: MochaForEachInput[] = [
 		public_admin_metadata: types.anything,
 		private_admin_metadata: types.anything
 	}, 200],
-	['post', '/users/new_user?action=create', null, 200],
+	['post', '/users/new_user?action=create',
+		 {password: 'secret', privileges: []}, 200],
 	['get', '/users/mock_user/properties', {
 		data: optional(types.anything)
 	}, 200],
@@ -182,9 +184,9 @@ const completeProtocol: MochaForEachInput[] = [
 		public_admin_metadata: types.anything,
 		private_admin_metadata: types.anything
 	}, 200],
-	['post', '/current_user', {password: {
-        old: "pass",
-        new: "pass"
+	['post', '/current_user?action=update', {password: {
+        old: 'pass',
+        new: 'newpass'
     }}, 200],
 	['get', '/project_roles', array({
 		role: types.string,
@@ -213,9 +215,9 @@ const completeProtocol: MochaForEachInput[] = [
 	}, 200],
 	['post', '/projects/mocky2', {}, 200],
 	['get', '/projects/mocky/properties', null, 200],
-	['post', '/projects/mocky/files/folder+some_file?action=overwrite', {}, 200],
-	['get',  '/projects/mocky/files/folder+some_file', null, 200],
-	['get', '/projects/mocky/files_by_id/file1', null, 200]
+	['post', '/projects/mocky/files/foler/file?action=overwrite', {}, 200],
+	['get',  '/projects/mocky/files/foler/file', null, 200]
+	//['get', '/projects/mocky/files_by_id/file1', null, 200]
 ];
 
 /* tslint:enable:align */
