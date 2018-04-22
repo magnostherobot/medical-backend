@@ -17,20 +17,21 @@
 \BOOKMARK [2][-]{subsection.5.2}{File Upload}{section.5}% 17
 \BOOKMARK [2][-]{subsection.5.3}{File Download}{section.5}% 18
 \BOOKMARK [1][-]{section.6}{Testing}{}% 19
-\BOOKMARK [2][-]{subsection.6.1}{Integration Testing}{section.6}% 20
-\BOOKMARK [3][-]{subsubsection.6.1.1}{CORS}{subsection.6.1}% 21
-\BOOKMARK [1][-]{section.7}{Process Management and Deployment}{}% 22
-\BOOKMARK [2][-]{subsection.7.1}{Process Manager Selection}{section.7}% 23
-\BOOKMARK [2][-]{subsection.7.2}{pm2 and KeyMetrics}{section.7}% 24
-\BOOKMARK [2][-]{subsection.7.3}{Process Limitations}{section.7}% 25
-\BOOKMARK [2][-]{subsection.7.4}{Heroku Hosting}{section.7}% 26
-\BOOKMARK [2][-]{subsection.7.5}{External System Hosting}{section.7}% 27
-\BOOKMARK [1][-]{section.8}{Conclusion}{}% 28
-\BOOKMARK [2][-]{subsection.8.1}{Future Development}{section.8}% 29
-\BOOKMARK [1][-]{section.9}{Individual Contributions}{}% 30
-\BOOKMARK [2][-]{subsection.9.1}{Tom Harley}{section.9}% 31
-\BOOKMARK [2][-]{subsection.9.2}{Josh Lee}{section.9}% 32
-\BOOKMARK [2][-]{subsection.9.3}{Calum Duff}{section.9}% 33
-\BOOKMARK [2][-]{subsection.9.4}{Johannes Weck}{section.9}% 34
-\BOOKMARK [2][-]{subsection.9.5}{Hafeez Abdul-Rehaman}{section.9}% 35
-\BOOKMARK [1][-]{appendix.A}{Scrum Board Images}{}% 36
+\BOOKMARK [2][-]{subsection.6.1}{Using Mocha and Postman}{section.6}% 20
+\BOOKMARK [2][-]{subsection.6.2}{Integration Testing}{section.6}% 21
+\BOOKMARK [3][-]{subsubsection.6.2.1}{CORS}{subsection.6.2}% 22
+\BOOKMARK [1][-]{section.7}{Process Management and Deployment}{}% 23
+\BOOKMARK [2][-]{subsection.7.1}{Process Manager Selection}{section.7}% 24
+\BOOKMARK [2][-]{subsection.7.2}{pm2 and KeyMetrics}{section.7}% 25
+\BOOKMARK [2][-]{subsection.7.3}{Process Limitations}{section.7}% 26
+\BOOKMARK [2][-]{subsection.7.4}{Heroku Hosting}{section.7}% 27
+\BOOKMARK [2][-]{subsection.7.5}{External System Hosting}{section.7}% 28
+\BOOKMARK [1][-]{section.8}{Conclusion}{}% 29
+\BOOKMARK [2][-]{subsection.8.1}{Future Development}{section.8}% 30
+\BOOKMARK [1][-]{section.9}{Individual Contributions}{}% 31
+\BOOKMARK [2][-]{subsection.9.1}{Tom Harley}{section.9}% 32
+\BOOKMARK [2][-]{subsection.9.2}{Josh Lee}{section.9}% 33
+\BOOKMARK [2][-]{subsection.9.3}{Calum Duff}{section.9}% 34
+\BOOKMARK [2][-]{subsection.9.4}{Johannes Weck}{section.9}% 35
+\BOOKMARK [2][-]{subsection.9.5}{Hafeez Abdul-Rehaman}{section.9}% 36
+\BOOKMARK [1][-]{appendix.A}{Scrum Board Images}{}% 37
