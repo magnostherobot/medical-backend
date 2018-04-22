@@ -1,12 +1,16 @@
-import { AllowNull, Column, DataType, HasMany, Model, Table
+import { AllowNull, Column, DataType, HasMany, Model, Table, PrimaryKey
 	} from 'sequelize-typescript';
 import { default as UserJoinsProject } from './UserJoinsProject';
 
 @Table
 export default class ContributorGroup extends Model<ContributorGroup> {
-	@AllowNull
+	@PrimaryKey
 	@Column(DataType.TEXT)
-	public name!: string | null;
+	public name!: string;
+
+	// @PrimaryKey
+	// @Column
+	// public username!: string;
 
 	/* "Error: Foreign key for "ContributorGroup"
 	 * is missing on "UserJoinsProject"." */
@@ -30,6 +34,10 @@ export default class ContributorGroup extends Model<ContributorGroup> {
 
 	@Column
 	public canEditUserPermissions!: boolean;
+
+	@Column
+	public canDeleteProject!: boolean;
+
 
 	@AllowNull
 	@Column(DataType.TEXT)

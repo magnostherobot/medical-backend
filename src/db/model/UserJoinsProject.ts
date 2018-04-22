@@ -14,13 +14,14 @@ export default class UserJoinsProject extends Model<UserJoinsProject> {
 	@Column
 	public projectName!: string;
 
+	@ForeignKey(() => ContributorGroup)
+	@Column
+	public contributorGroupName!: string;
+
 	@CreatedAt
 	@Column(DataType.DATE)
 	public joinDate!: Date;
 
-	@ForeignKey(() => ContributorGroup)
-	@Column
-	public contributorGroupId!: number;
 
 	@BelongsTo(() => ContributorGroup)
 	public contributorGroup?: ContributorGroup;
