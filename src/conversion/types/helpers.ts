@@ -6,7 +6,7 @@ import { Node } from 'xml-parser';
  * of the protocol specification for scalable images
  */
 export interface SupportedViews {
-	scalable_image: {
+	scalable_image?: {
 		width: number;
 		height: number;
 		channels:
@@ -25,6 +25,10 @@ export interface SupportedViews {
 		};
 		metadata?: {};
 	};
+	tabular?: {
+		columns: string[];
+		rows: number;
+	}
 }
 
 /**

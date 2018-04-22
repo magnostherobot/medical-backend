@@ -1,26 +1,46 @@
 import { logger } from '../../logger';
 import * as xlsx from 'xlsx';
 import * as fs from 'fs';
+import { SupportedViews } from '../types/helpers';
+import * as csv from 'csv-parser';
 
 // const testDir: string = `/cs/scratch/cjd24/csv/`;
 // const testFile: string = `test1.xlsx`
 
+const generateProtoViews: (sheet: xlsx.WorkSheet) => SupportedViews = (sheet: xlsx.WorkSheet): SupportedViews => {
+	return {
+		tabular: {
+			columns: [''],
+			rows: sheet['!rows'].length;
+		}
+	}
+}
 
-const toCSV: (file: string) => Promise<string[]> = async (file: string): Promise<string[]> => {
+const toCSV: (file: string) => Promise<string> = async (file: string): Promise<string> => {
 	logger.info(`xls convertor received new file to convert to csv: ${file}`);
 
+	let shortFile: string = file.split('.')[0].split('/')[1];
+	let path: string = file.split('/')[0] + '/';
 	let book: xlsx.WorkBook = xlsx.readFile(file);
+
 	try {
-		let sheetnames: string[] = [];
+		let views: any = {}; views.items = [];
+
 		for (let name of book.SheetNames) {
-			fs.writeFile(`${file.split('.')[0]}-${name}.csv`, xlsx.utils.sheet_to_csv(book.Sheets[name]));
-			sheetnames.push(`${file.split('.')[0]}-${name}.csv`);
-			logger.info(`Wrote ${file.split('.')[1]} subsheet {${file} : ${name}}  as CSV.`);
+			await fs.writeFile(`${path}${shortFile}-${name}.csv`, xlsx.utils.sheet_to_csv(book.Sheets[name]));
+			views.items.push(name);
+			let parse = csv(`${path}${shortFile}-${name}.csv`);
+
+			views[name] = generateProtoViews(book.Sheets[name]);
+			logger.info(`Wrote subsheet {${shortFile} : ${name}}  as CSV.`);
 		}
-		return sheetnames === [] ? ["__Empty_Book_Error"] : sheetnames;
+		fs.writeFile(`${path}${shortFile}-BASE.supported_views.json`, views[views.items[0]]);
+		await fs.writeFile(`${path}${shortFile}-ALL.supported_views.json`, views);
+
+		return views.items === [] ? "__Empty_Book_Error" : `${path}${shortFile}-ALL.supported_views.json`;
 	} catch (err) {
 		logger.error(err);
-		return ["__Conversion_to_csv_Error_Occurred: " + err]
+		return "__conversion_to_csv_error_occurred: " + err
 	}
 }
 
