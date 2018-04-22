@@ -8,10 +8,13 @@ import { default as UserGroup } from './db/model/UserGroup';
 import { RequestError } from './errors/errorware';
 import { NextFunction, Request, Response, Router } from 'express';
 import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
-	rootPathId, saveFile, upload, views } from './files';
+	rootPathId, saveFile, views } from './files';
 import { logger } from './logger';
+import { mimetype } from './mimetype';
 import { Property, default as serverConfig } from './serverConfig';
 import { uuid } from './uuid';
+
+import * as bodyParser from 'body-parser';
 
 /**
  * The type of an Express middleware callback.
@@ -492,6 +495,9 @@ const postProjectName: Middleware = async(
 	res.locals.modified = true;
 	let promise: PromiseLike<File> | null = null;
 	if (project == null) {
+		if (req.query.action !== 'create') {
+			return next(new RequestError(404, 'project-not-found'));
+		}
 		logger.debug('Adding new project');
 		const file: File = new File({
 			uuid: uuid.generate(),
@@ -509,6 +515,9 @@ const postProjectName: Middleware = async(
 		});
 		project.rootFolderId = file.uuid;
 	} else {
+		if (req.query.action === 'create') {
+			return next(new RequestError(400, 'project_already_exists'));
+		}
 		logger.debug('Updating project properties');
 	}
 
@@ -678,200 +687,200 @@ const qH: {
 		!qH.truncates(req) && !qH.isFinal(req)
 };
 
+const makeFile = async(req: Request, res: Response): Promise<File> => {
+	// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
+	let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
+		: res.locals.path.split(res.locals.deepestFolderName)[1];
+
+	let curPath: string = res.locals.deepestFolderName;
+	// Loop the part of the path that doesn't exist yet and create all the folders
+	while ((remainingPath.match(/\//g) || []).length > 1) {
+		// If there are more subfolders that dont exist, then create them
+		const subFolder: string = remainingPath.split('/')[1];
+		curPath += subFolder;
+		logger.debug(`Adding subfolder '${subFolder}'`);
+		const dir: File = new File({
+			uuid: uuid.generate(),
+			type: 'directory',
+			status: 'ready',
+			fullPathInternal: curPath,
+			nameInternal: subFolder
+		});
+		await dir.save();
+		curPath += '/';
+		// update parent directory of new directory
+		await addSubFileToFolder(res.locals.deepestFolderId, dir);
+		// update vars
+		remainingPath = remainingPath.split(subFolder)[1];
+		res.locals.deepestFolderName = subFolder;
+		res.locals.deepestFolderId = dir.uuid;
+	}
+
+	logger.debug(`Writing file '${res.locals.filename}' to folder '${res.locals.deepestFolderName}'`);
+	res.locals.file = new File({
+		uuid: uuid.generate(),
+		nameInternal: res.locals.filename,
+		fullPathInternal: res.locals.path,
+		status: req.query.final
+			? 'ready'
+			: 'uploading'
+	});
+	res.locals.file.mimetype = mimetype(
+		req.header('Content-Type'), req.body, res.locals.filename);
+
+	// update parent directory of new directory
+	await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file);
+	return res.locals.file;
+};
+
 /**
  * Post a File. / delete / move / etc
  */
-/* tslint:disable */
-const postFilePath: Middleware = async(req: Request, res: Response, next: NextFunction): Promise<void> =>  {
+const postFilePath: Middleware = async(
+	req: Request, res: Response, next: NextFunction
+): Promise<void> =>  {
 	try {
 		await getFileFromPath(req, res);
 		logger.debug(`Receiving file ${res.locals.path}`);
-		// req.query.action: set_metadata, mkdir, delete, move, copy
-		// req.query.overwrite (bool)
-		// req.query.offset (int)
-		// req.query.truncate (bool)
-		// req.query.final (bool)
+		// / req.query.action: set_metadata, mkdir, delete, move, copy
+		// / req.query.overwrite (bool)
+		// / req.query.offset (int)
+		// / req.query.truncate (bool)
+		// / req.query.final (bool)
 
-		// Return 404 when one of these actions is attempted on non-existing file
-		if (res.locals.file == null && (qH.setsMetadata(req) || qH.deletes(req) || qH.moves(req) || qH.copys(req))){
-			logger.debug(`Action \'${req.query.action}\' not valid if file does not exist`);
-			next(new RequestError(404, 'file_not_found'));
-			return;
-		}
-
-		// Return 400 when one of these actions is attempted on existing file
-		if (res.locals.file != null && (qH.nothingSet(req) || qH.mksDir(req))) {
-			logger.debug(`Action \'${req.query.action}\' not valid if file exists`);
-			next(new RequestError(400, 'file_exists'));
-			return;
-		}
-
-		// Sets final if requested
-		if (res.locals.file && qH.isFinal(req)) {
-			res.locals.file.status = 'preprocessing';
-			// start file conversion
-		}
-
-		// Sets Metadata if requested
-		if(qH.setsMetadata(req)){
-			res.locals.file.metadata = req.body;
-			await res.locals.file.save();
-			next();
-			return;
-		}
-
-		// Deletes File if requested
-		if(qH.deletes(req)){
-			logger.info(`File ${res.locals.file.name} will be deleted`)
-			deleteFile(res.locals.file.uuid, res.locals.project.name);
-			await res.locals.file.destroy();
-			next();
-			return;
-		}
-
-		// Moves File if requested
-		if(qH.moves(req)){
-			if(!req.body.path){
-				logger.debug(`copying by uuid not implimented`);
-				next(new RequestError(500, "copy_to_path_only"));
-				return;
-			}
-			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
-			// new File object
-			let promise: PromiseLike<File> | null = null;
-	
-			const newFile: File = new File({
-				uuid: uuid.generate(),
-				type: res.locals.file.type,
-				status: res.locals.file.status,
-				creatorName: res.locals.file.creatorName,
-				createdAt: res.locals.file.createdAt,
-				modifyDate: res.locals.file.modifyDate
-			});
-			newFile.setMetadataInternal(res.locals.file.metadata);
-			newFile.fullPath = req.body.path;
-			newFile.parentFolderId = res.locals.parentFolderId;
-			await newFile.save();
-			const oldUUID: string = res.locals.file.uuid;
-			await res.locals.file.destroy();
-			copyFile(res.locals.project.name, res.locals.file.uuid, oldUUID, true);
-			next();
-			return;
-		}
-
-		// Copies File if requested
-		if(qH.copys(req)){
-			if(!req.body.path){
-				logger.debug(`copying by uuid not implimented`);
-				next(new RequestError(500, "copy_to_path_only"));
-				return;
-			}
-			logger.info(`Copying file \'${res.locals.file.fullPath}\' to new path \'${req.body.path}\'`);
-			// new File object
-			let promise: PromiseLike<File> | null = null;
-	
-			const newFile: File = new File({
-				uuid: uuid.generate(),
-				type: res.locals.file.type,
-				status: res.locals.file.status,
-				creatorName: res.locals.file.creatorName,
-				createdAt: res.locals.file.createdAt,
-				modifyDate: res.locals.file.modifyDate
-			});
-			newFile.setMetadataInternal(res.locals.file.metadata);
-			newFile.fullPath = req.body.path;
-			newFile.parentFolderId = res.locals.parentFolderId;
-			await newFile.save();
-			copyFile(res.locals.project.name, res.locals.file.uuid, newFile.uuid);
-			next();
-			return;
-		}
-
-		// Overwrite data but not truncate
-		// eg. OOOONNNNNNOOOO (O = old data, N = new data)
-		if(qH.overwrites(req) && !qH.truncates(req)){
-			logger.info(`overwriting without truncating not supported`);
-			next(new RequestError(500, 'not_implemented', 'please specify truncate parameter'));
-			return;
-		}
-
-		// Create File or Folder if file doesn't exist
-		if (res.locals.file == null){
-			// Guarding against stupid Postman
-			if(!qH.mksDir(req) && !req.file){
-				logger.debug("No file attached. Sending 400");
-				next(new RequestError(400, 'no_file_attached'));
-			}
-
-			// lets have a res.locals.deepestFolderName (and Id) which is a string of the deepest parent folder found
-			let remainingPath: string = (res.locals.deepestFolderName == '') ? '/' + res.locals.path
-				: res.locals.path.split(res.locals.deepestFolderName)[1];
-
-			let curPath: string = res.locals.deepestFolderName;
-			// Loop the part of the path that doesn't exist yet and create all the folders
-			while((remainingPath.match(/\//g) || []).length > 1){
-				// If there are more subfolders that dont exist, then create them
-				const subFolder: string = remainingPath.split("/")[1]
-				curPath += subFolder;
-				logger.debug(`Adding subfolder \'${subFolder}\'`);
-				const dir: File = new File({
-					uuid: uuid.generate(),
-					type: 'directory',
-					status: 'ready',
-					fullPathInternal: curPath,
-					nameInternal: subFolder
-				});
-				await dir.save();
-				curPath += '/';
-				// update parent directory of new directory
-				if(!await addSubFileToFolder(res.locals.deepestFolderId, dir.uuid)){
-					logger.debug("adding file to folder failed!")
-					next(new RequestError(500, 'Adding file to folder failed'))
+		if (res.locals.file) {
+			/* tslint:disable-next-line:curly */
+			if (req.query.action) switch (req.query.action) {
+				case 'set_metadata': {
+					res.locals.file.metadata = JSON.parse(req.body.toString());
+					await res.locals.file.save();
+					break;
+				} case 'delete': {
+					logger.info(`File ${res.locals.file.name} will be deleted`);
+					deleteFile(res.locals.file.uuid, res.locals.project.name);
+					await res.locals.file.destroy();
+					break;
+				} case 'move': {
+					if (!req.body.path) {
+						logger.warn('copying by uuid not implimented');
+						return next(new RequestError(500, 'copy_to_path_only'));
+					}
+					logger.info(`Copying file '${
+						res.locals.file.fullPath}' to new path '${req.body.path}'`);
+					// New File object
+					const promise: PromiseLike<File> | null = null;
+					const newFile: File = new File({
+						uuid: uuid.generate(),
+						type: res.locals.file.type,
+						status: res.locals.file.status,
+						creatorName: res.locals.file.creatorName,
+						createdAt: res.locals.file.createdAt,
+						modifyDate: res.locals.file.modifyDate
+					});
+					newFile.setMetadataInternal(res.locals.file.metadata);
+					newFile.fullPath = req.body.path;
+					newFile.parentFolderId = res.locals.parentFolderId;
+					await newFile.save();
+					const oldUUID: string = res.locals.file.uuid;
+					await res.locals.file.destroy();
+					copyFile(res.locals.project.name, res.locals.file.uuid, oldUUID, true);
+					break;
+				} case 'copy': {
+					if (!req.body.path) {
+						logger.debug('copying by uuid not implimented');
+						return next(new RequestError(500, 'copy_to_path_only'));
+					}
+					logger.info(`Copying file '${
+						res.locals.file.fullPath}' to new path '${req.body.path}'`);
+					const promise: PromiseLike<File> | null = null;
+					const newFile: File = new File({
+						uuid: uuid.generate(),
+						type: res.locals.file.type,
+						status: res.locals.file.status,
+						creatorName: res.locals.file.creatorName,
+						createdAt: res.locals.file.createdAt,
+						modifyDate: res.locals.file.modifyDate
+					});
+					newFile.setMetadataInternal(res.locals.file.metadata);
+					newFile.fullPath = req.body.path;
+					newFile.parentFolderId = res.locals.parentFolderId;
+					await newFile.save();
+					copyFile(res.locals.project.name, res.locals.file.uuid, newFile.uuid);
+					break;
+				} case 'mkdir': {
+					logger.debug(`Action '${req.query.action}' not valid if file exists`);
+					return next(new RequestError(400, 'file_exists'));
+				} default: {
+					logger.warn(`Unknown file edit action '${req.query.action}'`);
+					return next(new RequestError(400, 'unknown_action'));
 				}
-				// update vars
-				remainingPath = remainingPath.split(subFolder)[1]
-				res.locals.deepestFolderName = subFolder;
-				res.locals.deepestFolderId = dir.uuid;
+			} else {
+				 if (req.query.overwrite) {
+					if (req.query.truncate) {
+						await saveFile(
+							req.body,
+							res.locals.project.name,
+							res.locals.file.uuid,
+							req.query
+						);
+						if (req.query.final) {
+							res.locals.file.status = 'preprocessing';
+							await res.locals.file.save();
+							// Start file preprocesssing
+						}
+					} else {
+						logger.warn('overwriting without truncating not supported');
+						return next(new RequestError(
+							500,
+							'not_implemented',
+							'please specify truncate parameter'
+						));
+					}
+				 } else {
+					 return next(new RequestError(400, 'file_already_exists'));
+				 }
 			}
-
-			logger.debug(`Writing file \'${res.locals.filename}\' to folder \'${res.locals.deepestFolderName}\'`)
-			res.locals.file = new File({
-				uuid: uuid.generate(),
-				nameInternal: res.locals.filename,
-				fullPathInternal: res.locals.path,
-				status: req.query.final
-					? 'ready'
-					: 'uploading'
-			});
-			res.locals.file.mimetype = qH.mksDir(req) ? 'inode/directory' : req.file.mimetype;
-
+		} else {
+			/* tslint:disable-next-line:curly */
+			if (req.query.action) switch (req.query.action) {
+				case 'mkdir': {
+					await makeFile(req, res);
+					res.locals.file.status = 'final';
+					break;
+				}
+				case 'set_metadata':
+				case 'delete':
+				case 'move':
+				case 'copy':
+					logger.debug(`Action '${req.query.action
+						}' not valid if file does not exist`);
+					return next(new RequestError(404, 'file_not_found'));
+			} else {
+				if (!req.body) {
+					logger.debug('No file attached. Sending 400');
+					next(new RequestError(400, 'no_file_attached'));
+				}
+				await makeFile(req, res);
+				await saveFile(
+					req.body,
+					res.locals.project.name,
+					res.locals.file.uuid,
+					req.query
+				);
+				// Sets final if requested
+				if (qH.isFinal(req)) {
+					res.locals.file.status = 'preprocessing';
+					// TODO Start file preprocessing
+				}
+			}
 			await res.locals.file.save();
-
-			// update parent directory of new directory
-			if(!await addSubFileToFolder(res.locals.deepestFolderId, res.locals.file.uuid)){
-				logger.debug("adding file to folder failed!")
-				next(new RequestError(500, 'Adding file to folder failed'))
-				return;
-			}
 		}
-
-		// Move temp file to proper location (if not directory)
-		if(!qH.mksDir(req)){
-			saveFile(req.file.originalname, res.locals.project.name, res.locals.file.uuid, qH.offset(req));
-		}
-
-		// Sets final if requested
-		if (qH.isFinal(req)) {
-			res.locals.file.status = 'final';
-		}
-
-		next();
+		return next();
 
 	} catch (e) {
 		next(e);
 	}
 };
-/* tslint:enable */
 
 export class FileRouter {
 	public router: Router;
@@ -915,7 +924,7 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/files/*',             getFilePath);
 		this.router.post(
 			'/projects/:project_name/files/*',
-			upload.single('userfile'), postFilePath);
+			bodyParser.raw({ type: '*/*' }), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 

@@ -18,7 +18,7 @@ const DEFAULT_PORT: number = 3000;
 
 // Use default port 3000 or port supplied by OS
 const port: number = process.env.PORT
-	? process.env.PORT
+	? Number(process.env.PORT)
 	: DEFAULT_PORT;
 logger.info(`Port ${port} chosen`);
 
@@ -93,7 +93,7 @@ async function reset(): Promise<void> {
 		process.exit(1);
 	}
 
-	await reset();
+	// /await reset();
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {

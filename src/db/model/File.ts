@@ -116,7 +116,7 @@ export default class File extends Model<File> {
 	}
 
 	public get metadata(): Metadata {
-		return !!(this.metadataInternal) ? JSON.parse(this.metadataInternal) 
+		return !!(this.metadataInternal) ? JSON.parse(this.metadataInternal)
 		: INITIAL_METADATA;
 	}
 

@@ -2,11 +2,16 @@ import { Request, Response } from 'express';
 import * as fs from 'fs-extra';
 import { logger } from './logger';
 import * as Multer from 'multer';
+import * as stream from 'stream';
 
 import * as parse from 'csv-parse';
 import * as stringify from 'csv-stringify';
+
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
+import { uuid } from './uuid';
+
+import { RequestError } from './errors';
 
 const CONTENT_BASE_DIRECTORY: string = './files';
 const LOG_BASE_DIRECTORY: string = './logs';
@@ -42,7 +47,21 @@ interface TabularParameters {
 	cols: string[];
 }
 
-interface Query extends Partial<RawSize>, Partial<TabularParameters> {
+interface FileUploadParameters {
+	truncate: boolean;
+	overwrite: boolean;
+	offset: number;
+	action: 'set_metadata'
+		| 'delete'
+		| 'move'
+		| 'copy'
+		| 'mkdir';
+}
+
+interface Query extends
+	Partial<RawSize>,
+	Partial<TabularParameters>,
+	Partial<FileUploadParameters> {
 	children?: boolean;
 }
 
@@ -67,15 +86,6 @@ export const logPath: (type: string, projectName?: string) => string = (
 		: `${LOG_BASE_DIRECTORY}/general/${type}`;
 };
 
-let storage = Multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, CONTENT_BASE_DIRECTORY)
-	},
-	filename: function (req, file, cb) {
-		cb(null, `temp-${file.originalname}`)
-	}
-});
-
 export const path: (file: string, project: string, view?: ViewName) => string =
 	(file: string, project: string, view: ViewName = 'raw'): string =>
 		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/${view}`;
@@ -87,41 +97,39 @@ export const pathNoView: (file: string, project: string) => string =
 export const tempPath: (file: string, project: string) => string = (
 	file: string
 ): string =>
-	`${TEMP_BASE_DIRECTORY}/${file}`
+	`${TEMP_BASE_DIRECTORY}/${uuid.generate()}`;
 
-export const upload: Multer.Instance = Multer({ storage: storage });
-
-export const saveFile: (filename: string, projectname: string, fileId: string, offset: number, truncate?: boolean) => Promise<void> =
-	async(filename: string, projectname: string, fileId: string, offset: number, truncate?: boolean): Promise<void> => {
+export const saveFile: (data: Buffer, projectName: string, fileId: string, query: Query) => Promise<void> =
+	async(data: Buffer, projectName: string, fileId: string, query: Query): Promise<void> => {
 	// TODO only overwrite beginning of file and keep rest of data
-	// ensure file exists
-	await fs.ensureFile(path(fileId, projectname));
-	// truncate to offset
-	await truncateFile(fileId, projectname, offset);
-	// open streams to append to file
-	let rStream = fs.createReadStream(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
-	let wStream = fs.createWriteStream(path(fileId, projectname), {'flags':'a'});
-	rStream.pipe(wStream).on('finish', async() => {
-		fs.remove(`${CONTENT_BASE_DIRECTORY}/temp-${filename}`);
-	}).on('error', (err: any) => {
-		logger.error(`Error while saving file to proper location: ${err}`);
+	// Ensure file exists
+	await fs.ensureFile(path(fileId, projectName));
+	// Truncate to offset
+	await truncateFile(fileId, projectName, query.offset || 0);
+	// Open streams to append to file
+	const rStream: stream.PassThrough = new stream.PassThrough();
+	rStream.end(data);
+	const wStream: fs.WriteStream =
+		fs.createWriteStream(path(fileId, projectName), { flags: 'a' });
+	rStream.pipe(wStream).on('error', (err: Error) => {
+		throw new RequestError(500, `Error while saving file to proper location: ${err}`);
 	});
-}
+};
 
 export const deleteFile: (fileId: string, projectName: string) => void = async(
 	fileId: string, projectName: string
 ): Promise<void> => {
 	await fs.remove(`${CONTENT_BASE_DIRECTORY}/${projectName}/${fileId}`);
-}
+};
 
 export const truncateFile: (fileId: string, projectName: string, newLength: number) => Promise<void> =
 	async(fileId: string, projectName: string, newLength: number): Promise<void> => {
 	// get the file descriptor of the file to be truncated
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	await fs.ftruncate(fd, newLength);
-}
+};
 
-export const copyFile: (projName: string, fromId: string, toId: string, move?: boolean) 
+export const copyFile: (projName: string, fromId: string, toId: string, move?: boolean)
 	=> Promise<void> = async(projName: string, fromId: string, toId: string, move?: boolean): Promise<void> => {
 	// ensure to path exists
 	fs.ensureDirSync(pathNoView(toId, projName));
@@ -129,29 +137,29 @@ export const copyFile: (projName: string, fromId: string, toId: string, move?: b
 	const toDir: string = pathNoView(toId, projName);
 	// loop all views in file
 	fs.readdir(fromDir, (err: any, files: string[]) => {
-		if(err){
+		if (err) {
 			logger.error(`Error while copying file: ${err}`);
 		} else {
 			files.forEach((file: string, index: number) => {
-				const fromPathFull = fromDir + "/" + file;
-				const toPathFull = toDir + "/" + file;
+				const fromPathFull = fromDir + '/' + file;
+				const toPathFull = toDir + '/' + file;
 				fs.ensureFileSync(toPathFull);
 				// open streams to transfer data
-				let rStream = fs.createReadStream(fromPathFull);
-				let wStream = fs.createWriteStream(toPathFull);
+				const rStream = fs.createReadStream(fromPathFull);
+				const wStream = fs.createWriteStream(toPathFull);
 				rStream.pipe(wStream).on('finish', async() => {
-					if(!!move){
+					if (!!move) {
 						await fs.remove(fromPathFull);
 					}
-					console.log(`copy success of file from \'${fromPathFull}\' to \'${toPathFull}\'`)
+					console.log(`copy success of file from \'${fromPathFull}\' to \'${toPathFull}\'`);
 				}).on('error', (err: any) => {
 					logger.error(`Error while copying file: ${err}`);
 				});
-			})
+			});
 		}
 	});
-	
-}
+
+};
 
 export const files: {
 	path: (f: string, p: string) => string;
@@ -341,38 +349,26 @@ export const rootPathFile: File | null = null;
 
 export const createRootFolder: () => Promise<void> = async(
 ): Promise<void> => {
-	if (!(await fs.exists(CONTENT_BASE_DIRECTORY))){
+	if (!(await fs.access(CONTENT_BASE_DIRECTORY))) {
 		await fs.mkdir(CONTENT_BASE_DIRECTORY);
 	}
-}
+};
 
 export const createProjectFolder: (name: string) => Promise<void> = async(
 	projName: string
 ): Promise<void> => {
-	if (!(await fs.exists(CONTENT_BASE_DIRECTORY + '/' + projName))){
+	if (!(await fs.access(CONTENT_BASE_DIRECTORY + '/' + projName))) {
 		await fs.mkdir(CONTENT_BASE_DIRECTORY + '/' + projName);
 	}
-}
+};
 
-export const addSubFileToFolder: (parentId: string, subFileId: string) => Promise<boolean> = async(parentId: string, subFileId: string): Promise<boolean> => {
-	logger.debug(`adding file ${subFileId} to directory ${parentId}`)
+export const addSubFileToFolder: (
+	parentId: string, subFile: File
+) => Promise<void> = async(
+	parentId: string, subFile: File
+): Promise<void> => {
+	logger.debug(`adding file ${subFile.uuid} to directory ${parentId}`);
 	// Fetch parent and subFile object from database
-	const parent: File | null = await File.findOne({
-		include: [{all: true}],
-		where: {
-			uuid: parentId
-		}
-	});
-	const file: File | null = await File.findOne({
-		include: [{all: true}],
-		where: {
-			uuid: subFileId
-		}
-	});
-	if(!parent || !file){
-		return false;
-	}
-	parent.$add('containedFilesInternal', file);
-
-	return true;
-}
+	subFile.parentFolderId = parentId;
+	await subFile.save();
+};
