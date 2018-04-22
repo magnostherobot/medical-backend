@@ -4,6 +4,7 @@ import { BelongsTo, BelongsToMany, Column, CreatedAt, DataType, ForeignKey,
 		Model, PrimaryKey, Table, UpdatedAt } from 'sequelize-typescript';
 import { default as User } from './User';
 import { default as UserJoinsProject } from './UserJoinsProject';
+import { NotVoid } from 'lodash';
 
 @Table
 export default class Project extends Model<Project> {
@@ -91,6 +92,65 @@ export default class Project extends Model<Project> {
 	public set adminMetadata(newMetadata: Metadata) {
 		return;
 	}
+	
+	public async hasAccessLevel(user:User, accessLevel: string): Promise<boolean>{
+		const ujps: UserJoinsProject[] | null = await UserJoinsProject.findAll({
+			include: [ ContributorGroup],
+			where: {
+				username: user.username,
+				projectName: this.name
+			}
+		})
+		if(ujps != null){
+			const adders:ContributorGroup[] = await ujps.map((ujp:UserJoinsProject): ContributorGroup =>{
+					if (ujp.contributorGroup != null){
+						return ujp.contributorGroup	
+					}		
+					else{
+						throw new Error(`Missing contributor group`);
+					}
+			})
+			if(adders.some((cg: ContributorGroup): boolean => cg.name == accessLevel)){
+				return true;
+			}
+			
+			switch(accessLevel){
+				case 'canCreateFiles': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canCreateFiles == true
+					);
+				case 'canDeleteFiles': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canDeleteFiles == true
+					);
+				case 'canViewFiles': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canViewFiles == true
+					);
+				case 'canAddUsers': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canAddUsers == true
+					);
+				case 'canRemoveUsers': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canRemoveUsers == true
+					);
+				case 'canEditUserPermissions': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canEditUserPermissions == true
+					);
+				case 'canDeleteProject': 
+					return adders.some(
+						(cg: ContributorGroup): boolean => cg.canDeleteProject == true
+					);
+				default:
+					throw new Error(`invalid access role`);
+			}
+		}
+		else{
+			return(false)
+		}
+	}
 
 	public async getAccessLevel(user: User): Promise<String[]> {
 		const ujps: UserJoinsProject[] | null = await UserJoinsProject.findAll({
@@ -100,15 +160,15 @@ export default class Project extends Model<Project> {
 				projectName: this.name
 			}
 		})
-		const people: String[] = await ujps.map((ujp: UserJoinsProject): String => { 
+		const listContributors: String[] = await ujps.map((ujp: UserJoinsProject): String => { 
 			if(ujp.contributorGroup != undefined){
 				return ujp.contributorGroupName
 			}
 			else{
-				throw new Error(`unimplemented, ${this}`);
+				throw new Error(`Invalid access`);
 			}
 		})
-		return people;
+		return listContributors;
 	}
 
 	public async getUserInfo(user: User): Promise<UserInfo> {
@@ -122,7 +182,6 @@ export default class Project extends Model<Project> {
 		if (this.contributors === undefined) {
 			throw new Error('contributors undefined');
 		}
-		//console.log(await this.getUserInfo(this.contributors[0]))
 		return {
 			project_name: this.name,
 			users: await Promise.all(this.contributors

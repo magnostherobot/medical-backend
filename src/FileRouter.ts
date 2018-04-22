@@ -305,7 +305,6 @@ const getUsername: Middleware = async (
 		return;
 	}
 	res.locals.data = await res.locals.user.getFullInfo();
-	console.log(await res.locals.user.hasPrivilege("standardUser"))
 	next();
 };
 
@@ -375,20 +374,23 @@ const postUsername: Middleware = async(
 	if( req.query.action === 'update'){
 		if (user!= null){
 			logger.debug('Editing user');
-			const priv: UserGroup[] | null = await UserGroup.findAll({
-				include: [{all: true}],
-				where: {
-					name: req.body.privileges
-				}
-			})
-			if(user.password != null){
-				user.password = req.params.password;
+			
+			if(req.body.password != null){
+				user.password = req.body.password;
 			}
 			if (req.body) {
 				user.metadata = req.body;
 			}
 			await user.save();
-			await user.$set('userGroups', priv);
+			if(req.body.privileges != null){
+				const priv: UserGroup[] | null = await UserGroup.findAll({
+					include: [{all: true}],
+					where: {
+						name: req.body.privileges
+					}
+				})
+				await user.$set('userGroups', priv);
+			}
 		}
 		else{
 			next(new RequestError(404, 'user_not_found'));
@@ -548,7 +550,6 @@ const postProjectName: Middleware = async(
 		else{
 			next(new RequestError(400, 'project_not_found'));
 		}
-
 	}
 	else if( req.query.action === 'delete'){
 		if(project != null){
@@ -563,17 +564,16 @@ const postProjectName: Middleware = async(
 			next(new RequestError(400, 'project_not_found'));
 		}
 		else{
-				let ujp: UserJoinsProject | null = await UserJoinsProject.findOne({
-					include: [{all:true}],
-					where: {
-						username: req.body.username,
-						projectName: project.name
-					}
-				})
-				if(ujp != null){
-					await ujp.destroy();
+			let ujp: UserJoinsProject | null = await UserJoinsProject.findOne({
+				include: [{all:true}],
+				where: {
+					username: req.body.username,
+					projectName: project.name
 				}
-			
+			})
+			if(ujp != null){
+				await ujp.destroy();
+			}
 			if(req.body.access_level != 'none'){
 				try{
 					let ujp: UserJoinsProject = new UserJoinsProject({
@@ -587,7 +587,6 @@ const postProjectName: Middleware = async(
 					next(new RequestError(400, 'invalid_access_level'));
 				}
 			}
-			
 		}
 	}
 	else{
@@ -602,13 +601,6 @@ const postProjectName: Middleware = async(
 				name: req.params.project_name,
 				rootFolder: file
 			});
-			const owner: ContributorGroup | null = await ContributorGroup.findOne({
-				include: [{all: true}],
-				where: {
-					name: 'projectOwner'
-				}
-			})
-			//console.log(owner);
 
 			project.metadata = req.body;
 			// tslint:disable-next-line:await-promise
@@ -621,12 +613,6 @@ const postProjectName: Middleware = async(
 
 			})
 			contribute.save()
-
-			console.log(contribute.contributorGroupName);
-			
-			// if (owner != undefined){
-			// 	await contribute.$set('contributorGroupId', [owner]);
-			// }
 		}
 		else{
 			next(new RequestError(400, 'project_already_exists'));
@@ -874,17 +860,14 @@ export class FileRouter {
 		this.router.get ('/users',									       getUsers);
 		this.router.get ('/users/:username',				            getUsername);
 		this.router.post('/users/:username',				           postUsername);
-			// create, update, delete
 		this.router.get ('/users/:username/properties',           getUserProperties);
 		this.router.get ('/current_user',					             getCurUser);
 		this.router.post('/current_user',					            postCurUser);
-			// update
 		// Projects
 		this.router.get ('/project_roles',					        getProjectRoles);
 		this.router.get ('/projects',							        getProjects);
 		this.router.get ('/projects/:project_name',                  getProjectName);
 		this.router.post('/projects/:project_name',                 postProjectName);
-			// create, update, delete, update_grant 
 		this.router.get ('/projects/:project_name/properties', getProjectProperties);
 		// File access
 		this.router.get ('/projects/:project_name/files/:path',         getFilePath);
