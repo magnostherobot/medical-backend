@@ -1,4 +1,4 @@
-import { TileBounds } from './helperCZITypes'
+import { TileBounds } from './helpers'
 
 //The following are interfaces for the Custom object storing Information
 //about the CUSTOM pyramid being created for this image

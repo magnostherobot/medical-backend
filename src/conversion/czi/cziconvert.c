@@ -284,8 +284,8 @@ int functionRouter(FILE* imageFile, FILE* jsonOutput, long* fileOffset) {
 int main(int argc, char* argv[]) {
 
     //Check program input arguments.
-    if (argc < 2 || argc > 4) {
-        printf("Invalid number of arguments passed in.\nUsage:\n\n./prog <input file> <outputjson> <pythonJxrConvertor>\n\n");
+    if (argc < 2 || argc > 3) {
+        printf("Invalid number of arguments passed in.\nUsage:\n\n./prog <input file> <outputjson>\n\n");
         exit(1);
     }
 
@@ -340,15 +340,5 @@ int main(int argc, char* argv[]) {
     fclose(jsonOutput);
 
     printf("\n=========== FINISH CZI EXTRACTION ===========\n\n\n\n");
-
-    //convert all the data's to jxr;
-    char jxrLoc[200];
-    sprintf(jxrLoc, "%s %s %s", "python3", argv[3], argv[2]);
-    system(jxrLoc);
-
-
-    //begin work on re-factoring the image structure into a "smooth" grid
-
-
     return 0;
 }

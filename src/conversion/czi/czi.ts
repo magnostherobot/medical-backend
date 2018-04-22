@@ -12,13 +12,14 @@ import * as parsexml from 'xml-parser';
 import { uuid } from '../../uuid'
 
 const readFile = require('util').promisify(fs.readFile);
+const readdir = require('util').promisify(fs.readdir);
 const exists = require('util').promisify(fs.exists);
 
 // Various constants for placing files and defining tiles
-const baseDirname: string = '/cs/scratch/cjd24/0701-extraction';
-const extractionDirectory: string = `${baseDirname}/`;
-const outputImageData: string = `${baseDirname}-processed/`;
-const outputImageDirectory: string = `${baseDirname}-processed/data/`;
+const testFile: string = '/cs/scratch/cjd24/0701.czi'
+let extractDirectory: string = "";
+let outputImageData: string = "";
+let outputImageDirectory: string = "";
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 1024;
 const maxZoom: number = 64;
@@ -30,18 +31,7 @@ const finalCZIJson: WholeCZIHierarchy = {
 	c_values: [],
 	zoom_level_count: 0
 };
-
-const exec = (cmd: string) => {
-    return new Promise((res, rej) => {
-        shell.exec(cmd, (code: number, stdout: any, stderr: any) => {
-            if (code !== 0) {
-                rej(stdout);
-            } else {
-                res({ code , stdout, stderr });
-            }
-        })
-    })
-}
+let dataBlocks: Segment[] = [];
 
 /**
  * Simple function to find the tile bounds version of an original tile
@@ -229,8 +219,8 @@ const findRegionToExtract: (
 			// Find out the region of the base tile to be added to the new image
 			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
 			// Extract this section of image data into a sharp buffer
-			const data: Promise<Buffer> =
-				sharp(`${extractionDirectory}${segCol.Data.Data}`)
+			let data: Promise<Buffer> =
+				sharp(`${extractDirectory}${segCol.Data.Data}`)
 				.extract({
 					left: chunkToExtract.left,
 					top: chunkToExtract.top,
@@ -395,17 +385,6 @@ const cleanSupportedViews: (view: SupportedViews) => void = (
 	}
 };
 
-/**
- * Create the objects needed for parsing the XML object
- * of the initial extraction.
- */
-// tslint:disable-next-line:no-var-requires
-const dataBlocks: Segment[] =
-	require(`${extractionDirectory}outputjson.json`)
-	.czi.filter((s: Segment) =>
-		s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty'
-	);
-
 let totalSizeX: number = -1;
 let totalSizeY: number = -1;
 const supportedViews: SupportedViews = {
@@ -512,62 +491,50 @@ const parseExtractedXML: (xmlFile: string) => void = async(
  * This is used to create the next zoomed out tier of the given height map
  */
 const zoomTier: (
-	previousHeightMap: CZIHeightMap, p: number
+	previousHeightMap: CZIHeightMap, p: number, c: number
 ) => Promise<CZIHeightMap> = async(
-	previousHeightMap: CZIHeightMap, p: number
+	previousHeightMap: CZIHeightMap, p: number, c: number
 ): Promise<CZIHeightMap> => {
 
-	const newZoomTier: CZIHeightMap = {
-		zoom_level: previousHeightMap.zoom_level * 2, plane: []
-	};
+	const squashRow = async (previousPlane: CZITile[][], ys: number, p: number): Promise<CZITile[]> => {
 
-	// Check the condition where another zoom level does not make sense
-	if (previousHeightMap.plane.length === 1
-	 && previousHeightMap.plane[0].length === 1) {
-		console.log(
-			'         Task(1/1):     ' +
-			'Stage 100% complete. ' +
-			'(0 sec/iter)  Stage was skipped as maximum sensible zoom level was reached.'
-		);
-		return previousHeightMap;
-	}
-
-	let quadrentCount: number;
-
-	// For all rows within the previous plane
-	for (let ys: number = 0; ys < previousHeightMap.plane.length; ys += 2) {
-		const cziRow: CZITile[] = [];
-		// For all columns within the previous plane
-		for (let xs: number = 0; xs < previousHeightMap.plane[0].length; xs += 2) {
+		const squashQuad = async (previousPlane: CZITile[][], ys: number, xs: number, p: number): Promise<CZITile> => {
+            if (await exists(`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`) && (ys < previousPlane.length)) {
+                finalCZIJson.total_files++;
+                return {
+                    x_offset: xs * tileSize,
+                    y_offset: ys * tileSize,
+                    width: tileSize,
+                    height: tileSize,
+                    file: `img-c${c}-p${p}-y${ys}-x${xs}.png`
+                };
+            }
 
 			// Combine 4 tiles into a new tile and scale down for this tier
 			// Top left
-			let quadrents:string = `${outputImageDirectory}${previousHeightMap.plane[ys][xs].file} `;
+			let quadrents:string = `${outputImageDirectory}${previousPlane[ys][xs].file} `;
 			let across:number = 1;
-			quadrentCount = 1;
+			let quadrentCount: number = 1;
 
 			// Combine top right
-			const moreToRight: boolean = (xs + 1) < previousHeightMap.plane[0].length;
+			const moreToRight: boolean = (xs + 1) < previousPlane[0].length;
 			if (moreToRight) {
-				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys][xs + 1].file} `;
-				across++;
-				quadrentCount++;
+				quadrents += `${outputImageDirectory}${previousPlane[ys][xs + 1].file} `;
+				across++; quadrentCount++;
 			}
 			// Combine bottom left
-			const moreToBottom: boolean = (ys + 1) < previousHeightMap.plane.length;
+			const moreToBottom: boolean = (ys + 1) < previousPlane.length;
 			if (moreToBottom) {
-				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs].file} `;
+				quadrents += `${outputImageDirectory}${previousPlane[ys + 1][xs].file} `;
 				quadrentCount++;
 			}
 			// Combine bottom right
 			if (moreToBottom && moreToRight) {
-				quadrents += `${outputImageDirectory}${previousHeightMap.plane[ys + 1][xs + 1].file} `;
+				quadrents += `${outputImageDirectory}${previousPlane[ys + 1][xs + 1].file} `;
 			}
 
-			let outputFileName: string =`${outputImageData}tmp/${uuid.generate()}.png`;
-//			console.log(quadrents);
-
-            await exec(`${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
+			let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`;
+			shell.exec(`${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`, {silent: true});
 
 			// Rescale and push to file
 			if (quadrentCount !== 3) {
@@ -586,29 +553,53 @@ const zoomTier: (
 						bottom: extBottom, right: extRight
 					}).toBuffer())
 					.resize(tileSize, tileSize)
-					.toFile(`${outputImageDirectory}img-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+					.toFile(`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
 			} else {
 				await sharp(outputFileName)
 					.resize(tileSize, tileSize)
-					.toFile(`${outputImageDirectory}img-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+					.toFile(`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
 			}
-			shell.rm(outputFileName);
+			shell.exec(`rm ${outputFileName}`, {silent: true});
 
-			cziRow.push({
-				x_offset: previousHeightMap.plane[ys][xs].x_offset,
-				y_offset: previousHeightMap.plane[ys][xs].y_offset,
-				width: previousHeightMap.plane[ys][xs].width * 2,
-				height: previousHeightMap.plane[ys][xs].height * 2,
-				file: `img-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`
-			});
 			finalCZIJson.total_files++;
-			rowProgBar += ">"; rowProgCount++;
-			process.stdout.write(`\r${rowProgBar} ${rowProgCount}`);
+			return {
+				x_offset: previousPlane[ys][xs].x_offset,
+				y_offset: previousPlane[ys][xs].y_offset,
+				width: previousPlane[ys][xs].width * 2,
+				height: previousPlane[ys][xs].height * 2,
+				file: `img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`
+			};
 		}
 
-		newZoomTier.plane.push(cziRow);
-		// tslint:disable-next-line:typedef
-		process.stdout.write("\r");
+		const cziRow: Promise<CZITile>[] = [];
+		// For all columns within the previous plane
+		for (let xs: number = 0; xs < previousPlane[0].length; xs += 2) {
+			cziRow.push(squashQuad(previousPlane, ys, xs, p));
+		}
+
+		return await Promise.all(cziRow);
+	}
+
+	const newZoomTier: CZIHeightMap = {
+		zoom_level: previousHeightMap.zoom_level * 2, plane: []
+	};
+
+	// Check the condition where another zoom level does not make sense
+	if (previousHeightMap.plane.length === 1
+	 && previousHeightMap.plane[0].length === 1) {
+		console.log(
+			'         Task(1/1):     ' +
+			'Stage 100% complete. ' +
+			'Stage was skipped as maximum sensible zoom level was reached.'
+		);
+		return previousHeightMap;
+	}
+
+	const newplane: CZITile[][] = [];
+	// For all rows within the previous plane
+	for (let ys: number = 0; ys < previousHeightMap.plane.length; ys += 2) {
+		newplane.push(await squashRow(previousHeightMap.plane, ys, p));
+
 		console.log(
 			`         Task(${ys / 2 + 1}/${
 				Math.floor(previousHeightMap.plane.length / 2) + 1}):     ` +
@@ -616,6 +607,8 @@ const zoomTier: (
 						* 100) * 100) / 100}% complete. `
 		);
 	}
+
+	newZoomTier.plane = newplane;
 	newZoomTier.tile_height_count = newZoomTier.plane.length;
 	newZoomTier.tile_width_count = newZoomTier.plane[0].length;
 
@@ -635,7 +628,7 @@ const extrapolateDimension: (
 	const doOneRow = (ys: number, filteredDataBlocks: Segment[]): Promise<CZITile[]> => {
 
 		const doOneBaseTile = async(xs: number, ys: number, filteredDataBlocks: Segment[]): Promise<CZITile> => {
-			if (await exists(`${outputImageDirectory}img-p0-y${ys}-x${xs}.png`) && (ys + tileSize < totalSizeY)) {
+			if (await exists(`${outputImageDirectory}img-c${cVal}-p0-y${ys}-x${xs}.png`) && (ys + tileSize < totalSizeY)) {
 				///////////////////////////////////////////////////////////////////////////////////This if statement should be temporary??????????????????????????????????/
 				finalCZIJson.total_files++;
 				return {
@@ -643,7 +636,7 @@ const extrapolateDimension: (
 					y_offset: ys,
 					width: tileSize,
 					height: tileSize,
-					file: `img-p0-y${ys}-x${xs}.png`
+					file: `img-c${cVal}-p0-y${ys}-x${xs}.png`
 				};
 			}
 			const desired: TileBounds = new TileBounds(
@@ -657,14 +650,14 @@ const extrapolateDimension: (
 				orderSegments(findRelatedTiles(filteredDataBlocks, desired));
 
 			(await extractAndStitchChunks(sortedSegments, desired))
-			.toFile(`${outputImageDirectory}img-p0-y${ys}-x${xs}.png`);
+			.toFile(`${outputImageDirectory}img-c${cVal}-p0-y${ys}-x${xs}.png`);
 
 			return {
 				x_offset: xs,
 				y_offset: ys,
 				width: tileSize,
 				height: tileSize,
-				file: `img-p0-y${ys}-x${xs}.png`
+				file: `img-c${cVal}-p0-y${ys}-x${xs}.png`
 			};
 		}
 
@@ -701,7 +694,7 @@ const extrapolateDimension: (
 			`Stage ${Math.ceil(((ys / totalSizeY) * 100) * 100) / 100}% complete. `
 		);
 	}
-	baseCZIHeightMap.plane = await Promise.all(plane);
+	baseCZIHeightMap.plane = plane;
 	baseCZIHeightMap.tile_height_count = baseCZIHeightMap.plane.length;
 	baseCZIHeightMap.tile_width_count = baseCZIHeightMap.plane[0].length;
 
@@ -710,16 +703,16 @@ const extrapolateDimension: (
 		}; Begin computing zoom tiers...\n`);
 
 	const retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
-	writeJSONToFile(`${outputImageData}intermediate-stage-map.json`, retHeightMap);
+	writeJSONToFile(`${outputImageData}/intermediate-stage-map.json`, retHeightMap);
 	for (let stage: number = 1; stage <= Math.log2(maxZoom); stage++) {
 		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
-		await zoomTier(retHeightMap[stage - 1], stage)
+		await zoomTier(retHeightMap[stage - 1], stage, cVal)
 		.then((v: CZIHeightMap) => {
 				retHeightMap.push(v);
 				return;
 			}
 		);
-		writeJSONToFile(`${outputImageData}intermediate-stage-map.json`, retHeightMap);
+		writeJSONToFile(`${outputImageData}/intermediate-stage-map.json`, retHeightMap);
 	}
 
 	console.log(`>> Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
@@ -731,13 +724,17 @@ const extrapolateDimension: (
  * used to write the supported views object to file both in total and "cleaned"
  */
 const createSupportedViewsObject: () => void = async(): Promise<void> => {
+	dataBlocks = require(`${extractDirectory}outputjson.json`)
+		.czi.filter((s: Segment) =>
+			s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty'
+		);
 	// Parse the xml
-	await parseExtractedXML(`${extractionDirectory}FILE-META-1.xml`);
+	await parseExtractedXML(`${extractDirectory}FILE-META-1.xml`);
 
 	// Create the total supported Views object
     // !!!!! This line was removed in order to reduce the output file size and
     // !!!!! increase the usability by only giving the striped down version
-	// writeJSONToFile(`${outputImageData}supported_views.json`, supportedViews);
+	// writeJSONToFile(`${outputImageData}/supported_views.json`, supportedViews);
 
 	// Cleanup and create "smart" supported views object without whole metadata
 	cleanSupportedViews(supportedViews);
@@ -747,15 +744,15 @@ const createSupportedViewsObject: () => void = async(): Promise<void> => {
 		tile_overlap: tileOverlap
 	};
 	writeJSONToFile(
-		`${outputImageData}supported_views.json`, supportedViews);
+		`${outputImageData}/supported_views.json`, supportedViews);
 };
 
 /**
  * Used to build up a pyramid for each value of c from the base images
  */
-const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
+const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> => {
 	// Set some variables for errors and and percent counts
-	let errorOccurred: Boolean;
+	let errorOccurred: boolean = false;
 	finalCZIJson.zoom_level_count = Math.log2(maxZoom) + 1;
 
 	// For all channels in the base image
@@ -786,11 +783,60 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 			console.error('Skipping futher elements and moving to next dimension.\n\n');
 		}
 		// Write the final json data to file with most recent changes
-		writeJSONToFile(`${outputImageData}layout.json`, finalCZIJson);
+		writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
 	}
 	finalCZIJson.complete = true;
+	return errorOccurred;
 };
 
+const initialExtractAndConvert: (absFilePath: string) => Promise<void> = async (absFilePath: string): Promise<void> => {
+
+	outputImageData = `${absFilePath.split('.')[0]}-processed`;
+	extractDirectory = outputImageData + "/extract/";
+	outputImageDirectory = outputImageData + "/data/";
+
+	checkForOutputDirectories([outputImageData, extractDirectory]);
+	console.log(">> This will complete at roughly 2GB/min");
+	shell.exec(`${execpaths} CZICrunch ${absFilePath} ${extractDirectory}`);
+
+	shell.exec(`${execpaths} python3 convertJxrs.py ${extractDirectory}`);
+
+	// let totalFiles: number = 0, counter: number = 0;
+	// console.log("=========== BEGIN JXR CONVERSION ===========")
+    //
+	// let filenames: string[] = (await readdir(extractDirectory)).filter((x: string) => x.endsWith(".jxr"));
+	// counter = 0
+	// totalFiles = filenames.length;
+    //
+	// const doOne: (n: number, file: string, asTif: string) => Promise<void> = async(n: number, file: string, asTif: string): Promise<void> => {
+	// 	shell.exec(`${execpaths} JxrDecApp -i ${file} -o ${asTif}`);
+	// 	shell.exec(`convert ${asTif} ${file.substring(0, file.lastIndexOf('.'))}.png`);
+	// 	shell.exec(`rm ${file} ${asTif}`);
+	// 	console.log (`> Processed File: ${n}/${totalFiles}   :   ${file}  -->  ${file.substring(0, file.lastIndexOf('.'))}.png`);
+	// }
+    //
+	// try {
+	// 	let promises: Promise<void>[] = [];
+	// 	for (let index: number = 0; index < filenames.length; index++) {
+    //
+	// 		if (promises.length < 30) {
+	// 			let file = extractDirectory + filenames[index];
+	// 			promises.push(doOne(counter++, file, file.substring(0, file.lastIndexOf('.')) + ".tif"));
+	// 		} else {
+	// 			index--;
+	// 			await Promise.all(promises);
+	// 			promises.length = 0;
+	// 		}
+	// 	}
+	// 	await Promise.all(promises);
+	// } catch (err) {
+	// 	console.log("Processing Failed. Probably couldn't find decoder due to invalid system environment path, check this before debugging. Actual Err:");
+	// 	console.error(err);
+	// }
+	// console.log("=========== FINISH JXR CONVERSION ===========")
+}
+
+process.on("warning", (err: any) => console.warn(err))
 /**
  * Main function used to call the rest of the relevant code to crunch a CZI
  * extraction.
@@ -798,14 +844,27 @@ const buildCustomPyramids: () => Promise<void> = async(): Promise<void> => {
 const main: () => Promise<void> = async (): Promise<void> => {
 	console.log('\n');
 
-	console.log('>> Checking/Creating output directories...');
-	checkForOutputDirectories([outputImageData, outputImageDirectory, `${outputImageData}tmp/`]);
+	try {
+		console.log('>> Extracting from CZI and Converting to PNG');
+		await initialExtractAndConvert(testFile);
 
-	console.log('>> Creating Supported Views and writing files...');
-	await createSupportedViewsObject();
+		console.log('\n>> Checking/Creating output directories...');
+		checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
 
-	console.log('');
-	buildCustomPyramids();
+		console.log('\n>> Creating Supported Views and writing files...');
+		await createSupportedViewsObject();
+
+		console.log('\n');
+		if (await buildCustomPyramids()) {
+			console.log('>> Removing the initial extraction bloat');
+			shell.exec(`rm -rf ${outputImageData}/extract/`, { async: true })
+		};
+
+		console.log("\n>> Done");
+	} catch (Err) {
+		console.error("This was a really big boi error, and something is sad: ");
+		console.error(Err);
+	}
 };
 main();
 
