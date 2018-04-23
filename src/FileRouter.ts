@@ -724,17 +724,23 @@ const getFileFromPath: (req: Request, res: Response) => Promise<void> = async(
 const getFile: Middleware = async(
 	req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
+    req.query.view = req.query.view || 'meta';
 	logger.debug(`Getting file in ${req.query.view} view`);
-	const file: File | null = res.locals.file;
-	if (file == null) {
-		return next(new RequestError(404, 'file_not_found'));
+	try {
+		const file: File | null = res.locals.file;
+		if (file == null) {
+			return next(new RequestError(404, 'file_not_found'));
+		}
+		const project: Project = res.locals.project;
+		const view: View = views[req.query.view || 'meta'];
+		// TODO return 400 for unsupported views
+		// TODO raw view accepts extra query params offset and length
+		res.locals.function = view.getResponseFunction(req, res);
+
+		res.locals.data = view.getResponseData(file, project, req.query, req.url);
+	} catch (err) {
+		next(err);
 	}
-	const project: Project = res.locals.project;
-	const view: View = views[req.query.view || 'meta'];
-	// TODO return 400 for unsupported views
-	// TODO raw view accepts extra query params offset and length
-	res.locals.function = view.getResponseFunction(req, res);
-	res.locals.data = view.getResponseData(file, project, req.query);
 	next();
 };
 
@@ -927,20 +933,24 @@ const postFilePath: Middleware = async(
 			}
 		} else {
 			/* tslint:disable-next-line:curly */
-			if (req.query.action) switch (req.query.action) {
-				case 'mkdir': {
-					await makeFile(req, res);
-					res.locals.file.status = 'final';
-					break;
-				}
-				case 'set_metadata':
-				case 'delete':
-				case 'move':
-				case 'copy':
-					logger.debug(`Action '${req.query.action
-						}' not valid if file does not exist`);
-					return next(new RequestError(404, 'file_not_found'));
-			} else {
+			if (req.query.action) {
+                switch (req.query.action) {
+    				case 'mkdir': {
+    					await makeFile(req, res);
+    					res.locals.file.status = 'final';
+    					break;
+    				}
+    				case 'set_metadata':
+    				case 'delete':
+    				case 'move':
+    				case 'copy':
+    					logger.debug(`Action '${req.query.action
+    						}' not valid if file does not exist`);
+    					return next(new RequestError(404, 'file_not_found'));
+                }
+			}
+
+            if (!req.query.action || req.query.action === 'upload') {
 				if (!req.body) {
 					logger.debug('No file attached. Sending 400');
 					next(new RequestError(400, 'no_file_attached'));

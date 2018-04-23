@@ -3,4 +3,4 @@ let pmx = require('pmx').init({
 	ports: true
 });
 
-module.export.profiler = pmx.probe();
+module.exports = { profiler: pmx.probe() };

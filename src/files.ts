@@ -12,8 +12,15 @@ import { main as CZICrunch } from './conversion/czi/czi'
 import { getTile } from './conversion/czi/pyramidWorker'
 import { RequestError } from './errors';
 import { toCSV as excelToCSV, buildSupportedViews } from './conversion/csv/excel';
+import { profiler } from './profiler';
+import { SupportedViews } from './conversion/types/helpers'
+import { CZITileRequest } from './conversion/types/customPyramidIndex'
 const readDir = require('util').promisify(fs.readdir);
 const readFile = require('util').promisify(fs.readFile);
+const cache = require('redis').createClient(13337);
+cache.on("error", function(err: any) {
+	logger.error("Redis_Error: " + err);
+})
 
 const BASE_BASE: string = `/cs/scratch/${require("os").userInfo().username}/`
 const CONTENT_BASE_DIRECTORY: string = BASE_BASE + 'files';
@@ -205,7 +212,7 @@ interface Query extends Partial<RawSize> {
 
 export interface View {
 	getContents: (file: File, project: Project) => object | Promise<object>;
-	getResponseData: (file: File, project: Project, query: Query) =>
+	getResponseData: (file: File, project: Project, query: Query, url: string) =>
 		Promise<object>;
 	getResponseFunction: (req: Request, res: Response) => Function | null;
 	preprocess: (file: File, original: string, space: string) =>
@@ -272,6 +279,16 @@ export const getSize: (file: File, project: Project) => Promise<number> = async(
 	const stat: fs.Stats = await fs.stat(path(file.uuid, project.name));
 	return stat.size;
 };
+
+const avgReqDuration = profiler.histogram({
+	name: "Avg. ImgTile Request Duration (ms)",
+	measurement: "mean",
+	agg_type: "avg"
+})
+const cacheHits = profiler.counter({
+	name: "Image Tile Cache Hits",
+	agg_type: "sum"
+})
 
 export const views: {
 	[view: string]: View;
@@ -358,23 +375,57 @@ export const views: {
 	},
     scalable_image: {
         getContents: async(file: File, project: Project): Promise<object> => {
-			return JSON.parse(await readFile(path(file.uuid, project.name, 'scalable_image') + "/supported_views.json", 'utf8'));
+			return JSON.parse(await readFile(path(file.uuid, project.name, 'scalable_image') + "/supported_views.json", 'utf8')).scalable_image;
         },
         getResponseData: async(
-            file: File, project: Project, query: Query
+            file: File, project: Project, query: Query, url: string
         ): Promise<object> => {
-			return getTile(
-				path(file.uuid, project.name, 'scalable_image') + '/',
-				query.channel_name,
-				query.x_offset,
-				query.y_offset,
-				query.width,
-				query.height,
-				query.zoom_level
-			);
+			let meta: SupportedViews = JSON.parse(await readFile(path(file.uuid, project.name, 'scalable_image') + "/supported_views.json", 'utf8'));
+			if (!meta.scalable_image)  {
+				throw new RequestError(400, "scalable_image_obj_missing");
+			}
+			for (let channel of meta.scalable_image.channels) {
+				if (channel.channel_name === query.channel_name) {
+					query.channel_name = channel.channel_id;
+					break;
+				}
+			}
+			let startTime: number = Date.now();
+
+			let cacheHit: string | null = await new Promise<string | null>((res, rej) => {
+				cache.get(url, (err:any, cacheFile: string) => {
+					if (cacheFile !== null) {
+						res(cacheFile);
+					}
+					res(null);
+				})
+			});
+
+			if (!cacheHit) {
+				try {
+					let retMe: CZITileRequest = await getTile(
+						path(file.uuid, project.name, 'scalable_image') + '/',
+						query.channel_name,
+						query.x_offset,
+						query.y_offset,
+						query.width,
+						query.height,
+						query.zoom_level
+					);
+					avgReqDuration.update(Date.now() - startTime)
+					cache.set(url, retMe.file_path);
+					cacheHit = retMe.file_path;
+				} catch (Err) {
+					throw Err;
+				}
+			} else {
+				cacheHits.inc();
+			}
+			return await readFile(cacheHit);
         },
         getResponseFunction: (req: Request, res: Response): Function | null => {
-            return (stream: fs.ReadStream) => stream.pipe(res);
+			res.setHeader('content-type', "image/png")
+            return res.send;
         },
         preprocess: async(file: File, original: string, space: string): Promise<void> => {
 			let isCZI: boolean = await new Promise<boolean>((res, rej) => {
