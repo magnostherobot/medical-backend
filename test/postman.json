@@ -1,8 +1,8 @@
 {
 	"variables": [],
 	"info": {
-		"name": "JH",
-		"_postman_id": "c78e805a-429f-8ed8-f523-6bfab655c397",
+		"name": "JH-Tests",
+		"_postman_id": "026d9590-14ae-08df-9cc1-7a592aebdf02",
 		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
 	},
@@ -15,14 +15,14 @@
 					"name": "/projects/",
 					"request": {
 						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects/other?action=create",
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}?action=create",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"{{endpoint}}",
 								"projects",
-								"other"
+								"{{dummy_project}}"
 							],
 							"query": [
 								{
@@ -58,7 +58,34 @@
 				{
 					"name": "/projects/abc/files",
 					"request": {
-						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file",
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file?overwrite=true&truncate=true",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}",
+								"files",
+								"file"
+							],
+							"query": [
+								{
+									"key": "overwrite",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "truncate",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -68,22 +95,15 @@
 							},
 							{
 								"key": "Content-Type",
-								"value": "application/json",
-								"description": "",
-								"disabled": true
+								"value": "image/jpeg",
+								"description": ""
 							}
 						],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "userfile",
-									"description": "",
-									"type": "file",
-									"src": "checker_black.jpg",
-									"value": ""
-								}
-							]
+							"mode": "file",
+							"file": {
+								"src": ""
+							}
 						},
 						"description": ""
 					},
@@ -447,7 +467,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -464,7 +487,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -481,7 +507,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -707,7 +736,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -724,7 +756,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
