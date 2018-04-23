@@ -3413,7 +3413,7 @@ setprototypeof@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/setprototypeof/-/setprototypeof-1.1.0.tgz#d0bd85536887b6fe7c0d818cb962d9d91c54e656"
 
-sharp@^0.20.0:
+sharp@^0.20.1:
   version "0.20.1"
   resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.20.1.tgz#13adde896bc9ec0372b0907554e0329f35a7bce6"
   dependencies:
@@ -4136,7 +4136,7 @@ xdg-basedir@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/xdg-basedir/-/xdg-basedir-3.0.0.tgz#496b2cc109eca8dbacfe2dc72b603c17c5870ad4"
 
-xlsx@0.12.10:
+xlsx@^0.12.10:
   version "0.12.10"
   resolved "https://registry.yarnpkg.com/xlsx/-/xlsx-0.12.10.tgz#c2e71be364d90ece2e08f0bae91563483c4897f8"
   dependencies:
