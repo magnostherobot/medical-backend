@@ -217,7 +217,7 @@ const completeProtocol: MochaForEachInput[] = [
 	['post', '/projects/mocky2', {}, 200],
 	['get', '/projects/mocky/properties', null, 200],
 	['post', '/projects/mocky/files/file?overwrite=true&truncate=true', {}, 200],
-	['get',  '/projects/mocky/files/file', null, 200]
+	['get',  '/projects/mocky/files/file', null, 404]
 	//['get', '/projects/mocky/files_by_id/file1', null, 200]
 ];
 
@@ -309,9 +309,12 @@ describe('routes : protocol', () => {
 
 		describe('GET invalid routes', () => {
 			// Should invalid routes also possibly be 401?
-			it.skip('should have response code 404', () => {
+			it('should have response code 404', () => {
 				return chai.request(app).get('/invalid/route')
 				.set('Authorization', `Bearer ${token}`)
+				.then((res: ChaiHttp.Response) => {
+					expect(res.status).to.equal(404);
+				})
 				.catch((err) => {
 					expect(err.status).to.equal(404);
 				});
@@ -327,9 +330,12 @@ describe('routes : protocol', () => {
 
 		describe('POST invalid routes', () => {
 			// Should invalid routes also possibly be 401?
-			it.skip('should have response code 404', () => {
+			it('should have response code 404', () => {
 				return chai.request(app).post('/invalid/route')
 				.set('Authorization', `Bearer ${token}`)
+				.then((res: ChaiHttp.Response) => {
+					expect(res.status).to.equal(404);
+				})
 				.catch((err) => {
 					expect(err.status).to.equal(404);
 				});
