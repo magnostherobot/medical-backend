@@ -1023,7 +1023,7 @@ export class FileRouter {
 		this.router.get ('/projects/:project_name/files/*',             getFilePath);
 		this.router.post(
 			'/projects/:project_name/files/*',
-			bodyParser.raw({ type: '*/*', limit: '20GB' }), postFilePath);
+			bodyParser.raw({ type: '*/*', limit: '1GB' }), postFilePath);
 		this.router.get ('/projects/:project_name/files_by_id/:id',       getFileId);
 	}
 

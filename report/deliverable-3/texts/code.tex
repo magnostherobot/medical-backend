@@ -3,4 +3,18 @@
 To ensure code clarity and quality, we decided to use the linter `ts-lint'. This did not only help us create professional-style code but also aided in avoiding bugs early by catching out common errors. The linter was integrated with our editors as well as yarn as to automate its work-flow.
 
 \subsection{Scripts}
-Several scripts were created to automate the installation and execution process. 
+Several scripts were created to automate the installation and execution process.
+
+\subsection{Caching}
+As we carried out testing of the serving of tileable images, we were finding that there was a significant amount of wasted computation taking place
+which was slowing down requests significantly. This was as a result of computing/stitiching and cutting regions of images even as a result of a
+repeated request from the frontend even if we had just done and written this to a file.
+
+In order to combat this we added a further database to our backend design called Redis. This database is optimised for caching.
+We decided that the best item to cache would be a specific URL request since this contained all the parameters used to figure
+out the region of the image to get. The value of the URL key, would be the filepath of the image which matches this URL's parameters on disk.
+Therefore if a duplicate request comes in, we can skip all image computation and simply stream the results of the image back to the client instantly.
+
+We planned to push this caching even higher still, and cache every request made to the server. This would be especially beneficial to things requiring access
+into supported views etc since file reads can be skipped and any navigation of the other database/filesystem or raw file computation/generation could be skipped.
+Regrettably we did not have the time to get this far, so currently only image tile requests are cached.
