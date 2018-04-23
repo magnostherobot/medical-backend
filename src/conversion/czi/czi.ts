@@ -800,6 +800,7 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 		writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
 	}
 	finalCZIJson.complete = true;
+	writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
 	return errorOccurred;
 };
 

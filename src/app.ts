@@ -44,6 +44,12 @@ class App {
 		logger.debug('Constructing router');
 		this.logEnabled = enableLog;
 		this.express = ex();
+        this.express.use((req, res, next) => {
+            if (req.headers.authorisation) {
+                (req.headers.authorization as any) = req.headers.authorisation;
+            }
+            next();
+        });
 		this.express.use(cors());
 		this.express.use(
 			(req: ex.Request, res: ex.Response, next: ex.NextFunction): void => {
@@ -82,12 +88,6 @@ class App {
 				'/cs3099group-be-4/_supported_protocols_'
 			] })
 		);
-		this.express.use((req, res, next) => {
-			if (req.headers.authorisation) {
-				(req.headers.authorization as any) = req.headers.authorisation;
-			}
-			next();
-		})
 		this.express.use(passport.initialize());
 		this.express.use(async(
 			req: ex.Request, res: ex.Response, next: ex.NextFunction
