@@ -1,8 +1,9 @@
 {
 	"variables": [],
 	"info": {
-		"name": "JH",
-		"_postman_id": "5676ae95-d7b9-baa0-5688-08862c569679",
+
+		"name": "JH-Tests",
+		"_postman_id": "026d9590-14ae-08df-9cc1-7a592aebdf02",
 		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
 	},
@@ -58,7 +59,34 @@
 				{
 					"name": "/projects/abc/files",
 					"request": {
-						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/text",
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file?overwrite=true&truncate=true",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}",
+								"files",
+								"file"
+							],
+							"query": [
+								{
+									"key": "overwrite",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "truncate",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -68,7 +96,7 @@
 							},
 							{
 								"key": "Content-Type",
-								"value": "text/plain",
+								"value": "image/jpeg",
 								"description": ""
 							}
 						],
@@ -188,9 +216,9 @@
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
-								"disabled": true
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
 							}
 						],
 						"body": {
@@ -350,6 +378,388 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/log",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/log",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type`",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\n\t\"component\": \"anything\",\n\t\"level\": \"info\",\n\t\"value\": \"1000\"\n}]"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/properties",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/properties?action=update",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"properties"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "update",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\n\t\"id\": \"project_example\",\n\t\"value\": 10\n}]"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/user_privileges",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/user_privileges",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users/{{dummy_admin_username}}",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=create",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=create",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"privileges\": [],\n\t\"password\": \"newPass\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=update",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=update",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "update",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": \"newPass2\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=delete",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=delete",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "delete",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users/{{new_username}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/current_user",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/current_user",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": {\n\t\t\"old\": \"pass\",\n\t\t\"new\": \"pass2\"\n\t}\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/:project_name",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/:project_name/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
