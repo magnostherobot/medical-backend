@@ -75,6 +75,9 @@ export default class File extends Model<File> {
 	public status!: string;
 
 	@Column
+	public originalMimetype!: string;
+
+	@Column
 	private metadataInternal!: string;
 
 	public get name(): string {
@@ -136,6 +139,7 @@ export default class File extends Model<File> {
 	}
 
 	public set mimetype(mime: string) {
+		this.originalMimetype = mime;
 		this.type = mimes.get(mime) || 'generic';
 	}
 }

@@ -13,6 +13,9 @@ import { uuid } from './uuid';
 
 import { RequestError } from './errors';
 
+import { toCSV as excelToCSV, buildSupportedViews } from './conversion/csv/excel';
+const readDir = require('util').promisify(fs.readdir);
+
 const CONTENT_BASE_DIRECTORY: string = './files';
 const LOG_BASE_DIRECTORY: string = './logs';
 const TEMP_BASE_DIRECTORY: string = './files-temp';
@@ -74,7 +77,7 @@ const readableStream: (
 	filename: string,
 	projectName: string,
 	{ offset, length }: Query = { offset: undefined, length: undefined },
-	view: ViewName = 'raw'
+	view?: ViewName
 ): fs.ReadStream => {
 	const options: object = {
 		start: offset ? offset : 0,
@@ -92,8 +95,8 @@ export const logPath: (type: string, projectName?: string) => string = (
 };
 
 export const path: (file: string, project: string, view?: ViewName) => string =
-	(file: string, project: string, view: ViewName = 'raw'): string =>
-		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/${view}`;
+	(file: string, project: string, view?: ViewName): string =>
+		`${CONTENT_BASE_DIRECTORY}/${project}/${file}/${view || 'ORIGINAL'}`;
 
 export const originalPath: (file: string, project: string) => string =
 	(file: string, project: string): string =>
@@ -191,7 +194,7 @@ export interface View {
 	getResponseData: (file: File, project: Project, query: Query) =>
 		Promise<object>;
 	getResponseFunction: (req: Request, res: Response) => Function | null;
-	preprocess: (original: string, space: string) =>
+	preprocess: (file: File, original: string, space: string) =>
 		Promise<void>;
 }
 
@@ -274,7 +277,7 @@ export const views: {
 			return (rStream: fs.ReadStream): fs.ReadStream =>
 				rStream.pipe(res as any);
 		},
-		preprocess: async(original: string, space: string): Promise<void> => {
+		preprocess: async(): Promise<void> => {
 			return;
 		}
 	},
@@ -286,35 +289,57 @@ export const views: {
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return null;
 		},
-		preprocess: async(original: string, space: string): Promise<void> => {
+		preprocess: async(): Promise<void> => {
 			return;
 		}
 	},
 	tabular: {
-		getContents: (file: File): object => {
-			return {
-				// columns:
-				// rows:
-			};
+		getContents: async(file: File, project: Project): Promise<object> => {
+			return await buildSupportedViews(path(file.uuid, project.name, 'tabular'));
 		},
 		getResponseData: async(
 			file: File, project: Project, query: Query
 		): Promise<object> => {
-			return readableStream(file.name, project.name, query)
+			const space: string = path(file.uuid, project.name, 'tabular');
+			const files: string[] = await readDir(space);
+			const select: string | undefined = files.find((name: string): boolean => name[0] === '_');
+			if (!select) {
+				throw new Error('no default sheet to show :s')
+			}
+			let rowTo = (query.rowcount)
+				? (Number(query.rowstart) || 0) + Number(query.rowcount) -1
+				: undefined;
+				console.log(rowTo)
+			return fs.createReadStream(`${space}/${select}`)
 				.pipe(parse({
 					columns: true,
 					from: query.rowstart,
-					to: (query.rowstart && query.rowcount)
-						? query.rowstart + query.rowcount
-						: undefined
+					to: rowTo
 				})).pipe(stringify({
 				}));
 		},
 		getResponseFunction: (req: Request, res: Response): Function | null => {
 			return (stream: fs.ReadStream) => stream.pipe(res);
 		},
-		preprocess: async(original: string, space: string): Promise<void> => {
-			return;
+		preprocess: async(file: File, original: string, space: string): Promise<void> => {
+			const mt: string = file.originalMimetype;
+			let validType: boolean = false;
+
+			if (mt.includes("csv")) {
+				validType = true;
+			} else if(mt.includes("spreadsheet")) {
+				validType = true;
+			} else if(mt.includes("ods")) {
+				validType = true;
+			} else if(mt.includes("xls")) {
+				validType = true;
+			}
+
+			if (validType) {
+				await excelToCSV(original, space, mt);
+			} else {
+				logger.warn(`unsupported file type ${mt}`);
+			}
 		}
 	}
 };
@@ -353,6 +378,7 @@ export const preprocess: (
 	const promises: Promise<void>[] = [];
 	for (const view of fileTypes[file.type].supportedViews) {
 		promises.push(views[view].preprocess(
+			file,
 			originalPath(file.uuid, project.name),
 			path(file.uuid, project.name, view)
 		));

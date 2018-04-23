@@ -25,3 +25,5 @@ export const mimetype: (
 	}
 	return DEFAULT_MIMETYPE;
 };
+
+export { extension } from 'mime-types';

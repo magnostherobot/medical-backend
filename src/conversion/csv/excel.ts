@@ -3,10 +3,13 @@ import * as xlsx from 'xlsx';
 import * as fs from 'fs';
 import { SupportedViews, writeJSONToFile } from '../types/helpers';
 import * as csv from 'csv-parse';
-
+import { extension } from '../../mimetype'
 const writeFile = require('util').promisify(fs.writeFile);
 const readFile = require('util').promisify(fs.readFile);
-
+const createFolder = require('util').promisify(fs.mkdir);
+const readDir = require('util').promisify(fs.readdir);
+const rename = require('util').promisify(fs.rename);
+const copy = require('util').promisify(fs.copyFile);
 
 const supportedViewsFromMem: (content: string) => Promise<SupportedViews> = (content: string): Promise<SupportedViews> => {
 	return new Promise((res, rej) => {
@@ -25,32 +28,61 @@ const supportedViewsFromDsk: (path: string) => Promise<SupportedViews> = async(p
 	return supportedViewsFromMem((await readFile(path)).toString());
 }
 
-const toCSV: (file: string) => Promise<string> = async (file: string): Promise<string> => {
+export const toCSV: (file: string, output: string, mimetype: string) => Promise<number> = async (file: string, output: string, mimetype: string): Promise<number> => {
 	logger.info(`xls convertor received new file to convert to csv: ${file}`);
 
-	let temp: string[] = file.split('.')[0].split('/');
-	let shortFile: string = temp[temp.length - 1];
-	let path: string = file.substring(0, file.lastIndexOf('/')) + '/';
+	await copy(file, `${file}.${extension(mimetype)}`);
 	let book: xlsx.WorkBook = xlsx.readFile(file);
+	fs.unlink(`${file}.${extension(mimetype)}`, (err) => {
+	  if (err) {
+			logger.warn(err.toString());
+		}
+	});;
 
 	try {
-		let views: any = {}; views.items = [];
+		await createFolder(output);
+		let noSheets: number = 0;
 
 		for (let name of book.SheetNames) {
-			let csvify:string = xlsx.utils.sheet_to_csv(book.Sheets[name]);
-			await writeFile(`${path}${shortFile}-${name}.csv`, csvify);
-			views.items.push(name);
-			views[name] = await supportedViewsFromMem(csvify);
-			logger.info(`Wrote subsheet {${shortFile} : ${name}}  as CSV.`);
+			await writeFile(`${output}/-${name}`, xlsx.utils.sheet_to_csv(book.Sheets[name]));
+			noSheets++;
 		}
-		writeJSONToFile(`${path}${shortFile}-BASE.supported_views.json`, views[views.items[0]]);
-		await writeJSONToFile(`${path}${shortFile}-ALL.supported_views.json`, views);
 
-		return views.items === [] ? "__Empty_Book_Error" : `${path}${shortFile}-ALL.supported_views.json`;
+		rename(`${output}/-${book.SheetNames[0]}`, `${output}/_${book.SheetNames[0]}`)
+
+		return noSheets;
 	} catch (err) {
-		logger.error(err);
-		return "__conversion_to_csv_error_occurred: " + err
+		logger.failure(err);
+		return 0;
 	}
+}
+
+
+const buildSupportedView: (file: string ) => Promise<object> = async (file: string): Promise<object> => {
+	let shortFile:string = file.split('/')[file.split('/').length - 1]
+	let index: string = shortFile.substring(1, shortFile.length);
+	return {
+		firstSheet: shortFile.startsWith('_'),
+		name: index,
+		tabular: (await supportedViewsFromDsk(file)).tabular
+	}
+}
+
+export const buildSupportedViews: (inputFolder: string ) => Promise<SupportedViews> = async (inputFolder: string): Promise<SupportedViews> => {
+		let allSheets: string[] = await readDir(inputFolder);
+
+		let views: any = {}; views.items = [];
+
+		for (let file of allSheets) {
+			let view: any = await buildSupportedView(`${inputFolder}/${file}`);
+			views.items.push(view.name);
+			views[view.name] = view.tabular;
+			if (view.firstSheet) {
+				views.columns = view.tabular.columns;
+				views.rows = view.tabular.rows;
+			}
+		}
+		return views;
 }
 
 
