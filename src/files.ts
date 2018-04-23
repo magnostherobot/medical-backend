@@ -120,18 +120,24 @@ export const tempPath: (file: string, project: string) => string = (
 ): string =>
 	`${TEMP_BASE_DIRECTORY}/${uuid.generate()}`;
 
-export const saveFile: (data: Buffer, projectName: string, fileId: string, query: Query) => Promise<void> =
-	async(data: Buffer, projectName: string, fileId: string, query: Query): Promise<void> => {
+export const saveFile: (data: Buffer, projectName: string,
+	fileId: string, query: Query) => Promise<void> =
+	async(data: Buffer, projectName: string,
+	fileId: string, query: Query): Promise<void> => {
 	// Ensure file exists
 	await fs.ensureFile(path(fileId, projectName));
 	// Truncate to offset
-	await truncateFile(fileId, projectName, query.offset || 0);
-	// Open streams to append to file
-	fs.writeFile(path(fileId, projectName), data, "binary", (err: any) => {
+	if (!!query.truncate) {
+		await truncateFile(fileId, projectName, query.offset || 0);
+	}
+	const fuckingOffset: number = query.offset || 0;
+	// Open file
+	const fd: number = await fs.open(path(fileId, projectName), 'r+');
+	// Write data to file
+	fs.write(fd, data, 0, data.length, Number(fuckingOffset), (err: any, bytesWritten: number, buffer: Buffer) => {
+		console.log("written: " + bytesWritten)
 		if (err) {
-			logger.failure(err);
-		} else {
-			logger.debug('The file was saved successfully');
+			logger.failure("Error while writing to file: " + err);
 		}
 	});
 };

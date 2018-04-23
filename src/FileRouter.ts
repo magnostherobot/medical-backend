@@ -909,25 +909,17 @@ const postFilePath: Middleware = async(
 				}
 			} else {
 				 if (req.query.overwrite) {
-					if (req.query.truncate) {
-						await saveFile(
-							req.body,
-							res.locals.project.name,
-							res.locals.file.uuid,
-							req.query
-						);
-						if (req.query.final) {
-							res.locals.file.status = 'preprocessing';
-							await res.locals.file.save();
-							preprocess(res.locals.file, res.locals.project);
-						}
-					} else {
-						logger.warn('overwriting without truncating not supported');
-						return next(new RequestError(
-							500,
-							'not_implemented',
-							'please specify truncate parameter'
-						));
+					console.log("overwriting from offset " + (req.query.offset || 0))
+					await saveFile(
+						req.body,
+						res.locals.project.name,
+						res.locals.file.uuid,
+						req.query
+					);
+					if (req.query.final) {
+						res.locals.file.status = 'preprocessing';
+						await res.locals.file.save();
+						preprocess(res.locals.file, res.locals.project);
 					}
 				 } else {
 					 return next(new RequestError(400, 'file_already_exists'));
