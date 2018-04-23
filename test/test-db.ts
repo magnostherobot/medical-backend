@@ -2,7 +2,12 @@ import { default as Project } from '../src/db/model/Project';
 import { default as User } from '../src/db/model/User';
 import { default as UserGroup } from '../src/db/model/UserGroup';
 import { default as File } from '../src/db/model/File';
+import { View, addSubFileToFolder, copyFile, createProjectFolder, deleteFile,
+	saveFile, views, preprocess } from '../src/files';
+import * as fs from 'fs-extra';
 import { FileTypeName } from '../src/files';
+import { uuid } from '../src/uuid';
+
 
 import { Sequelize } from 'sequelize-typescript';
 import * as sqlite from 'sqlite3';
@@ -37,14 +42,15 @@ export interface Projec {
 	contributors: Credentials[];
 	creationDate: Date;
 	lastActivity: Date;
+	rootFolderId: string;
 }
 
 export interface Filee {
-	name: string,
-	path: string,
-	uuid: string,
-	creator: Credentials,
-	type: FileTypeName
+	name: string;
+	path: string;
+	uuid: string;
+	creator: Credentials;
+	type: FileTypeName;
 }
 
 export const addUser: (database?: Database, admin?: boolean) =>
@@ -92,11 +98,19 @@ export const addProjec: (database: Database, user: Credentials) =>
 	Promise<Projec> = async(
 		database: Database, user: Credentials
 ): Promise<Projec> => {
+	createProjectFolder('mocky');
+	const file: File = new File({
+		uuid: uuid.generate()
+	});
+	file.mimetype = 'inode/directory';
+	file.name = '';
+	await file.save();
 	const mockProject: Projec = {
 		name: 'mocky',
 		contributors: [user],
 		creationDate: new Date(),
-		lastActivity: new Date()
+		lastActivity: new Date(),
+		rootFolderId: file.uuid
 	};
 
 	await new Project(mockProject).save();

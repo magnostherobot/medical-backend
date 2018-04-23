@@ -2,7 +2,7 @@
 	"variables": [],
 	"info": {
 		"name": "JH",
-		"_postman_id": "d9fad1ce-92af-fc2c-ff74-074fc681c7ee",
+		"_postman_id": "5676ae95-d7b9-baa0-5688-08862c569679",
 		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
 	},
@@ -15,14 +15,14 @@
 					"name": "/projects/",
 					"request": {
 						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects/other?action=create",
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}?action=create",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"{{endpoint}}",
 								"projects",
-								"other"
+								"{{dummy_project}}"
 							],
 							"query": [
 								{
@@ -58,7 +58,7 @@
 				{
 					"name": "/projects/abc/files",
 					"request": {
-						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file",
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/text",
 						"method": "POST",
 						"header": [
 							{
@@ -68,21 +68,15 @@
 							},
 							{
 								"key": "Content-Type",
-								"value": "application/json",
-								"description": "",
-								"disabled": true
+								"value": "text/plain",
+								"description": ""
 							}
 						],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "userfile",
-									"description": "",
-									"type": "file",
-									"src": "checker_black.jpg"
-								}
-							]
+							"mode": "file",
+							"file": {
+								"src": ""
+							}
 						},
 						"description": ""
 					},
@@ -179,7 +173,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -217,7 +214,10 @@
 								"disabled": true
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -235,7 +235,10 @@
 								"disabled": true
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -252,7 +255,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -296,7 +302,10 @@
 						"url": "{{host}}/",
 						"method": "GET",
 						"header": [],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []
@@ -313,7 +322,10 @@
 								"description": ""
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"description": ""
 					},
 					"response": []

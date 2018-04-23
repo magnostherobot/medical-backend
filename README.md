@@ -13,6 +13,14 @@ $ ./runmepostgres.sh
 
 $ yarn start
 
+### Instructions to monitor server
+
+$ yarn console
+
+### Instructions to stop server
+
+$ yarn stop
+
 ## To test:
 
 $ yarn test

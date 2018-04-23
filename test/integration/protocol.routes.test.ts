@@ -100,11 +100,12 @@ const completeProtocol: MochaForEachInput[] = [
 			'debug',
 			'info',
 			'security',
-			'warning',
+			'warn',
 			'error',
 			'critical',
 			'success',
-			'failure'
+			'failure',
+			'verbose'
 		]),
 		message: types.anything,
 		label: optional(types.string),
@@ -215,8 +216,8 @@ const completeProtocol: MochaForEachInput[] = [
 	}, 200],
 	['post', '/projects/mocky2', {}, 200],
 	['get', '/projects/mocky/properties', null, 200],
-	['post', '/projects/mocky/files/foler/file?action=overwrite', {}, 200],
-	['get',  '/projects/mocky/files/foler/file', null, 200]
+	['post', '/projects/mocky/files/file?overwrite=true&truncate=true', {}, 200],
+	['get',  '/projects/mocky/files/file', null, 200]
 	//['get', '/projects/mocky/files_by_id/file1', null, 200]
 ];
 

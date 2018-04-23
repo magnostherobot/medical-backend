@@ -15,8 +15,7 @@ import { toCSV as excelToCSV, buildSupportedViews } from './conversion/csv/excel
 const readDir = require('util').promisify(fs.readdir);
 const readFile = require('util').promisify(fs.readFile);
 
-
-const BASE_BASE: string = '/cs/scratch/cjd24/'
+const BASE_BASE: string = `/cs/scratch/${require("os").userInfo().username}/`
 const CONTENT_BASE_DIRECTORY: string = BASE_BASE + 'files';
 const LOG_BASE_DIRECTORY: string = BASE_BASE + 'logs';
 const TEMP_BASE_DIRECTORY: string = BASE_BASE + 'files-temp';
@@ -123,18 +122,17 @@ export const tempPath: (file: string, project: string) => string = (
 
 export const saveFile: (data: Buffer, projectName: string, fileId: string, query: Query) => Promise<void> =
 	async(data: Buffer, projectName: string, fileId: string, query: Query): Promise<void> => {
-	// TODO only overwrite beginning of file and keep rest of data
 	// Ensure file exists
 	await fs.ensureFile(path(fileId, projectName));
 	// Truncate to offset
 	await truncateFile(fileId, projectName, query.offset || 0);
 	// Open streams to append to file
-	const rStream: stream.PassThrough = new stream.PassThrough();
-	rStream.end(data);
-	const wStream: fs.WriteStream =
-		fs.createWriteStream(path(fileId, projectName), { flags: 'a' });
-	rStream.pipe(wStream).on('error', (err: Error) => {
-		throw new RequestError(500, `Error while saving file to proper location: ${err}`);
+	fs.writeFile(path(fileId, projectName), data, "binary", (err: any) => {
+		if (err) {
+			logger.failure(err);
+		} else {
+			logger.debug('The file was saved successfully');
+		}
 	});
 };
 

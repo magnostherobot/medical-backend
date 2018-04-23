@@ -589,7 +589,7 @@ const postProjectName: Middleware = async(
 		if (project == null) {
 			logger.debug('Adding new project');
 			const file: File = new File({
-				uuid: uuid.generate(),
+				uuid: uuid.generate()
 			});
 			file.mimetype = 'inode/directory';
 			file.name = '';
@@ -662,9 +662,7 @@ const getFileFromPath: (req: Request, res: Response) => Promise<void> = async(
 		}
 		return j;
 	};
-
 	const path: string = req.path.substring(nth(req.path, '/', 4) + 1);
-
 	res.locals.path = path;
 	logger.debug(`Searching for path '${res.locals.path}'`);
 	// Split path into parts
@@ -674,7 +672,7 @@ const getFileFromPath: (req: Request, res: Response) => Promise<void> = async(
 		?  fileNames[fileNames.length - 1]
 		: '';
 	const project: Project | null = res.locals.project;
-	if (project == null) {
+	if (!project) {
 		// Project should have been found by previous precondition
 		logger.debug('Project was not found: skipping finding file');
 		throw new RequestError(404, 'project_not_found');
@@ -1107,6 +1105,6 @@ export class FileRouter {
 }
 
 // Create the FileRouter, and export its configured Express.Router
-const fileRoutes: FileRouter = new FileRouter();
+//const fileRoutes: FileRouter = new FileRouter();
 
-export default fileRoutes.router;
+export default new FileRouter().router;

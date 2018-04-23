@@ -18,9 +18,9 @@
     "_lint": "tslint -p './tsconfig.json' -c './tslint.json'",
     "lint": "yarn _lint --fix --force './src/**/*.ts'",
     "lint:tests": "yarn _lint --fix --force './test/**/*.ts'",
-	"start": "pm2 restart ecosystem.config.js",
-	"stop": "pm2 stop all",
-	"console": "pm2 monit"
+    "start": "pm2 restart ecosystem.config.js",
+    "stop": "pm2 stop all",
+    "console": "pm2 monit"
   },
   "repository": {
     "type": "git",
@@ -83,6 +83,7 @@
     "mime-types": "^2.1.18",
     "mocha-each": "^1.1.0",
     "morgan": "^1.9.0",
+    "os": "^0.1.1",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
     "pg": "^7.4.1",
