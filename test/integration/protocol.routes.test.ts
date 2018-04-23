@@ -232,7 +232,7 @@ describe('routes : protocol', () => {
 		forEach(completeProtocol).it(
 			'%s %s should be json',
 			(method: string, path: string, temp: Template, resCode: number) => {
-			const request: ChaiHttp.Request = method === 'get'
+			const request: any = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path)
 					.set('content-type', 'application/json').send(temp);
@@ -263,7 +263,7 @@ describe('routes : protocol', () => {
 		forEach(completeProtocol).it(
 			'%s %s should conform to the general response template',
 			(method: string, path: string, temp: Template, resCode: number) => {
-			const request: ChaiHttp.Request = method === 'get'
+			const request: any = method === 'get'
 				? chai.request(app).get(base + path)
 				: chai.request(app).post(base + path).send(temp);;
 			request.set('Authorization', `Bearer ${token}`);
