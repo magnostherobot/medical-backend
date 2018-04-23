@@ -1,6 +1,6 @@
 import { logger } from '../../logger';
 import * as xlsx from 'xlsx';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import { SupportedViews, writeJSONToFile } from '../types/helpers';
 import * as csv from 'csv-parse';
 import { extension } from '../../mimetype'
@@ -10,7 +10,7 @@ const readFile = require('util').promisify(fs.readFile);
 const createFolder = require('util').promisify(fs.mkdir);
 const readDir = require('util').promisify(fs.readdir);
 const rename = require('util').promisify(fs.rename);
-const copy = require('util').promisify(fs.copyFile);
+const copy = require('util').promisify(fs.copy);
 
 const supportedViewsFromMem: (content: string) => Promise<SupportedViews> = (content: string): Promise<SupportedViews> => {
 	return new Promise((res, rej) => {

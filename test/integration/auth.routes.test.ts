@@ -80,10 +80,10 @@ describe('authentication', () => {
 				grant_type: 'password'
 			}).then((res) => {
 				// File-not-found is a valid response
-				expect(res).to.have.status(404);
+				expect(res).to.have.status(401);
 			}).catch((reason) => {
 				// Unauthorised is a valid response
-				expect(reason).to.have.status(401);
+				expect(reason).to.have.status(404);
 			});
 		});
 		it('should reject invalid usernames', () => {

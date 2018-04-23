@@ -116,7 +116,7 @@ class App {
 		defRouter.get('/', (req: ex.Request, res: ex.Response): void => {
 			res.json({
 				message: 'Welcome to the CS3099 BE4 server!',
-				important: 'Endpoints start from /cs3099group-be-4'
+				important: 'Endpoints start from /cs3099group-be-4/'
 			});
 		});
 		this.express.use('/cs3099group-be-4', FileRouter);

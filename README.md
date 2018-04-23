@@ -2,27 +2,25 @@
 
 ## Instructions to install:
 
-$ ./getmenode.sh
-$ npm install all
+$ ./getmeall.sh
+$ yarn
 
-## Instructions to install postgres locally (on lab machines):
+## Instructions to run postgres:
 
-$ ./getmepostgres.sh
+$ ./runmepostgres.sh
 
-## Instructions to execute:
+## Instructions to run server:
 
-$ ./runmenode.sh
+$ yarn start
 
-// alternative for home pc:
-$ npm start
+### Instructions to monitor server
+
+$ yarn console
+
+### Instructions to stop server
+
+$ yarn stop
 
 ## To test:
 
-$ npm test
--- these tests should always pass (when the server is up and running ofc)
-
-## Sources:
-http://mherman.org/blog/2016/11/05/developing-a-restful-api-with-node-and-typescript/#.WlW1fhdpw8o
-https://basarat.gitbooks.io/typescript/docs/quick/nodejs.html
-https://github.com/RobinBuschmann/sequelize-typescript
-https://sequelize.readthedocs.io/en/v3/
+$ yarn test

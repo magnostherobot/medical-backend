@@ -1,46 +1,209 @@
 {
+	"variables": [],
 	"info": {
-		"name": "JH",
-		"_postman_id": "323a3189-bd95-4f51-b985-d2ca626300ec",
+
+		"name": "JH-Tests",
+		"_postman_id": "026d9590-14ae-08df-9cc1-7a592aebdf02",
 		"description": "",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
 	},
 	"item": [
 		{
 			"name": "authorised",
-			"description": null,
+			"description": "",
 			"item": [
 				{
-					"name": "/projects",
+					"name": "/projects/",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [
-							{
-								"key": "",
-								"value": "",
-								"disabled": true
-							}
-						],
-						"body": {},
 						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects",
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}?action=create",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"{{endpoint}}",
-								"projects"
+								"projects",
+								"{{dummy_project}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file?overwrite=true&truncate=true",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}",
+								"files",
+								"file"
+							],
+							"query": [
+								{
+									"key": "overwrite",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								},
+								{
+									"key": "truncate",
+									"value": "true",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/jpeg",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": ""
+							}
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files copy",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/file?action=move",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"projects",
+								"{{dummy_project}}",
+								"files",
+								"file"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "move",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"path\": \"newFile\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files/",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pres",
+									"value": "",
+									"description": "",
+									"type": "file"
+								}
 							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
@@ -49,34 +212,18 @@
 				{
 					"name": "/log",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
+						"url": "{{host}}/{{endpoint}}/log",
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
-								"disabled": true
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
 							}
 						],
-						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/log",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"log"
-							]
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
@@ -85,27 +232,19 @@
 				{
 					"name": "/_supported_protocols",
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
+						"url": "{{host}}/{{endpoint}}/_supported_protocols_",
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
 								"disabled": true
 							}
 						],
-						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/_supported_protocols_",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"_supported_protocols_"
-							]
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
@@ -114,33 +253,71 @@
 				{
 					"name": "/project_roles",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
-						},
+						"url": "{{host}}/{{endpoint}}/project_roles",
 						"method": "GET",
 						"header": [
 							{
-								"key": "",
-								"value": "",
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "",
 								"disabled": true
 							}
 						],
-						"body": {},
-						"url": {
-							"raw": "{{host}}/{{endpoint}}/project_roles",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"{{endpoint}}",
-								"project_roles"
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/project_roles copy",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "GET",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/abc/files_by_id",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/files_by_id/d124ef49-e9e3-4794-bf50-76f40797b5d5",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "image/png",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pres",
+									"value": "",
+									"description": "",
+									"type": "file"
+								}
 							]
 						},
 						"description": ""
@@ -148,39 +325,441 @@
 					"response": []
 				},
 				{
-					"name": "/projects/",
+					"name": "/",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{access_token}}",
-									"type": "string"
-								}
-							]
+						"url": "{{host}}/",
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/ copy",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/json"
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
 							}
 						],
 						"body": {
 							"mode": "raw",
 							"raw": "{}"
 						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/log",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/log",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type`",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\n\t\"component\": \"anything\",\n\t\"level\": \"info\",\n\t\"value\": \"1000\"\n}]"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/properties",
+					"request": {
 						"url": {
-							"raw": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
+							"raw": "{{host}}/{{endpoint}}/properties?action=update",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"{{endpoint}}",
-								"projects",
-								"{{dummy_project}}"
-							]
+								"properties"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "update",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[{\n\t\"id\": \"project_example\",\n\t\"value\": 10\n}]"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/user_privileges",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/user_privileges",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users/{{dummy_admin_username}}",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=create",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=create",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"privileges\": [],\n\t\"password\": \"newPass\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=update",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=update",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "update",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": \"newPass2\"\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username?action=delete",
+					"request": {
+						"url": {
+							"raw": "{{host}}/{{endpoint}}/users/{{new_username}}?action=delete",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"{{endpoint}}",
+								"users",
+								"{{new_username}}"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "delete",
+									"equals": true,
+									"description": ""
+								}
+							],
+							"variable": []
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/users/:username/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/users/{{new_username}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/current_user",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": "",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/current_user",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/current_user",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": {\n\t\t\"old\": \"pass\",\n\t\t\"new\": \"pass2\"\n\t}\n}"
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/:project_name",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "/projects/:project_name/properties",
+					"request": {
+						"url": "{{host}}/{{endpoint}}/projects/{{dummy_project}}/properties",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
 						},
 						"description": ""
 					},
@@ -192,19 +771,8 @@
 			"name": "/oauth/token",
 			"event": [
 				{
-					"listen": "prerequest",
-					"script": {
-						"id": "7cbb2980-4092-4675-af5e-cfcbd1c00b81",
-						"type": "text/javascript",
-						"exec": [
-							""
-						]
-					}
-				},
-				{
 					"listen": "test",
 					"script": {
-						"id": "7ce27395-de92-457b-97cc-7728824c821d",
 						"type": "text/javascript",
 						"exec": [
 							"let res = JSON.parse(responseBody);",
@@ -215,9 +783,7 @@
 				}
 			],
 			"request": {
-				"auth": {
-					"type": "noauth"
-				},
+				"url": "{{host}}/{{endpoint}}/oauth/token",
 				"method": "POST",
 				"header": [
 					{
@@ -246,17 +812,6 @@
 							"description": "",
 							"type": "text"
 						}
-					]
-				},
-				"url": {
-					"raw": "{{host}}/{{endpoint}}/oauth/token",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"{{endpoint}}",
-						"oauth",
-						"token"
 					]
 				},
 				"description": "wefrwrbjk;"

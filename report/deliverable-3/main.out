@@ -1,0 +1,39 @@
+\BOOKMARK [1][-]{section.1}{Aims for Final Submission}{}% 1
+\BOOKMARK [1][-]{section.2}{Completed Work}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Endpoints}{section.2}% 3
+\BOOKMARK [1][-]{section.3}{Continued use of Scrum}{}% 4
+\BOOKMARK [2][-]{subsection.3.1}{Sprints}{section.3}% 5
+\BOOKMARK [2][-]{subsection.3.2}{Scrum board}{section.3}% 6
+\BOOKMARK [1][-]{section.4}{Code Quality}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Linter}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.2}{Scripts}{section.4}% 9
+\BOOKMARK [1][-]{section.5}{File Conversion}{}% 10
+\BOOKMARK [2][-]{subsection.5.1}{Dealing with Images}{section.5}% 11
+\BOOKMARK [3][-]{subsubsection.5.1.1}{Extraction of Zeiss Within `C'}{subsection.5.1}% 12
+\BOOKMARK [3][-]{subsubsection.5.1.2}{Converting Extracted Files}{subsection.5.1}% 13
+\BOOKMARK [3][-]{subsubsection.5.1.3}{Stitching Base Tiles}{subsection.5.1}% 14
+\BOOKMARK [3][-]{subsubsection.5.1.4}{Building Up Hierarchy of Zoom Levels}{subsection.5.1}% 15
+\BOOKMARK [2][-]{subsection.5.2}{Leica \046 Other Formats}{section.5}% 16
+\BOOKMARK [2][-]{subsection.5.3}{Non image formats \(.csv etc.\)}{section.5}% 17
+\BOOKMARK [1][-]{section.6}{File Management}{}% 18
+\BOOKMARK [2][-]{subsection.6.1}{Directory Structure}{section.6}% 19
+\BOOKMARK [2][-]{subsection.6.2}{File Upload and Download}{section.6}% 20
+\BOOKMARK [1][-]{section.7}{Testing}{}% 21
+\BOOKMARK [2][-]{subsection.7.1}{Using Mocha and Postman}{section.7}% 22
+\BOOKMARK [2][-]{subsection.7.2}{Integration Testing}{section.7}% 23
+\BOOKMARK [3][-]{subsubsection.7.2.1}{CORS}{subsection.7.2}% 24
+\BOOKMARK [1][-]{section.8}{Process Management and Deployment}{}% 25
+\BOOKMARK [2][-]{subsection.8.1}{Process Manager Selection}{section.8}% 26
+\BOOKMARK [2][-]{subsection.8.2}{pm2 and KeyMetrics}{section.8}% 27
+\BOOKMARK [2][-]{subsection.8.3}{Process Limitations}{section.8}% 28
+\BOOKMARK [2][-]{subsection.8.4}{Heroku Hosting}{section.8}% 29
+\BOOKMARK [2][-]{subsection.8.5}{External System Hosting}{section.8}% 30
+\BOOKMARK [1][-]{section.9}{Conclusion}{}% 31
+\BOOKMARK [2][-]{subsection.9.1}{Future Development}{section.9}% 32
+\BOOKMARK [1][-]{section.10}{Individual Contributions}{}% 33
+\BOOKMARK [2][-]{subsection.10.1}{Tom Harley}{section.10}% 34
+\BOOKMARK [2][-]{subsection.10.2}{Josh Lee}{section.10}% 35
+\BOOKMARK [2][-]{subsection.10.3}{Calum Duff}{section.10}% 36
+\BOOKMARK [2][-]{subsection.10.4}{Johannes Weck}{section.10}% 37
+\BOOKMARK [2][-]{subsection.10.5}{Hafeez Abdul-Rehaman}{section.10}% 38
+\BOOKMARK [1][-]{appendix.A}{Scrum Board Images}{}% 39
