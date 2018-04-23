@@ -5,9 +5,10 @@
 $ ./getmeall.sh
 $ yarn
 
-## Instructions to run postgres:
+## Instructions to run postgres & cacheing:
 
 $ ./runmepostgres.sh
+$ ./runmeredis.sh
 
 ## Instructions to run server:
 

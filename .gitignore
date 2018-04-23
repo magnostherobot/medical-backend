@@ -29,4 +29,7 @@ docs/
 # project files
 files/*
 
+# redis folder
+redis*
+
 report/deliverable-3/main.synctex.gz
