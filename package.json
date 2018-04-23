@@ -4,8 +4,8 @@
   "main": "index.ts",
   "license": "UNLICENSED",
   "scripts": {
-    "_test": "PORT=4321 mocha --reporter spec -r ts-node/register",
-    "test": "yarn _test './test/**/*.test.ts'",
+    "_test": "PORT=4321 NODE_ENV='test' mocha --reporter spec -r ts-node/register",
+    "test": "yarn _test NODE_ENV='test'  './test/**/*.test.ts'",
     "test:routes": "yarn _test './test/**/*.routes.test.ts'",
     "test:unit": "yarn _test './test/**/*.unit.test.ts'",
     "test:routes:db": "yarn _test './test/**/*database.unit.test.ts'",
