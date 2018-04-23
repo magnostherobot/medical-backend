@@ -96,7 +96,7 @@ const readableStream: (
 	view?: ViewName
 ): fs.ReadStream => {
 	const options: object = {
-		start: offset ? offset : 0,
+		start: Number(offset ? offset : 0),
 		end: offset && length ? offset + length : undefined
 	};
 	return fs.createReadStream(path(filename, projectName, view), options);
