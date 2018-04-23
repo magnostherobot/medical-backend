@@ -1,8 +1,11 @@
-import { CZIHeightMap, CZITile, CZITileRequest } from '../types/customPyramidIndex';
+import { WholeCZIHierarchy, CZIHeightMap, CZITile, CZITileRequest } from '../types/customPyramidIndex';
 import { TileBounds, execpaths } from '../types/helpers';
 import * as sharp from 'sharp';
 import { isTileRelated } from './tileExtraction';
 import { uuid } from '../../uuid'
+import * as fs from 'fs';
+import { RequestError } from '../../errors'
+const readFile = require('util').promisify(fs.readFile);
 
 const findRelatedTiles: Function = function(plane: CZIHeightMap, desired: TileBounds): CZITile[][] {
 
@@ -31,6 +34,20 @@ const findRelatedTiles: Function = function(plane: CZIHeightMap, desired: TileBo
 	}
 	return relatedTiles;
 };
+
+export const getTile: Function = async function(imageDir: string, cVal: string, x:number = 0, y:number = 0, w:number = 1024, h:number = 1024, zoom: number = 1): Promise<Buffer> {
+	let layout: WholeCZIHierarchy = JSON.parse(await readFile(imageDir + "/layout.json", 'utf8'));
+
+	let bound: TileBounds = new TileBounds(x, x + w, y, y + h);
+	let map: CZIHeightMap;
+	try {
+		map = layout.c_values[Number(cVal)].height_map[Math.floor(Math.log2(zoom))]
+	} catch {
+		throw new RequestError(400, "bad_zoom_index")
+	}
+
+	return readFile((await getFinalTile(imageDir, map, cVal, bound)).file_path);
+}
 
 const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHeightMap, cVal: string, desiredRegion: TileBounds): Promise<CZITileRequest> {
 

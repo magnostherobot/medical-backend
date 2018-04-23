@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { SupportedViews, writeJSONToFile } from '../types/helpers';
 import * as csv from 'csv-parse';
 import { extension } from '../../mimetype'
+
 const writeFile = require('util').promisify(fs.writeFile);
 const readFile = require('util').promisify(fs.readFile);
 const createFolder = require('util').promisify(fs.mkdir);

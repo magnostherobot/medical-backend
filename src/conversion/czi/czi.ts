@@ -16,7 +16,6 @@ const readdir = require('util').promisify(fs.readdir);
 const exists = require('util').promisify(fs.exists);
 
 // Various constants for placing files and defining tiles
-const testFile: string = '/cs/scratch/cjd24/0701.czi'
 let extractDirectory: string = "";
 let outputImageData: string = "";
 let outputImageDirectory: string = "";
@@ -378,6 +377,9 @@ const cleanSupportedViewObject: (obj: parsexml.Node[]) => object = (
 const cleanSupportedViews: (view: SupportedViews) => void = (
 	view: SupportedViews
 ): void => {
+	if (!view.scalable_image) {
+		throw new Error("SupportedView.scalable_image does not exist where it should.");
+	}
 	for (const channel of view.scalable_image.channels) {
 		channel.metadata = cleanSupportedViewObject(
 			channel.metadata as parsexml.Node[]
@@ -398,6 +400,9 @@ const supportedViews: SupportedViews = {
 		metadata: {}
 	}
 };
+if (!supportedViews.scalable_image) {
+	throw new Error("SupportedView.scalable_image does not exist where it should.");
+}
 supportedViews.scalable_image.channels.pop();
 
 /* tslint:disable:curly cyclomatic-complexity */
@@ -412,6 +417,9 @@ const parseExtractedXML: (xmlFile: string) => void = async(
 	// Parse the XML :(
 	// THE FOLLOWING 2 FOR LOOPS ARE DISGUSTING AND I HATE IT,
 	// AND I WISH I DIDNT WRITE IT BUT DON'T SEE ANY OTHER WAY TO DO IT LOL :'(
+	if (!supportedViews.scalable_image) {
+		throw new Error("SupportedView.scalable_image does not exist where it should.");
+	}
 	for (const child of metaXML.root.children) if (child.name === 'Metadata') {
 		for (const entry of child.children)	if (entry.name === 'Information') {
 			for (const properties of entry.children) if (properties.name === 'Image') {
@@ -738,6 +746,9 @@ const createSupportedViewsObject: () => void = async(): Promise<void> => {
 
 	// Cleanup and create "smart" supported views object without whole metadata
 	cleanSupportedViews(supportedViews);
+	if (!supportedViews.scalable_image) {
+		throw new Error("SupportedView.scalable_image does not exist where it should.");
+	}
 	supportedViews.scalable_image.metadata = {
 		tile_size: tileSize,
 		max_zoom: maxZoom,
@@ -756,6 +767,9 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 	finalCZIJson.zoom_level_count = Math.log2(maxZoom) + 1;
 
 	// For all channels in the base image
+	if (!supportedViews.scalable_image) {
+		throw new Error("SupportedView.scalable_image does not exist where it should.");
+	}
 	for (const cval of supportedViews.scalable_image.channels) {
 
 		errorOccurred = false;
@@ -789,9 +803,9 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 	return errorOccurred;
 };
 
-const initialExtractAndConvert: (absFilePath: string) => Promise<void> = async (absFilePath: string): Promise<void> => {
+const initialExtractAndConvert: (absFilePath: string, space: string) => Promise<void> = async (absFilePath: string, space: string): Promise<void> => {
 
-	outputImageData = `${absFilePath.split('.')[0]}-processed`;
+	outputImageData = space;
 	extractDirectory = outputImageData + "/extract/";
 	outputImageDirectory = outputImageData + "/data/";
 
@@ -841,12 +855,12 @@ process.on("warning", (err: any) => console.warn(err))
  * Main function used to call the rest of the relevant code to crunch a CZI
  * extraction.
  */
-const main: () => Promise<void> = async (): Promise<void> => {
+export const main: (original: string, space:string) => Promise<void> = async (original: string, space:string): Promise<void> => {
 	console.log('\n');
 
 	try {
 		console.log('>> Extracting from CZI and Converting to PNG');
-		await initialExtractAndConvert(testFile);
+		await initialExtractAndConvert(original, space);
 
 		console.log('\n>> Checking/Creating output directories...');
 		checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
@@ -866,7 +880,7 @@ const main: () => Promise<void> = async (): Promise<void> => {
 		console.error(Err);
 	}
 };
-main();
+// main();
 
 // /* tslint:disable */
 // async function main2() {

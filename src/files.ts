@@ -3,22 +3,23 @@ import * as fs from 'fs-extra';
 import { logger } from './logger';
 import * as Multer from 'multer';
 import * as stream from 'stream';
-
 import * as parse from 'csv-parse';
 import * as stringify from 'csv-stringify';
-
 import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
 import { uuid } from './uuid';
-
+import { main as CZICrunch } from './conversion/czi/czi'
+import { getTile } from './conversion/czi/pyramidWorker'
 import { RequestError } from './errors';
-
 import { toCSV as excelToCSV, buildSupportedViews } from './conversion/csv/excel';
 const readDir = require('util').promisify(fs.readdir);
+const readFile = require('util').promisify(fs.readFile);
 
-const CONTENT_BASE_DIRECTORY: string = './files';
-const LOG_BASE_DIRECTORY: string = './logs';
-const TEMP_BASE_DIRECTORY: string = './files-temp';
+
+const BASE_BASE: string = '/cs/scratch/cjd24/'
+const CONTENT_BASE_DIRECTORY: string = BASE_BASE + 'files';
+const LOG_BASE_DIRECTORY: string = BASE_BASE + 'logs';
+const TEMP_BASE_DIRECTORY: string = BASE_BASE + 'files-temp';
 
 export interface Metadata {
 	version: number;
@@ -61,10 +62,19 @@ interface FileUploadParameters {
 		| 'mkdir';
 }
 
+interface TileQuery {
+	channel_name: string;
+	x_offset: number;
+	y_offset: number;
+	width: number;
+	height: number;
+	zoom_level: number;
+}
 interface Query extends
 	Partial<RawSize>,
 	Partial<TabularParameters>,
-	Partial<FileUploadParameters> {
+	Partial<FileUploadParameters>,
+	Partial<TileQuery> {
 	children?: boolean;
 }
 
@@ -183,7 +193,7 @@ export const files: {
 	logPath
 };
 
-export type ViewName = 'raw' | 'meta' | 'tabular';
+export type ViewName = 'raw' | 'meta' | 'tabular' | 'scalable_image';
 
 interface Query extends Partial<RawSize> {
 	include_children?: boolean;
@@ -341,10 +351,61 @@ export const views: {
 				logger.warn(`unsupported file type ${mt}`);
 			}
 		}
-	}
+	},
+    scalable_image: {
+        getContents: async(file: File, project: Project): Promise<object> => {
+			return JSON.parse(await readFile(path(file.uuid, project.name, 'scalable_image') + "/supported_views.json", 'utf8'));
+        },
+        getResponseData: async(
+            file: File, project: Project, query: Query
+        ): Promise<object> => {
+			return getTile(
+				path(file.uuid, project.name, 'scalable_image') + '/',
+				query.channel_name,
+				query.x_offset,
+				query.y_offset,
+				query.width,
+				query.height,
+				query.zoom_level
+			);
+        },
+        getResponseFunction: (req: Request, res: Response): Function | null => {
+            return (stream: fs.ReadStream) => stream.pipe(res);
+        },
+        preprocess: async(file: File, original: string, space: string): Promise<void> => {
+			let isCZI: boolean = await new Promise<boolean>((res, rej) => {
+				fs.open(original, 'r', function(status, fd) {
+				    if (status) {
+				        logger.debug(status.message);
+				        return;
+				    }
+				    var buffer = new Buffer(10);
+				    fs.read(fd, buffer, 0, 10, 0, function(err, num) {
+				        logger.debug(buffer.toString('utf8', 0, num));
+						res(buffer.toString('utf8', 0, num) === 'ZISRAWFILE');
+				    });
+				});
+			});
+
+			if (isCZI) {
+				CZICrunch(original, space);
+			} else {
+				const mt: string = file.originalMimetype;
+				let validType: boolean = false;
+
+				logger.crit("FILES OTHER THAN CZI CURRENTLY NOT IMPLEMENTED")
+
+				// if (mt.includes("tif")) {
+				// 	await lecialol(original, space, mt);
+				// } else {
+				// 	logger.warn(`unsupported file type ${mt}`);
+				// }
+			}
+        }
+    }
 };
 
-export type FileTypeName = 'generic' | 'directory' | 'tabular';
+export type FileTypeName = 'generic' | 'directory' | 'tabular' | 'scalable_image';
 
 export interface FileType {
 	supportedViews: ViewName[];
@@ -367,7 +428,12 @@ const fileTypes: {
 		supportedViews: [
 			'raw', 'meta', 'tabular'
 		]
-	}
+	},
+    scalable_image: {
+        supportedViews: [
+            'raw', 'meta', 'scalable_image'
+        ]
+    }
 };
 
 export const preprocess: (
