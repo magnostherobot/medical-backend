@@ -347,6 +347,7 @@ export const views: {
 					from: query.rowstart,
 					to: rowTo
 				})).pipe(stringify({
+					header: true
 				}));
 		},
 		getResponseFunction: (req: Request, res: Response): Function | null => {
