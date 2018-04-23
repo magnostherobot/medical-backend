@@ -1,0 +1,45 @@
+\section{Completed Work}
+Looking back on the tasks set out from the initial specifications we are very satisfied with the amount of work completed and the percentage of the user stories covered in our final submission. The following points are summaries from the specifications supplied by the school and the specifications decided by the student body. 
+
+\begin{description}
+\item[Web-based application] We used NodeJS and typescript to deploy our server to the school host servers, where it is accessible both from within and outside the university network.
+\item[Conceptual structures for file, project and user management] The data models for these items developed into very sophisticated objects - containing hierarchies, permission groups, project contributors and much more. A mode of user authentication is provided using oauth tokens. 
+\item[Files may be uploaded to specific projects] Files can only be associated to a specific project. Folder hierarchies are stored on the database, while data is stored in the file-system.
+\item[Files upload should be agnostic of file type] The server does not discriminate files based on type. All files have associated meta-data stored in a database, which contains information like file-type. On the server, files and directories are identified by their uuid and filestypes are divided into the categories `tabular', `image' and `generic'.
+\item[Allow conversion of images and tabular data] Our current system allows fluent transition between czi input files and tiled png output *todo*. Tabular data is handled in csv format, giving the server a good understanding of the data.
+\item[Robustness to user input] A reasonable attempt was made to catch out invalid input and close collaboration with the HCI groups ensured a distribution of responsibility for the preservation of dependencies and cleaning of user input.
+\item[Ensure compatibility between groups] A common api was decided by the student body to ensure seamless communication between systems. As part of our testing we integrated with several other HCI and ML groups. 
+\item[Follow an agreed protocol for intergroup communication] We implemented the entire protocol \url{https://github.com/CS3099JH2017/cs3099jh/blob/master/protocols/BE01.md}
+\end{description}
+
+\subsection{Endpoints}
+as specified by the agreed protocol
+\begin{description}
+\item[post	/oauth/token] Allows authentication, issuing a token.
+\item[get	/\_supported\_protocols\_] Returns the supported protocols
+\item[get	/log] Allows retreiving of logs (requires admin privileges)\\
+optional url parameters: \texttt{before=<datetime>\&after=<datetime>\&level=<level>} 
+\item[post	/log] Allows viewing of logs (requires logging permission)
+\item[get	/properties] Returns the server configuration
+\item[post	/properties] Allows changing of the server configuration
+\item[get	/user\_privileges] Returns all available privileges
+\item[get	/users] Returns all users 
+\item[get	/users/:username] Returns information on a specific user
+\item[post 	/users/:username] Allows adding, deleting and changing of user (information)\\
+url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{action=delete}
+\item[get	/users/:username/properties] Returns additional configuration options on a specific user
+\item[get	/current\_user] Returns information of the authenticated user
+\item[post	/current\_user] Allows changing of information for the authenticated user
+\item[get	/project\_roles] Returns all project roles
+\item[get	/projects] Returns all projects
+\item[get	/projects/:project\_name] Returns information of a specific project
+\item[post	/projects/:project\_name] Allows changing of information of a specific project\\
+url parameters: \texttt{action=create} or \texttt{action=update} or \texttt{action=delete}
+\item[get	/projects/:project\_name/properties] Returns additional configuration options of a specific project
+\item[get	/projects/:project\_name/files/] Returns all files and folders at the base level of the project (non-recursive)
+\item[get	/projects/:project\_name/files/:path] Returns a file\\
+optional url parameters: (default) \texttt{view=meta} or \texttt{raw} or other views depending on the file type
+\item[post	/projects/:project\_name/files/:path] Uploads a file\\
+optional url parameters: \texttt{action=set\_metadata, mkdir, delete, move, copy}, \texttt{overwrite=true, false}, \texttt{offset=int}, \texttt{truncate= true, false} and \texttt{final=true, false}
+\item[get	/projects/:project\_name/files\_by\_id/:id] Returns a file
+\end{description}

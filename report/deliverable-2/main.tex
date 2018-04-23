@@ -1,0 +1,38 @@
+\input{preamble}
+
+\input{title}
+
+\begin{document}
+
+	\maketitle
+	\thispagestyle{empty}
+	\newpage
+	\setcounter{page}{1}
+
+	\tableofcontents
+	\newpage
+
+	\input{texts/aims}
+	\input{texts/scrum}
+	\input{texts/conversion}
+	% \input{texts/protocol}
+	% \input{texts/auth}
+	\input{texts/logging}
+	\input{texts/process-management}
+	\input{texts/testing}
+	\input{texts/typings}
+	\input{texts/conclusion}
+
+	\appendix
+	\newpage
+	\input{appendix/scrumboard}
+	\newpage
+	\input{appendix/minutes}
+
+	\clearpage
+
+	\nocite{*}
+	\bibliography{biblio}{}
+	\bibliographystyle{plain}
+
+\end{document}

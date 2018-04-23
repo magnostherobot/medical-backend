@@ -8,6 +8,10 @@ dist/
 *.aux
 *.log*
 *.pdf
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
 
 # PostreSQL log files
 POSTGRES_logfile
@@ -24,3 +28,5 @@ docs/
 
 # project files
 files/*
+
+report/deliverable-3/main.synctex.gz
