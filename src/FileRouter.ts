@@ -970,6 +970,10 @@ const postFilePath: Middleware = async(
 			}
 			await res.locals.file.save();
 		}
+		res.locals.data = {
+			id: res.locals.file.uuid,
+			created: true
+		};
 		return next();
 
 	} catch (e) {
