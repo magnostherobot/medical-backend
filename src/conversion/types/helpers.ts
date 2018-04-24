@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { Node } from 'xml-parser';
+import { logger } from '../../logger'
 
 /**
  * Interface used to define the structure of the "supportedViews" section

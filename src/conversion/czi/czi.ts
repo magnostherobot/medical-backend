@@ -3,7 +3,7 @@ import { CZIHeightMap, CZITile,
 import { Dimension, Segment } from '../types/cziBinaryTypings';
 import * as fs from 'fs';
 import { SupportedViews, TileBounds, checkForOutputDirectories, writeJSONToFile, execpaths } from '../types/helpers';
-// import { logger } from '../../logger';
+import { logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
@@ -19,6 +19,9 @@ const exists = require('util').promisify(fs.exists);
 let extractDirectory: string = "";
 let outputImageData: string = "";
 let outputImageDirectory: string = "";
+let supportedViews: SupportedViews;
+let totalSizeX: number = -1;
+let totalSizeY: number = -1;
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 1024;
 const maxZoom: number = 64;
@@ -387,24 +390,6 @@ const cleanSupportedViews: (view: SupportedViews) => void = (
 	}
 };
 
-let totalSizeX: number = -1;
-let totalSizeY: number = -1;
-const supportedViews: SupportedViews = {
-	scalable_image: {
-		width: -1,
-		height: -1,
-		channels: [{
-			channel_id: '-1',
-			channel_name: ''
-		}],
-		metadata: {}
-	}
-};
-if (!supportedViews.scalable_image) {
-	throw new Error("SupportedView.scalable_image does not exist where it should.");
-}
-supportedViews.scalable_image.channels.pop();
-
 /* tslint:disable:curly cyclomatic-complexity */
 /*
  * Function to parse the xml file from the original extraction from CZI,
@@ -693,6 +678,7 @@ const extrapolateDimension: (
 	console.log(`Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
 	// For all rows within the total base pixel height
 	const plane: CZITile[][] = [];
+
 	for (let ys: number = 0; ys < totalSizeY; ys += tileSize) {
 		plane.push(await doOneRow(ys, filteredDataBlocks));
 
@@ -731,31 +717,50 @@ const extrapolateDimension: (
 /**
  * used to write the supported views object to file both in total and "cleaned"
  */
-const createSupportedViewsObject: () => void = async(): Promise<void> => {
-	dataBlocks = require(`${extractDirectory}outputjson.json`)
-		.czi.filter((s: Segment) =>
-			s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty'
-		);
-	// Parse the xml
-	await parseExtractedXML(`${extractDirectory}FILE-META-1.xml`);
+const createSupportedViewsObject: (skipping: boolean) => void = async(skipping: boolean): Promise<void> => {
 
-	// Create the total supported Views object
-    // !!!!! This line was removed in order to reduce the output file size and
-    // !!!!! increase the usability by only giving the striped down version
-	// writeJSONToFile(`${outputImageData}/supported_views.json`, supportedViews);
+		dataBlocks = require(`${extractDirectory}outputjson.json`)
+			.czi.filter((s: Segment) =>
+				s.Id === 'ZISRAWSUBBLOCK' && s.Data.Data !== 'empty'
+			);
 
-	// Cleanup and create "smart" supported views object without whole metadata
-	cleanSupportedViews(supportedViews);
-	if (!supportedViews.scalable_image) {
-		throw new Error("SupportedView.scalable_image does not exist where it should.");
-	}
-	supportedViews.scalable_image.metadata = {
-		tile_size: tileSize,
-		max_zoom: maxZoom,
-		tile_overlap: tileOverlap
-	};
-	writeJSONToFile(
-		`${outputImageData}/supported_views.json`, supportedViews);
+		if (!skipping) {
+			supportedViews = {
+				scalable_image: {
+					width: -1,
+					height: -1,
+					channels: [{
+						channel_id: '-1',
+						channel_name: ''
+					}],
+					metadata: {}
+				}
+			};
+			if (!supportedViews.scalable_image) {
+				throw new Error("SupportedView.scalable_image does not exist where it should.");
+			}
+			supportedViews.scalable_image.channels.pop();
+
+			// Parse the xml
+			await parseExtractedXML(`${extractDirectory}FILE-META-1.xml`);
+
+			// Create the total supported Views object
+			// !!!!! This line was removed in order to reduce the output file size and
+			// !!!!! increase the usability by only giving the striped down version
+			// writeJSONToFile(`${outputImageData}/supported_views.json`, supportedViews);
+
+			// Cleanup and create "smart" supported views object without whole metadata
+			cleanSupportedViews(supportedViews);
+			if (!supportedViews.scalable_image) {
+				throw new Error("SupportedView.scalable_image does not exist where it should.");
+			}
+			supportedViews.scalable_image.metadata = {
+				tile_size: tileSize,
+				max_zoom: maxZoom,
+				tile_overlap: tileOverlap
+			};
+			writeJSONToFile(`${outputImageData}/supported_views.json`, supportedViews);
+		}
 };
 
 /**
@@ -763,7 +768,7 @@ const createSupportedViewsObject: () => void = async(): Promise<void> => {
  */
 const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> => {
 	// Set some variables for errors and and percent counts
-	let errorOccurred: boolean = false;
+	let successfulBuild: boolean = false;
 	finalCZIJson.zoom_level_count = Math.log2(maxZoom) + 1;
 
 	// For all channels in the base image
@@ -772,8 +777,8 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 	}
 	for (const cval of supportedViews.scalable_image.channels) {
 
-		errorOccurred = false;
-		if (!errorOccurred) {
+		successfulBuild = true;
+		if (successfulBuild) {
 			// Extract the base tiles and build up custom pyramid data
 			await extrapolateDimension(
 				Number.parseInt(cval.channel_id, 10),
@@ -789,7 +794,7 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 					if (err) {
 						console.error(err.message);
 					}
-					errorOccurred = true;
+					successfulBuild = false;
 				}
 			);
 		} else {
@@ -801,19 +806,15 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 	}
 	finalCZIJson.complete = true;
 	writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
-	return errorOccurred;
+	return successfulBuild;
 };
 
 const initialExtractAndConvert: (absFilePath: string, space: string) => Promise<void> = async (absFilePath: string, space: string): Promise<void> => {
 
-	outputImageData = space;
-	extractDirectory = outputImageData + "/extract/";
-	outputImageDirectory = outputImageData + "/data/";
-
 	checkForOutputDirectories([outputImageData, extractDirectory]);
-	console.log(">> This will complete at roughly 2GB/min");
-	shell.exec(`${execpaths} CZICrunch ${absFilePath} ${extractDirectory}`);
+	logger.silly(">> This will complete at roughly 2GB/min");
 
+	shell.exec(`${execpaths} CZICrunch ${absFilePath} ${extractDirectory}`);
 	shell.exec(`${execpaths} python3 convertJxrs.py ${extractDirectory}`);
 
 	// let totalFiles: number = 0, counter: number = 0;
@@ -857,31 +858,57 @@ process.on("warning", (err: any) => console.warn(err))
  * extraction.
  */
 export const main: (original: string, space:string) => Promise<void> = async (original: string, space:string): Promise<void> => {
-	console.log('\n');
+
+let fileName: string = `CZI: ${original.split('/')[original.split('/').length - 1]}`;
+logger.notice("CZI Convertor Received new file: " + fileName);
 
 	try {
-		console.log('>> Extracting from CZI and Converting to PNG');
-		await initialExtractAndConvert(original, space);
+		outputImageData = space;
+		extractDirectory = outputImageData + "/extract/";
+		outputImageDirectory = outputImageData + "/data/";
 
-		console.log('\n>> Checking/Creating output directories...');
-		checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
+		if (!(await exists(`${outputImageData}/supported_views.json`))) {
+			logger.info(`${fileName} > Begin Extracting and Converting to PNG`);
+			await initialExtractAndConvert(original, space);
 
-		console.log('\n>> Creating Supported Views and writing files...');
-		await createSupportedViewsObject();
+			logger.info(`${fileName} > Checking/Creating output directories...`);
+			checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
 
-		console.log('\n');
+			logger.info(`${fileName} > Creating Supported Views and writing files...`);
+			await createSupportedViewsObject(false);
+		} else {
+			logger.alert("It appears as though this CZI has already been extracted, loading files...");
+			await createSupportedViewsObject(true);
+			supportedViews = require(`${outputImageData}/supported_views.json`);
+		}
+
+		if (!supportedViews.scalable_image) {
+			throw new Error("lol this wont ever show :)");
+		}
+		totalSizeX = supportedViews.scalable_image.width;
+		totalSizeY = supportedViews.scalable_image.height;
+
 		if (await buildCustomPyramids()) {
-			console.log('>> Removing the initial extraction bloat');
-			shell.exec(`rm -rf ${outputImageData}/extract/`, { async: true })
+			logger.alert('UNCOMMENT ME AGAIN >> Removing the initial extraction bloat');
+//			shell.exec(`rm -rf ${outputImageData}/extract/`)
 		};
 
-		console.log("\n>> Done");
+		logger.success("\n>> Done");
 	} catch (Err) {
-		console.error("This was a really big boi error, and something is sad: ");
-		console.error(Err);
+		logger.critical("This was a really big boi error, and something is sad: ");
+		logger.critical(Err);
+		throw Err;
 	}
 };
-// main();
+
+
+
+
+
+
+
+console.log("REMEMBER TO REMOVE THE MAIN CALL AGAIN MR GOOSEMUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+main("/cs/scratch/trh/0701.czi", "/cs/scratch/trh/0701-extract");
 
 // /* tslint:disable */
 // async function main2() {
