@@ -9,33 +9,34 @@ class PromisePriorityQueue {
 		for (let i = 1; i <= this.least; ++i) {
 			this.queues[i] = [];
 		}
-		this.priority = this.least;
+	}
+
+	configure(config) {
+		if (config.least) this.least = config.least;
+		if (config.concurrent) this.concurrent = config.concurrent;
 	}
 
 	enqueue(i, p) {
-		if (i < least) {
-			priority = i;
-		}
-		q[i].push(p);
-
-		this.run();
+		return new Promise((res, rej) => {
+			q[i].push([p, res, rej]);
+			this.run();
+		});
 	};
 
 	dequeue() {
-		while(this.priority <= this.least) {
-			if (q[this.priority][0] !== undefined) {
-				return q[this.priority].shift;
+		for (let i = 0; i < this.least; ++i) {
+			if (q[i][0] !== undefined) {
+				return q[i].shift;
 			}
-			this.priority++;
 		}
 		return null;
 	}
 
 	async run() {
 		if (this.running < this.concurrent) {
-			let p;
+			let x;
 			while (this.dequeue()) {
-				await p();
+				await x[0]().then(x[1], x[2]);
 			}
 		}
 	}
