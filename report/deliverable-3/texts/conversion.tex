@@ -112,18 +112,19 @@ up to the next power of two (2048) and collecting 4 images together then scaling
 This process can be repeated for each level of zoom we would like to raise to. This will massively speed up
 the process of searching through base tiles and stitching many together if we pre-process all of the intermediate
 layers. Since most HCI groups are using OpenSeaDragon (which requests things in scales of powers
-of two~\cite{openseadragon}), our approach should be a very fast performer with the trade off of larger up-front processing time.\\
-Indexing into this pyramid will be fast with each request too, as they will be separated by `C' value, which is
-one of the image's layering options, then by zoom level.
+of two~\cite{openseadragon}), our approach should be a very fast performer with the trade off of larger up-front pre-processing time.\\
+Indexing into this pyramid will be extremely fast with each request too, as they will be separated by `C' value, which is
+one of the image's layering options, then by zoom level, then you are straight into the 2d plane.
 
 \subsection{Leica \& Other Formats}
-As Zeiss is such a difficult and mammoth file format almost all of my time was spent dealing with purely this,
-and it is still not even complete yet. However having looked quickly into Leica, there appears to be
-library support, which may make life easier, along with the fact the internal structure appears to be similar to
-a BigTiff. More progress on this format will take place for the next deliverable.
+As Zeiss is such a difficult and mammoth file format almost all of my time was spent dealing with purely this.
+However having looked quickly into Leica, there appears to be
+With Leica files, once more research was done into their format, it was found that they are actually identical
+to BigTiffs, with the only difference being a meta value which is optional in tif is mandatory in Lecia.
 
-As for other image formats such as JPEG, TIFF etc. These are standard formats and so will be trivial to
-convert to our required standard of PNG so is not a significant point of progress currently.
+With this discovered, and with our chosen image processing library `sharp' on hand, which can natively convert Tiff to
+`.dzi' which is the standard that OpenSeaDragon seems to prefer, then if a file was a Lecia it became as trivial to convert
+as other image formats such as JPEG etc.
 
 \subsection{Non image formats (\file{.csv} etc.)}
 As for non image formats such as \file{.csv}, it has been decided that the backend should only be responsible of hosting these
@@ -131,5 +132,26 @@ files, since there is no way that a backend server could possibly predict what t
 Additionally, there are also many cases where an end-user may wish to deliberately store something in a format
 which a backend server checking legitimacy of the file would complain about incorrectly.
 
-The team hasn't really looked into things such as Excel (\file{.xlsx}) files, however again, pre-emptively looking, there seems to
-be fairly wide library support for things like this, so it was not a major concern for this deliverable.
+Another of the client desired file formats support was Excel (\file{.xlsx}). This was fairly easy to complete too.
+We loaded a library that was capable of parsing the binary and transforming it into an object which is easier to work with.
+This object can then be converted to csv for each sheet in the workbook and various files written and recorded to describe
+how this is lain out.
+
+\subsection{Final Results of conversion}
+With the end of Deliverable 3, we carried out some integration testing.
+Unfortunately we came across a significant number of problems with regards the running of the conversion code through no fault of our own.
+
+For example, the max filesize of postman was exceded with even the smallest of CZI files. The host servers have some process creation limitations
+and therefore do not allow the conversion side of the code to be run on them, as such any and all conversion needed to take place on the
+scratch drive of a local lab machine, which is significantly less powerful, and so all testing took substantial time.
+
+Since we were not able to upload the file directly there needed to be some live editing of our postgres database at run time to full the system
+into beleiving that it had a file uploaded as a CZI. Much to our delight however, we did get a sample of this working, and found a sucessful
+integration with an HCI group, whereby they were able to load the CZI endpoint and zoom and pan the image by requesting tiles precreated by the backend!
+
+The actual computation required to crunch down a CZI file into something that can be easily read and used by the end user is \emph{massive}. Huge amounts
+of testing and raw image computation/buffer manipulation is carried out in order to normalise regions and arrange them in a sensible format.
+From what we can tell of other backend groups, noone else even attempted to get image support for these formats, yet I have achieved full support.
+(albeit in some confined rules of the system environment required to allow the code to actually run).
+
+We are very proud of this level of support, and only wish we had a longer time to test and optimise it further in serving it.

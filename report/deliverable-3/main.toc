@@ -22,18 +22,19 @@
 \contentsline {subsection}{\numberline {7.1}Using Mocha and Postman}{8}{subsection.7.1}
 \contentsline {subsection}{\numberline {7.2}Integration Testing}{8}{subsection.7.2}
 \contentsline {subsubsection}{\numberline {7.2.1}CORS}{8}{subsubsection.7.2.1}
-\contentsline {section}{\numberline {8}Process Management and Deployment}{8}{section.8}
+\contentsline {subsection}{\numberline {7.3}Stress Testing}{8}{subsection.7.3}
+\contentsline {section}{\numberline {8}Process Management and Deployment}{9}{section.8}
 \contentsline {subsection}{\numberline {8.1}Process Manager Selection}{9}{subsection.8.1}
 \contentsline {subsection}{\numberline {8.2}pm2 and KeyMetrics}{9}{subsection.8.2}
-\contentsline {subsection}{\numberline {8.3}Process Limitations}{9}{subsection.8.3}
-\contentsline {subsection}{\numberline {8.4}Heroku Hosting}{9}{subsection.8.4}
-\contentsline {subsection}{\numberline {8.5}External System Hosting}{9}{subsection.8.5}
+\contentsline {subsection}{\numberline {8.3}Process Limitations}{10}{subsection.8.3}
+\contentsline {subsection}{\numberline {8.4}Heroku Hosting}{10}{subsection.8.4}
+\contentsline {subsection}{\numberline {8.5}External System Hosting}{10}{subsection.8.5}
 \contentsline {section}{\numberline {9}Conclusion}{10}{section.9}
-\contentsline {subsection}{\numberline {9.1}Future Development}{10}{subsection.9.1}
-\contentsline {section}{\numberline {10}Individual Contributions}{10}{section.10}
-\contentsline {subsection}{\numberline {10.1}Tom Harley}{10}{subsection.10.1}
-\contentsline {subsection}{\numberline {10.2}Josh Lee}{10}{subsection.10.2}
+\contentsline {subsection}{\numberline {9.1}Future Development}{11}{subsection.9.1}
+\contentsline {section}{\numberline {10}Individual Contributions}{11}{section.10}
+\contentsline {subsection}{\numberline {10.1}Tom Harley}{11}{subsection.10.1}
+\contentsline {subsection}{\numberline {10.2}Josh Lee}{11}{subsection.10.2}
 \contentsline {subsection}{\numberline {10.3}Calum Duff}{11}{subsection.10.3}
 \contentsline {subsection}{\numberline {10.4}Johannes Weck}{11}{subsection.10.4}
-\contentsline {subsection}{\numberline {10.5}Hafeez Abdul-Rehaman}{11}{subsection.10.5}
-\contentsline {section}{\numberline {A}Scrum Board Images}{12}{appendix.A}
+\contentsline {subsection}{\numberline {10.5}Hafeez Abdul-Rehaman}{12}{subsection.10.5}
+\contentsline {section}{\numberline {A}Scrum Board Images}{13}{appendix.A}

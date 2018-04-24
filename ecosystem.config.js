@@ -9,7 +9,7 @@ module.exports = {
 			script: 'src/index.ts',
 			// cwd: '.',
 			args: '',
-			instances: 1,
+			instances: 4,
 			watch: false,
 			ignore_watch: '',
 			max_memory_restart: '1G',
