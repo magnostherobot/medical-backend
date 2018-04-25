@@ -142,7 +142,6 @@ export const saveFile: (data: Buffer, projectName: string,
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	// Write data to file
 	fs.write(fd, data, 0, data.length, Number(fuckingOffset), (err: any, bytesWritten: number, buffer: Buffer) => {
-		console.log("written: " + bytesWritten)
 		if (err) {
 			logger.failure("Error while writing to file: " + err);
 		}
@@ -184,7 +183,6 @@ export const copyFile: (projName: string, fromId: string, toId: string, move?: b
 					if (!!move) {
 						await fs.remove(fromPathFull);
 					}
-					console.log(`copy success of file from \'${fromPathFull}\' to \'${toPathFull}\'`);
 				}).on('error', (err: any) => {
 					logger.error(`Error while copying file: ${err}`);
 				});

@@ -19,6 +19,7 @@
     "lint": "yarn _lint --fix --force './src/**/*.ts'",
     "lint:tests": "yarn _lint --fix --force './test/**/*.ts'",
     "start": "pm2 restart ecosystem.config.js",
+    "reload": "pm2 reload ecosystem.config.js",
     "stop": "pm2 stop all",
     "console": "pm2 monit"
   },
