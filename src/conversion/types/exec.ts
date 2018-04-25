@@ -11,6 +11,7 @@ export const exec = (cmd: string): Promise<{
 		if (code === 0) {
 			res(ret);
 		} else {
+			console.log("ERROR EXECING: " + ret)
 			rej(ret);
 		}
 	})

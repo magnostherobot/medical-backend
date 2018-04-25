@@ -13,7 +13,7 @@ import { uuid } from '../../uuid'
 import { queue as jobQueue, Promiser as Job } from '../../ppq'
 import { profiler } from '../../profiler';
 import { exec } from '../types/exec'
-sharp.concurrency(4);
+sharp.concurrency(2);
 
 let log: Logger;
 const readFile = require('util').promisify(fs.readFile);
@@ -571,7 +571,7 @@ const zoomTier: (
 				await jobQueue.enqueue(5, fullTileQuadRef.toFile as Job<sharp.OutputInfo>, fullTileQuadRef,
 					`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
 			}
-			fs.unlink(`rm ${outputFileName}`, (err) => {
+			fs.unlink(`${outputFileName}`, (err) => {
 				log.warn(fileName + ' Error when deleting redundant resource: \n' + err.stack)
 			});
 
@@ -838,8 +838,8 @@ const initialExtractAndConvert: (absFilePath: string, space: string) => Promise<
 	checkForOutputDirectories([outputImageData, extractDirectory]);
 	log.silly(`${fileName} > This will complete at roughly 2GB/min`);
 
-	shell.exec(`${execpaths} CZICrunch ${absFilePath} ${extractDirectory}`);
-	shell.exec(`${execpaths} python3 ./ext/bin/convertJxrs.py ${extractDirectory}`);
+	exec(`${execpaths} CZICrunch "${absFilePath}" "${extractDirectory}"`);
+	exec(`${execpaths} python3 ./ext/bin/convertJxrs.py "${extractDirectory}"`);
 
 	// let totalFiles: number = 0, counter: number = 0;
 	// console.log("=========== BEGIN JXR CONVERSION ===========")
@@ -931,8 +931,8 @@ log.notice("CZI Convertor Received new file: " + fileName);
 
 
 
-console.log("REMEMBER TO REMOVE THE MAIN CALL AGAIN MR GOOSEMUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-main("/cs/scratch/cjd24/0701.czi", "/cs/scratch/cjd24/0701-extract");
+// console.log("REMEMBER TO REMOVE THE MAIN CALL AGAIN MR GOOSEMUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+// main("/cs/scratch/cjd24/0701.czi", "/cs/scratch/cjd24/0701-extract");
 
 // /* tslint:disable */
 // async function main2() {
