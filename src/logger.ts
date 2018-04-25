@@ -121,12 +121,12 @@ const consoleTransport: winston.TransportInstance =
 	handleExceptions: true,
 	humanReadableUncaughtException: true,
 	formatter: (
-		{ level, message }:
-			{ level: string; message: string }
+		{ level, message, meta }:
+			{ level: string; message: string, meta: any }
 	): string => {
 		let out: string = '';
 		const stamp: string = new Date().toLocaleTimeString();
-		out += `[${LOG_LEVEL_COLOURS[level](`${stamp} ${level}`)}] `;
+		out += `[${LOG_LEVEL_COLOURS[level](`${stamp} ${level}`)}${meta.component ? ` ${meta.component}` : ''}] `;
 		out += (level === 'critical')
 			? colors.red(message)
 			: message;
@@ -238,8 +238,8 @@ const queryLogger: winston.LoggerInstance = new winston.Logger({
 
 type LogFunction = (message: string, meta?: LoggingMetadata) => void;
 
-const makeLogFunction: (level: LogLevel) => LogFunction = (
-	level: LogLevel
+const makeLogFunction: (level: LogLevel, defaults: LoggingMetadata) => LogFunction = (
+	level: LogLevel, defaults: LoggingMetadata
 ): LogFunction => {
 	return (
 		message: string, meta: LoggingMetadata = {}
@@ -247,9 +247,9 @@ const makeLogFunction: (level: LogLevel) => LogFunction = (
 		if (!enabled) {
 			return;
 		}
-		meta.user = meta.user || '_BE4_system';
-		meta.component = meta.component || 'core';
-		basicLogger.log(level, message, meta);
+		meta.user = meta.user || defaults.user ||'_BE4_system';
+		meta.component = meta.component || defaults.component || 'core';
+		basicLogger.log(level, message, { ...defaults, ...meta });
 	};
 };
 
@@ -293,8 +293,55 @@ const fetchLogs2: (level?: LogLevel, params?: FetchParams) => Promise<LogItem[]>
 };
 /* tslint:enable */
 
-export const logger: {
-	7: LogFunction;
+export const setDefaults: (defaults: LoggingMetadata) => Logger = (
+    defaults: LoggingMetadata
+): Logger => {
+    return {
+    	7: makeLogFunction('7', defaults),
+    	debug: makeLogFunction('debug', defaults),
+    	minor: makeLogFunction('minor', defaults),
+    	silly: makeLogFunction('silly', defaults),
+    	testing: makeLogFunction('testing', defaults),
+    	verbose: makeLogFunction('verbose', defaults),
+    	6: makeLogFunction('6', defaults),
+    	information: makeLogFunction('information', defaults),
+    	inform: makeLogFunction('inform', defaults),
+    	info: makeLogFunction('info', defaults),
+    	5: makeLogFunction('5', defaults),
+    	note: makeLogFunction('note', defaults),
+    	notice: makeLogFunction('notice', defaults),
+    	notify: makeLogFunction('notify', defaults),
+    	success: makeLogFunction('success', defaults),
+    	security: makeLogFunction('security', defaults),
+    	4: makeLogFunction('4', defaults),
+    	warn: makeLogFunction('warn', defaults),
+    	warning: makeLogFunction('warning', defaults),
+    	3: makeLogFunction('3', defaults),
+    	err: makeLogFunction('err', defaults),
+    	failure: makeLogFunction('failure', defaults),
+    	fail: makeLogFunction('fail', defaults),
+    	error: makeLogFunction('error', defaults),
+    	2: makeLogFunction('2', defaults),
+    	crit: makeLogFunction('crit', defaults),
+    	severe: makeLogFunction('severe', defaults),
+    	critical: makeLogFunction('critical', defaults),
+    	1: makeLogFunction('1', defaults),
+    	alert: makeLogFunction('alert', defaults),
+    	breach: makeLogFunction('breach', defaults),
+    	0: makeLogFunction('0', defaults),
+    	fatal: makeLogFunction('fatal', defaults),
+    	emerg: makeLogFunction('emerg', defaults),
+    	emergency: makeLogFunction('emergency', defaults),
+    	shutdown: makeLogFunction('shutdown', defaults),
+    	isEnabled: (): boolean => !basicFileTransport.silent,
+    	forward: forwardLog,
+    	fetch: fetchLogs2,
+		for: setDefaults
+    }
+}
+
+export interface Logger {
+    7: LogFunction;
 	debug: LogFunction;
 	minor: LogFunction;
 	silly: LogFunction;
@@ -333,47 +380,10 @@ export const logger: {
 	isEnabled: () => boolean;
 	forward: (level: LogLevel, message: string, meta: LoggingMetadata) => void;
 	fetch: (level: LogLevel, params?: FetchParams) => Promise<LogItem[]>;
-} = {
-	7: makeLogFunction('7'),
-	debug: makeLogFunction('debug'),
-	minor: makeLogFunction('minor'),
-	silly: makeLogFunction('silly'),
-	testing: makeLogFunction('testing'),
-	verbose: makeLogFunction('verbose'),
-	6: makeLogFunction('6'),
-	information: makeLogFunction('information'),
-	inform: makeLogFunction('inform'),
-	info: makeLogFunction('info'),
-	5: makeLogFunction('5'),
-	note: makeLogFunction('note'),
-	notice: makeLogFunction('notice'),
-	notify: makeLogFunction('notify'),
-	success: makeLogFunction('success'),
-	security: makeLogFunction('security'),
-	4: makeLogFunction('4'),
-	warn: makeLogFunction('warn'),
-	warning: makeLogFunction('warning'),
-	3: makeLogFunction('3'),
-	err: makeLogFunction('err'),
-	failure: makeLogFunction('failure'),
-	fail: makeLogFunction('fail'),
-	error: makeLogFunction('error'),
-	2: makeLogFunction('2'),
-	crit: makeLogFunction('crit'),
-	severe: makeLogFunction('severe'),
-	critical: makeLogFunction('critical'),
-	1: makeLogFunction('1'),
-	alert: makeLogFunction('alert'),
-	breach: makeLogFunction('breach'),
-	0: makeLogFunction('0'),
-	fatal: makeLogFunction('fatal'),
-	emerg: makeLogFunction('emerg'),
-	emergency: makeLogFunction('emergency'),
-	shutdown: makeLogFunction('shutdown'),
-	isEnabled: (): boolean => !basicFileTransport.silent,
-	forward: forwardLog,
-	fetch: fetchLogs2
-};
+	for: (defaults: LoggingMetadata) => Logger;
+}
+
+export const logger: Logger = setDefaults({ user: '_BE4_system', component: 'core' });
 
 export const logQuery: (query: string, duration: string) => void = (
 	query: string, duration: string

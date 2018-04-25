@@ -22,3 +22,5 @@ PATH="$PATH:$PWD/ext/bin"
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/ext/lib"
 
 gcc -Wall -Wextra --pedantic -std=c99 ./src/conversion/czi/cziconvert.c -o ./ext/bin/CZICrunch
+
+cp ./src/conversion/czi/convertJxrs.py ./ext/bin/convertJxrs.py

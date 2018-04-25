@@ -3,17 +3,28 @@ import { CZIHeightMap, CZITile,
 import { Dimension, Segment } from '../types/cziBinaryTypings';
 import * as fs from 'fs';
 import { SupportedViews, TileBounds, checkForOutputDirectories, writeJSONToFile, execpaths } from '../types/helpers';
-import { logger } from '../../logger';
+import { logger, Logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
 import { isTileRelated, regionToExtract } from './tileExtraction';
 import * as parsexml from 'xml-parser';
 import { uuid } from '../../uuid'
+import { queue as jobQueue, Promiser as Job } from '../../ppq'
+import { profiler } from '../../profiler';
+import { exec } from '../types/exec'
+sharp.concurrency(4);
 
+let log: Logger;
 const readFile = require('util').promisify(fs.readFile);
 const readdir = require('util').promisify(fs.readdir);
 const exists = require('util').promisify(fs.exists);
+
+const queueSize = profiler.metric({
+	name: "Queued Image Jobs",
+	agg_type: "sum",
+	value   : () => jobQueue.size
+})
 
 // Various constants for placing files and defining tiles
 let extractDirectory: string = "";
@@ -22,6 +33,7 @@ let outputImageDirectory: string = "";
 let supportedViews: SupportedViews;
 let totalSizeX: number = -1;
 let totalSizeY: number = -1;
+let fileName: string = "unset filename";
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 1024;
 const maxZoom: number = 64;
@@ -220,19 +232,19 @@ const findRegionToExtract: (
 		for (const segCol of segRow) {
 			// Find out the region of the base tile to be added to the new image
 			chunkToExtract = findRegionToExtract(segCol, desiredRegion);
+			let localSharp: SharpInstance = sharp(`${extractDirectory}${segCol.Data.Data}`);
 			// Extract this section of image data into a sharp buffer
-			let data: Promise<Buffer> =
-				sharp(`${extractDirectory}${segCol.Data.Data}`)
+			let data: Job<Buffer> =
+				localSharp
 				.extract({
 					left: chunkToExtract.left,
 					top: chunkToExtract.top,
 					width: chunkToExtract.right - chunkToExtract.left,
 					height: chunkToExtract.bottom - chunkToExtract.top
-				})
-				.toBuffer();
+				}).toBuffer;
 
 			// Push this data into the row buffer
-			tileRow.push(await data);
+			tileRow.push(await jobQueue.enqueue(10, data, localSharp));
 		}
 
 		// Prepare variables to squash all of the column data into one, for this row
@@ -240,7 +252,7 @@ const findRegionToExtract: (
 		const bufferBound: TileBounds = findRegionToExtract(segRow[0], desiredRegion);
 		// Check if the inital chunk needs to be extended to support the other columns
 		if ((bufferBound.right - bufferBound.left) < (tileSize - tileOverlap)) {
-			imageVerticalSlice = await imageVerticalSlice.extend({
+			imageVerticalSlice = imageVerticalSlice.extend({
 				top: 0,
 				left: 0,
 				bottom: 0,
@@ -249,7 +261,7 @@ const findRegionToExtract: (
 		}
 		// For every column along this row, join it to the previous column data
 		for (let index: number = 1; index < segRow.length; index++) {
-			imageVerticalSlice = await imageVerticalSlice
+			imageVerticalSlice = imageVerticalSlice
 				.overlayWith(tileRow[index], {
 					top: 0,
 					left: (bufferBound.right - bufferBound.left)
@@ -258,7 +270,7 @@ const findRegionToExtract: (
 		}
 
 		// Add this horizontal data buffer to the vertical buffer
-		tileVerticalBuffer.push(await imageVerticalSlice.toBuffer());
+		tileVerticalBuffer.push(await jobQueue.enqueue(10, imageVerticalSlice.toBuffer as Job<Buffer>, imageVerticalSlice));
 	}
 
 	// Prepare variables used to combine all rows into one image
@@ -267,7 +279,7 @@ const findRegionToExtract: (
 		findRegionToExtract(segments[0][0], desiredRegion);
 	// Check if the inital row needs to be extended to support further rows
 	if ((bufferBound.bottom - bufferBound.top) < (tileSize - tileOverlap)) {
-		finalImage = await finalImage
+		finalImage = finalImage
 							.background({
 								r: 0,
 								g: 0,
@@ -288,7 +300,7 @@ const findRegionToExtract: (
 	}
 
 	// Return the finalised image.
-	if ((await finalImage.metadata()).channels != 4) {
+	if ((await jobQueue.enqueue(5, finalImage.metadata as Job<sharp.Metadata>, finalImage)).channels != 4) {
 		return sharp(Buffer.alloc(tileSize, tileSize), {
 			create: {
 				width: tileSize,
@@ -296,7 +308,7 @@ const findRegionToExtract: (
 				channels: 4,
 				background: { r: 0, g: 0, b: 0, alpha: 1 }
 			}
-		}).overlayWith(await finalImage.toBuffer())
+		}).overlayWith(await jobQueue.enqueue(5, finalImage.toBuffer as Job<Buffer>, finalImage));
 	} else {
 		return finalImage;
 	}
@@ -527,7 +539,7 @@ const zoomTier: (
 			}
 
 			let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`;
-			shell.exec(`${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`, {silent: true});
+			await jobQueue.enqueue(4, exec, null, `${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
 
 			// Rescale and push to file
 			if (quadrentCount !== 3) {
@@ -539,20 +551,29 @@ const zoomTier: (
 					extRight = tileSize;
 				}
 
-				sharp(await sharp(outputFileName)
+				let fullTileQuadRef: SharpInstance = sharp(outputFileName)
 					.background({r: 0, g: 0, b: 0, alpha: 1})
 					.extend({
 						top: 0, left: 0,
 						bottom: extBottom, right: extRight
-					}).toBuffer())
-					.resize(tileSize, tileSize)
-					.toFile(`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+					});
+				let fullTileQuad: Buffer = await jobQueue.enqueue(5, fullTileQuadRef.toBuffer as Job<Buffer>, fullTileQuadRef);
+
+				let rescaledTileQuadRef: SharpInstance = sharp(fullTileQuad)
+					.resize(tileSize, tileSize);
+
+				await jobQueue.enqueue(5, rescaledTileQuadRef.toFile as Job<sharp.OutputInfo>, rescaledTileQuadRef,
+					`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
 			} else {
-				await sharp(outputFileName)
+				let fullTileQuadRef: SharpInstance = sharp(outputFileName)
 					.resize(tileSize, tileSize)
-					.toFile(`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+
+				await jobQueue.enqueue(5, fullTileQuadRef.toFile as Job<sharp.OutputInfo>, fullTileQuadRef,
+					`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
 			}
-			shell.exec(`rm ${outputFileName}`, {silent: true});
+			fs.unlink(`rm ${outputFileName}`, (err) => {
+				log.warn(fileName + ' Error when deleting redundant resource: \n' + err.stack)
+			});
 
 			finalCZIJson.total_files++;
 			return {
@@ -580,7 +601,7 @@ const zoomTier: (
 	// Check the condition where another zoom level does not make sense
 	if (previousHeightMap.plane.length === 1
 	 && previousHeightMap.plane[0].length === 1) {
-		console.log(
+		log.notice(fileName +
 			'         Task(1/1):     ' +
 			'Stage 100% complete. ' +
 			'Stage was skipped as maximum sensible zoom level was reached.'
@@ -593,7 +614,7 @@ const zoomTier: (
 	for (let ys: number = 0; ys < previousHeightMap.plane.length; ys += 2) {
 		newplane.push(await squashRow(previousHeightMap.plane, ys, p));
 
-		console.log(
+		log.debug(fileName +
 			`         Task(${ys / 2 + 1}/${
 				Math.floor(previousHeightMap.plane.length / 2) + 1}):     ` +
 			`Stage ${Math.ceil(((ys / previousHeightMap.plane.length)
@@ -669,13 +690,13 @@ const extrapolateDimension: (
 			getDimension(item, 'C').Start === cVal
 	);
 	// Begin output for the base tier
-	console.log('=========================================================');
-	console.log(`>>    Beginning Dimension Extrapolation for \'C\' : ${cVal}`);
-	console.log('=========================================================');
-	console.log('>> Computing base tier, this will take a while...\n');
+	// console.log('=========================================================');
+	log.notify(`${fileName} > Beginning Dimension Extrapolation for \'C\' : ${cVal}`);
+	// console.log('=========================================================');
+	// console.log('>> Computing base tier, this will take a while...\n');
 	const baseCZIHeightMap: CZIHeightMap = {zoom_level: 1, plane: []};
 
-	console.log(`Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
+	log.notify(`${fileName} > Stage (${cVal * Math.log2(maxZoom) + 1}/${totalCs}):`);
 	// For all rows within the total base pixel height
 	const plane: CZITile[][] = [];
 
@@ -683,7 +704,7 @@ const extrapolateDimension: (
 		plane.push(await doOneRow(ys, filteredDataBlocks));
 
 		process.stdout.write("\r");
-		console.log(
+		log.info(fileName +
 			`         Task(${ys / tileSize}/${Math.ceil(totalSizeY / tileSize)}):     ` +
 			`Stage ${Math.ceil(((ys / totalSizeY) * 100) * 100) / 100}% complete. `
 		);
@@ -693,13 +714,13 @@ const extrapolateDimension: (
 	baseCZIHeightMap.tile_width_count = baseCZIHeightMap.plane[0].length;
 
 	// BUILD UP THE HIGHER ZOOM LAYERS.
-	console.log(`>> Base tier complete for \'C\': ${cVal
-		}; Begin computing zoom tiers...\n`);
+	// console.log(`>> Base tier complete for \'C\': ${cVal
+	// 	}; Begin computing zoom tiers...\n`);
 
 	const retHeightMap: CZIHeightMap[] = [baseCZIHeightMap];
 	writeJSONToFile(`${outputImageData}/intermediate-stage-map.json`, retHeightMap);
 	for (let stage: number = 1; stage <= Math.log2(maxZoom); stage++) {
-		console.log(`Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
+		log.notify(`${fileName} > Stage (${cVal * Math.log2(maxZoom) + 1 + stage}/${totalCs}):`);
 		await zoomTier(retHeightMap[stage - 1], stage, cVal)
 		.then((v: CZIHeightMap) => {
 				retHeightMap.push(v);
@@ -709,7 +730,7 @@ const extrapolateDimension: (
 		writeJSONToFile(`${outputImageData}/intermediate-stage-map.json`, retHeightMap);
 	}
 
-	console.log(`>> Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
+	log.notify(`${fileName} > Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
 	return retHeightMap;
 };
 
@@ -793,18 +814,21 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 					// On error, write the error to console and set an error true.
 					if (err) {
 						console.error(err.message);
+						console.log(err);
 					}
 					successfulBuild = false;
 				}
 			);
 		} else {
-			console.error(`\nAn error occurred while extracting dimension: ${cval}`);
-			console.error('Skipping futher elements and moving to next dimension.\n\n');
+			log.error(`${fileName} > An error occurred while extracting dimension: ${cval}`);
+			log.warn(`${fileName} > Skipping futher elements and moving to next dimension.\n\n`);
 		}
 		// Write the final json data to file with most recent changes
 		writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
 	}
-	finalCZIJson.complete = true;
+	if (successfulBuild) {
+		finalCZIJson.complete = true;
+	}
 	writeJSONToFile(`${outputImageData}/layout.json`, finalCZIJson);
 	return successfulBuild;
 };
@@ -812,10 +836,10 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 const initialExtractAndConvert: (absFilePath: string, space: string) => Promise<void> = async (absFilePath: string, space: string): Promise<void> => {
 
 	checkForOutputDirectories([outputImageData, extractDirectory]);
-	logger.silly(">> This will complete at roughly 2GB/min");
+	log.silly(`${fileName} > This will complete at roughly 2GB/min`);
 
 	shell.exec(`${execpaths} CZICrunch ${absFilePath} ${extractDirectory}`);
-	shell.exec(`${execpaths} python3 convertJxrs.py ${extractDirectory}`);
+	shell.exec(`${execpaths} python3 ./ext/bin/convertJxrs.py ${extractDirectory}`);
 
 	// let totalFiles: number = 0, counter: number = 0;
 	// console.log("=========== BEGIN JXR CONVERSION ===========")
@@ -858,9 +882,9 @@ process.on("warning", (err: any) => console.warn(err))
  * extraction.
  */
 export const main: (original: string, space:string) => Promise<void> = async (original: string, space:string): Promise<void> => {
-
-let fileName: string = `CZI: ${original.split('/')[original.split('/').length - 1]}`;
-logger.notice("CZI Convertor Received new file: " + fileName);
+fileName = `${original.split('/')[original.split('/').length - 1]}`;
+log = logger.for({component: "CZI Crunch", targetFile: original});
+log.notice("CZI Convertor Received new file: " + fileName);
 
 	try {
 		outputImageData = space;
@@ -868,16 +892,16 @@ logger.notice("CZI Convertor Received new file: " + fileName);
 		outputImageDirectory = outputImageData + "/data/";
 
 		if (!(await exists(`${outputImageData}/supported_views.json`))) {
-			logger.info(`${fileName} > Begin Extracting and Converting to PNG`);
+			log.info(`${fileName} > Begin Extracting and Converting to PNG`);
 			await initialExtractAndConvert(original, space);
 
-			logger.info(`${fileName} > Checking/Creating output directories...`);
+			log.info(`${fileName} > Checking/Creating output directories...`);
 			checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
 
-			logger.info(`${fileName} > Creating Supported Views and writing files...`);
+			log.info(`${fileName} > Creating Supported Views and writing files...`);
 			await createSupportedViewsObject(false);
 		} else {
-			logger.alert("It appears as though this CZI has already been extracted, loading files...");
+			log.alert("It appears as though this CZI has already been extracted, loading files...");
 			await createSupportedViewsObject(true);
 			supportedViews = require(`${outputImageData}/supported_views.json`);
 		}
@@ -889,14 +913,14 @@ logger.notice("CZI Convertor Received new file: " + fileName);
 		totalSizeY = supportedViews.scalable_image.height;
 
 		if (await buildCustomPyramids()) {
-			logger.alert('UNCOMMENT ME AGAIN >> Removing the initial extraction bloat');
+			log.alert(`UNCOMMENT ME AGAIN ${fileName} > Removing the initial extraction bloat`);
 //			shell.exec(`rm -rf ${outputImageData}/extract/`)
 		};
 
-		logger.success("\n>> Done");
+		log.success(`${fileName} > Done`);
 	} catch (Err) {
-		logger.critical("This was a really big boi error, and something is sad: ");
-		logger.critical(Err);
+		log.critical(`${fileName} > This was a really big boi error, and something is sad: `);
+		log.critical(Err);
 		throw Err;
 	}
 };
@@ -908,7 +932,7 @@ logger.notice("CZI Convertor Received new file: " + fileName);
 
 
 console.log("REMEMBER TO REMOVE THE MAIN CALL AGAIN MR GOOSEMUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-main("/cs/scratch/trh/0701.czi", "/cs/scratch/trh/0701-extract");
+main("/cs/scratch/cjd24/0701.czi", "/cs/scratch/cjd24/0701-extract");
 
 // /* tslint:disable */
 // async function main2() {

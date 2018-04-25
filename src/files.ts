@@ -420,6 +420,7 @@ export const views: {
 					throw Err;
 				}
 			} else {
+				logger.debug("CACHE HIT for image tile!");
 				cacheHits.inc();
 			}
 			return await readFile(cacheHit);

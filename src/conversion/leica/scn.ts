@@ -68,6 +68,9 @@ const crunchLeica: () => Promise<string> = async (): Promise<string> => {
 					metadata: {}
 				})
 			}
+			if (!supportedViews.scalable_image) {
+				throw new Error("Not a scalable image");
+			}
 			supportedViews.scalable_image.channels = channels;
 		}
 

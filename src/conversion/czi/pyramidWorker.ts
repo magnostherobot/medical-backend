@@ -1,12 +1,16 @@
 import { WholeCZIHierarchy, CZIHeightMap, CZITile, CZITileRequest } from '../types/customPyramidIndex';
 import { TileBounds, execpaths } from '../types/helpers';
 import * as sharp from 'sharp';
+import { SharpInstance } from 'sharp';
 import { isTileRelated } from './tileExtraction';
 import { uuid } from '../../uuid'
 import * as fs from 'fs';
 import { RequestError } from '../../errors'
-import { logger } from '../../logger'
+import { logger, Logger } from '../../logger'
+import { exec } from '../types/exec'
+import { queue as jobQueue, Promiser as Job } from '../../ppq'
 const readFile = require('util').promisify(fs.readFile);
+const log: Logger = logger.for({component: "CZI Live Server"});
 
 const findRelatedTiles: Function = function(plane: CZIHeightMap, desired: TileBounds): CZITile[][] {
 
@@ -37,7 +41,7 @@ const findRelatedTiles: Function = function(plane: CZIHeightMap, desired: TileBo
 };
 
 export const getTile: Function = async function(imageDir: string, cVal: string, x:number = 0, y:number = 0, w:number = 1024, h:number = 1024, zoom: number = 1): Promise<CZITileRequest> {
-	let layout: WholeCZIHierarchy = JSON.parse(await readFile(imageDir + "/layout.json", 'utf8'));
+	let layout: WholeCZIHierarchy = JSON.parse(await jobQueue.enqueue(2, readFile, null, imageDir + "/layout.json", 'utf8'));
 	if (!layout.complete) {
 		throw new RequestError(400, "conversion_incomplete")
 	}
@@ -59,7 +63,6 @@ export const getTile: Function = async function(imageDir: string, cVal: string, 
 		throw new RequestError(400, "bad_zoom_index")
 	}
 	let reqRes: CZITileRequest = await getFinalTile(imageDir, map, cVal, bound);
-	logger.verbose(JSON.stringify(reqRes))
 	return reqRes;
 }
 
@@ -75,19 +78,19 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	let id: string = uuid.generate();
 	let intermediateFileName: string = `${imageDir}tmp/${id}.png`
 	let outputFileName: string = `${imageDir}tmp/${id}-out.png`
-	require('shelljs').exec(`${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${imageTier.plane[0].length}`)
+	await jobQueue.enqueue(2, exec, null, `${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${imageTier.plane[0].length}`);
 
 
 	desiredRegion.scaleDown(imageTier.zoom_level);
 
-	await sharp(intermediateFileName)
+	let final: SharpInstance = sharp(intermediateFileName)
 		.extract({
 			top: desiredRegion.top,
 			left: desiredRegion.left,
 			width: desiredRegion.width(),
 			height: desiredRegion.height()
-		})
-		.toFile(outputFileName);
+		});
+	await jobQueue.enqueue(2, final.toFile as Job<sharp.OutputInfo>, final, outputFileName);
 
 	fs.unlink(intermediateFileName, (err:any) => {
 		if (err) {
@@ -95,6 +98,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 		}
 	})
 
+	log.info(`Gen new Tile: ${outputFileName}  X:${desiredRegion.left} Y:${desiredRegion.top} W:${desiredRegion.width()} H:${desiredRegion.height()} Z:${cVal}`);
 	return {
 		dimensions: new TileBounds(
 							0, desiredRegion.width(),
