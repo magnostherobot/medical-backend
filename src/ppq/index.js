@@ -19,23 +19,23 @@ class PromisePriorityQueue {
 		if (config.concurrent) this.concurrent = config.concurrent;
 	}
 
-	// enqueue(i, p, t, ...args) {
-	// 	return p.bind(t)(...args);
-	// }
+	enqueue(i, p, t, ...args) {
+		return p.bind(t)(...args);
+	}
 
-	enqueue(i, p, t, ...argv) {
-		this.size++;
-		return new Promise((res, rej) => {
-			this.queues[i-1].push(
-				[
-					p.bind(t, ...argv),
-					res,
-					rej
-				]
-			);
-			this.run();
-		});
-	};
+	// enqueue(i, p, t, ...argv) {
+	// 	this.size++;
+	// 	return new Promise((res, rej) => {
+	// 		this.queues[i-1].push(
+	// 			[
+	// 				p.bind(t, ...argv),
+	// 				res,
+	// 				rej
+	// 			]
+	// 		);
+	// 		this.run();
+	// 	});
+	// };
 
 	dequeue() {
 		for (let i = 0; i < this.least; ++i) {

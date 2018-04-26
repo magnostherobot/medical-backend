@@ -2,9 +2,20 @@
 
 import * as colors from 'colors/safe';
 import * as winston from 'winston';
+import { profiler } from './profiler'
 
 import { logPath } from './files';
 import { QueryOptions } from 'sequelize';
+const dbQuery = profiler.meter({
+	name: "Database Requests Per Minute",
+	samples: 60,
+	timeframe: 60
+})
+const dbTime = profiler.histogram({
+	name: "Time to Serve DB requests (ms)",
+	measurement: "mean",
+	agg_type: "avg"
+})
 
 type Colour = (s: string) => string;
 
@@ -388,6 +399,8 @@ export const logger: Logger = setDefaults({ user: '_BE4_system', component: 'cor
 export const logQuery: (query: string, duration: string) => void = (
 	query: string, duration: string
 ): void => {
+	dbQuery.mark();
+	dbTime.update(Number(duration));
 	queryLogger.info(query, {
 		duration
 	});

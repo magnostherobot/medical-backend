@@ -9,6 +9,7 @@ import { RequestError } from '../../errors'
 import { logger, Logger } from '../../logger'
 import { exec } from '../types/exec'
 import { queue as jobQueue, Promiser as Job } from '../../ppq'
+const shell = require('shelljs');
 const readFile = require('util').promisify(fs.readFile);
 const log: Logger = logger.for({component: "CZI Live Server"});
 
@@ -78,7 +79,16 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	let id: string = uuid.generate();
 	let intermediateFileName: string = `${imageDir}tmp/${id}.png`
 	let outputFileName: string = `${imageDir}tmp/${id}-out.png`
-	await jobQueue.enqueue(2, exec, null, `${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${imageTier.plane[0].length}`);
+	try {
+		await new Promise((res) => {
+			shell.exec(`${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${imageTier.plane[0].length} --vips-concurrency=2`);
+			res();
+		});
+	} catch (err) {
+		if (err) {
+			log.fatal(err);
+		}
+	}
 
 
 	desiredRegion.scaleDown(imageTier.zoom_level);

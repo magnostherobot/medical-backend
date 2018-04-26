@@ -13,9 +13,10 @@ import { uuid } from '../../uuid'
 import { queue as jobQueue, Promiser as Job } from '../../ppq'
 import { profiler } from '../../profiler';
 import { exec } from '../types/exec'
-sharp.concurrency(2);
 
 let log: Logger;
+const THREAD_LIMIT: number = 2;
+sharp.concurrency(THREAD_LIMIT);
 const readFile = require('util').promisify(fs.readFile);
 const readdir = require('util').promisify(fs.readdir);
 const exists = require('util').promisify(fs.exists);
@@ -538,51 +539,64 @@ const zoomTier: (
 				quadrents += `${outputImageDirectory}${previousPlane[ys + 1][xs + 1].file} `;
 			}
 
-			let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`;
-			await jobQueue.enqueue(4, exec, null, `${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across}`);
+            let outputFileName: string =`${outputImageData}/tmp/${uuid.generate()}.png`;
 
-			// Rescale and push to file
-			if (quadrentCount !== 3) {
+            try {
+				await new Promise((res) => {
+	        		shell.exec(`${execpaths} vips arrayjoin "${quadrents}" ${outputFileName} --across ${across} --vips-concurrency=${THREAD_LIMIT}`);
+					res();
+				});
+            } catch (err) {
+                if (err) {
+                    log.fatal(err);
+                }
+            }
 
-				let extRight: number = 0, extBottom: number = 0;
-				if (moreToRight) {
-					extBottom = tileSize;
-				} else if (moreToBottom){
-					extRight = tileSize;
-				}
+            // Rescale and push to file
+    		if (quadrentCount !== 3) {
 
-				let fullTileQuadRef: SharpInstance = sharp(outputFileName)
-					.background({r: 0, g: 0, b: 0, alpha: 1})
-					.extend({
-						top: 0, left: 0,
-						bottom: extBottom, right: extRight
-					});
-				let fullTileQuad: Buffer = await jobQueue.enqueue(5, fullTileQuadRef.toBuffer as Job<Buffer>, fullTileQuadRef);
+    			let extRight: number = 0, extBottom: number = 0;
+    			if (moreToRight) {
+    				extBottom = tileSize;
+    			} else if (moreToBottom){
+    				extRight = tileSize;
+    			}
 
-				let rescaledTileQuadRef: SharpInstance = sharp(fullTileQuad)
-					.resize(tileSize, tileSize);
+    			let fullTileQuadRef: SharpInstance = sharp(outputFileName)
+    				.background({r: 0, g: 0, b: 0, alpha: 1})
+    				.extend({
+    					top: 0, left: 0,
+    					bottom: extBottom, right: extRight
+    				});
+    			let fullTileQuad: Buffer = await jobQueue.enqueue(5, fullTileQuadRef.toBuffer as Job<Buffer>, fullTileQuadRef);
 
-				await jobQueue.enqueue(5, rescaledTileQuadRef.toFile as Job<sharp.OutputInfo>, rescaledTileQuadRef,
-					`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
-			} else {
-				let fullTileQuadRef: SharpInstance = sharp(outputFileName)
-					.resize(tileSize, tileSize)
+    			let rescaledTileQuadRef: SharpInstance = sharp(fullTileQuad)
+    				.resize(tileSize, tileSize);
 
-				await jobQueue.enqueue(5, fullTileQuadRef.toFile as Job<sharp.OutputInfo>, fullTileQuadRef,
-					`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
-			}
-			fs.unlink(`${outputFileName}`, (err) => {
-				log.warn(fileName + ' Error when deleting redundant resource: \n' + err.stack)
-			});
+    			await jobQueue.enqueue(5, rescaledTileQuadRef.toFile as Job<sharp.OutputInfo>, rescaledTileQuadRef,
+    				`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+    		} else {
+    			let fullTileQuadRef: SharpInstance = sharp(outputFileName)
+    				.resize(tileSize, tileSize)
 
-			finalCZIJson.total_files++;
-			return {
-				x_offset: previousPlane[ys][xs].x_offset,
-				y_offset: previousPlane[ys][xs].y_offset,
-				width: previousPlane[ys][xs].width * 2,
-				height: previousPlane[ys][xs].height * 2,
-				file: `img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`
-			};
+    			await jobQueue.enqueue(5, fullTileQuadRef.toFile as Job<sharp.OutputInfo>, fullTileQuadRef,
+    				`${outputImageDirectory}img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`);
+    		}
+
+    		fs.unlink(`${outputFileName}`, (err) => {
+    			if (err) {
+    				log.warn(fileName + ' Error when deleting redundant resource: \n' + err.stack)
+    			}
+    		});
+
+    		finalCZIJson.total_files++;
+    		return {
+    			x_offset: previousPlane[ys][xs].x_offset,
+    			y_offset: previousPlane[ys][xs].y_offset,
+    			width: previousPlane[ys][xs].width * 2,
+    			height: previousPlane[ys][xs].height * 2,
+    			file: `img-c${c}-p${p}-y${ys * tileSize}-x${xs * tileSize}.png`
+    		};
 		}
 
 		const cziRow: Promise<CZITile>[] = [];
@@ -730,7 +744,7 @@ const extrapolateDimension: (
 		writeJSONToFile(`${outputImageData}/intermediate-stage-map.json`, retHeightMap);
 	}
 
-	log.notify(`${fileName} > Completed Extrapolation for dimension, \'C\': ${cVal}\n\n`);
+	log.notify(`${fileName} > Completed Extrapolation for dimension, \'C\': ${cVal}`);
 	return retHeightMap;
 };
 
@@ -814,7 +828,7 @@ const buildCustomPyramids: () => Promise<boolean> = async(): Promise<boolean> =>
 					// On error, write the error to console and set an error true.
 					if (err) {
 						console.error(err.message);
-						console.log(err);
+						console.log(err.stack);
 					}
 					successfulBuild = false;
 				}
@@ -838,8 +852,8 @@ const initialExtractAndConvert: (absFilePath: string, space: string) => Promise<
 	checkForOutputDirectories([outputImageData, extractDirectory]);
 	log.silly(`${fileName} > This will complete at roughly 2GB/min`);
 
-	exec(`${execpaths} CZICrunch "${absFilePath}" "${extractDirectory}"`);
-	exec(`${execpaths} python3 ./ext/bin/convertJxrs.py "${extractDirectory}"`);
+	await exec(`${execpaths} CZICrunch "${absFilePath}" "${extractDirectory}"`);
+	await exec(`${execpaths} python3 ./ext/bin/convertJxrs.py "${extractDirectory}"`);
 
 	// let totalFiles: number = 0, counter: number = 0;
 	// console.log("=========== BEGIN JXR CONVERSION ===========")
@@ -892,16 +906,16 @@ log.notice("CZI Convertor Received new file: " + fileName);
 		outputImageDirectory = outputImageData + "/data/";
 
 		if (!(await exists(`${outputImageData}/supported_views.json`))) {
-			log.info(`${fileName} > Begin Extracting and Converting to PNG`);
+			log.information(`${fileName} > Begin Extracting and Converting to PNG`);
 			await initialExtractAndConvert(original, space);
 
-			log.info(`${fileName} > Checking/Creating output directories...`);
+			log.information(`${fileName} > Checking/Creating output directories...`);
 			checkForOutputDirectories([outputImageDirectory, `${outputImageData}/tmp/`]);
 
-			log.info(`${fileName} > Creating Supported Views and writing files...`);
+			log.information(`${fileName} > Creating Supported Views and writing files...`);
 			await createSupportedViewsObject(false);
 		} else {
-			log.alert("It appears as though this CZI has already been extracted, loading files...");
+			log.notify("It appears as though this CZI has already been extracted, loading files...");
 			await createSupportedViewsObject(true);
 			supportedViews = require(`${outputImageData}/supported_views.json`);
 		}

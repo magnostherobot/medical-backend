@@ -17,7 +17,7 @@ import { SupportedViews } from './conversion/types/helpers'
 import { CZITileRequest } from './conversion/types/customPyramidIndex'
 const readDir = require('util').promisify(fs.readdir);
 const readFile = require('util').promisify(fs.readFile);
-const cache = require('redis').createClient(13337);
+const cache = require('redis').createClient();//13337); //////////////////////////////////////////////////////////////////
 cache.on("error", function(err: any) {
 	logger.error("Redis_Error: " + err);
 })
@@ -137,11 +137,10 @@ export const saveFile: (data: Buffer, projectName: string,
 	if (!!query.truncate) {
 		await truncateFile(fileId, projectName, query.offset || 0);
 	}
-	const fuckingOffset: number = query.offset || 0;
 	// Open file
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	// Write data to file
-	fs.write(fd, data, 0, data.length, Number(fuckingOffset), (err: any, bytesWritten: number, buffer: Buffer) => {
+	fs.write(fd, data, 0, data.length, Number(query.offset || 0), (err: any, bytesWritten: number, buffer: Buffer) => {
 		console.log("written: " + bytesWritten)
 		if (err) {
 			logger.failure("Error while writing to file: " + err);
