@@ -21,11 +21,6 @@ const readFile = require('util').promisify(fs.readFile);
 const readdir = require('util').promisify(fs.readdir);
 const exists = require('util').promisify(fs.exists);
 
-const queueSize = profiler.metric({
-	name: "Queued Image Jobs",
-	agg_type: "sum",
-	value   : () => jobQueue.size
-})
 
 // Various constants for placing files and defining tiles
 let extractDirectory: string = "";
