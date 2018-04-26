@@ -58,16 +58,16 @@ export class TileBounds {
 		return this.bottom - this.top;
 	}
 	public scaleDown(level: number) {
-		this.left = Math.ceil(this.left / level),
-		this.right = Math.ceil(this.right / level),
-		this.top = Math.ceil(this.top / level),
-		this.bottom = Math.ceil(this.bottom / level)
+		this.left = Math.floor(this.left / level),
+		this.right = Math.floor(this.right / level),
+		this.top = Math.floor(this.top / level),
+		this.bottom = Math.floor(this.bottom / level)
 	}
 	public scaleUp(level: number) {
 		this.left = Math.floor(this.left * level),
-		this.right = Math.ceil(this.right * level),
-		this.top = Math.ceil(this.top * level),
-		this.bottom = Math.ceil(this.bottom * level)
+		this.right = Math.floor(this.right * level),
+		this.top = Math.floor(this.top * level),
+		this.bottom = Math.floor(this.bottom * level)
 	}
 }
 

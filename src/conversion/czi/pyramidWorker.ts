@@ -43,7 +43,7 @@ const findRelatedTiles: Function = function(plane: CZIHeightMap, desired: TileBo
 };
 
 export const getTile: Function = async function(imageDir: string, cVal: string, x:number = 0, y:number = 0, w:number = 1024, h:number = 1024, zoom: number = 1): Promise<CZITileRequest> {
-	log = logger.for({component: "CZI Live Server", req: {imageDir: imageDir, cVal: cVal, x:x = 0, y:y = 0, w:w, h:h, zoom: zoom}});
+	log = logger.for({component: "CZI Live Server", req: {imageDir: imageDir, cVal: cVal, x:x, y:y, w:w, h:h, zoom: zoom}});
 
 	let layout: WholeCZIHierarchy = JSON.parse(await jobQueue.enqueue(2, readFile, null, imageDir + "layout.json", 'utf8'));
 	if (!layout.complete) {
@@ -85,7 +85,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 	let outputFileName: string = `${imageDir}tmp/${id}-out.png`
 	try {
 		await new Promise((res) => {
-			shell.exec(`${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${imageTier.plane[0].length} --vips-concurrency=2`);
+			shell.exec(`${execpaths} vips arrayjoin "${involvedTiles}" ${intermediateFileName} --across ${relatedTiles[0].length} --vips-concurrency=2`);
 			res();
 		});
 	} catch (err) {
@@ -118,7 +118,7 @@ const getFinalTile: Function = async function(imageDir: string, imageTier: CZIHe
 		}
 	})
 
-	log.info(`Gen new Tile: ${outputFileName}  X:${desiredRegion.left} Y:${desiredRegion.top} W:${desiredRegion.width()} H:${desiredRegion.height()} Z:${cVal}`);
+	log.debug(`Gen new Tile: X:${desiredRegion.left} Y:${desiredRegion.top} W:${desiredRegion.width()} H:${desiredRegion.height()} Z:${cVal}`);
 	return {
 		dimensions: new TileBounds(
 							0, extractionRegion.width(),

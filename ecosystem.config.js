@@ -8,7 +8,7 @@ module.exports = {
 			name: 'JHBE4',
 			script: 'src/index.ts',
 			args: '',
-			instances: 4,
+			instances: 2,
 			watch: false,
 			ignore_watch: '',
 			max_memory_restart: '1G',
