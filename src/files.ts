@@ -9,7 +9,9 @@ import { default as File } from './db/model/File';
 import { default as Project } from './db/model/Project';
 import { uuid } from './uuid';
 import { main as CZICrunch } from './conversion/czi/czi'
-import { getTile } from './conversion/czi/pyramidWorker'
+import { crunchLeica as SCNCrunch } from './conversion/leica/scn';
+import { getTile as getSCNTile } from './conversion/leica/requestconvertor';
+import { getTile as getCZITile } from './conversion/czi/pyramidWorker'
 import { RequestError } from './errors';
 import { toCSV as excelToCSV, buildSupportedViews } from './conversion/csv/excel';
 import { profiler } from './profiler';
@@ -402,15 +404,30 @@ export const views: {
 
 			if (!cacheHit) {
 				try {
-					let retMe: CZITileRequest = await getTile(
-						path(file.uuid, project.name, 'scalable_image') + '/',
-						query.channel_name,
-						query.x_offset,
-						query.y_offset,
-						query.width,
-						query.height,
-						query.zoom_level
-					);
+					let retMe: CZITileRequest;
+					if (file.originalMimetype.includes('tif')) {
+						retMe = await getSCNTile(
+							path(file.uuid, project.name, 'scalable_image') + '/',
+							query.channel_name,
+							query.x_offset,
+							query.y_offset,
+							query.width,
+							query.height,
+							query.zoom_level
+						);
+					} else if (file.originalMimetype.includes('czi')) {
+						retMe = await getCZITile(
+							path(file.uuid, project.name, 'scalable_image') + '/',
+							query.channel_name,
+							query.x_offset,
+							query.y_offset,
+							query.width,
+							query.height,
+							query.zoom_level
+						);
+					} else {
+						throw new RequestError(400, "bad_tile_mimetype");
+					}
 					avgReqDuration.update(Date.now() - startTime)
 					cache.set(url, retMe.file_path);
 					cacheHit = retMe.file_path;
@@ -435,8 +452,10 @@ export const views: {
 				        return;
 				    }
 				    var buffer = new Buffer(10);
-				    fs.read(fd, buffer, 0, 10, 0, function(err, num) {
+				    fs.read(fd, buffer, 0, 10, 0, async function(err, num) {
 				        logger.debug(buffer.toString('utf8', 0, num));
+						file.originalMimetype = 'image/czi';
+						await file.save();
 						res(buffer.toString('utf8', 0, num) === 'ZISRAWFILE');
 				    });
 				});
@@ -444,11 +463,13 @@ export const views: {
 
 			if (isCZI) {
 				CZICrunch(original, space);
+			} else if (file.originalMimetype.includes('tif')){
+				SCNCrunch(original, space);
 			} else {
 				const mt: string = file.originalMimetype;
 				let validType: boolean = false;
 
-				logger.crit("FILES OTHER THAN CZI CURRENTLY NOT IMPLEMENTED")
+				logger.crit("OTHER FILES CURRENTLY NOT IMPLEMENTED")
 
 				// if (mt.includes("tif")) {
 				// 	await lecialol(original, space, mt);
@@ -526,7 +547,17 @@ class MimeTypeMap extends Map<string, string> {
 
 export const mimes: MimeTypeMap = new MimeTypeMap([
 	[ 'inode/directory', 'directory' ],
-	[ 'text/csv',        'tabular'   ]
+	[ 'text/csv',        'tabular'   ],
+	[ 'application/vnd.ms-excel', 'tabular'],
+	[ 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'tabular'],
+	[ 'application/vnd.oasis.opendocument.text', 'tabular'],
+	[ 'application/vnd.oasis.opendocument.spreadsheet', 'tabular'],
+	[ 'image/leica', 'scalable_image'],
+	[ 'image/zeiss', 'scalable_image'],
+	[ 'image/czi', 'scalable_image'],
+	[ 'image/tif', 'scalable_image'],
+	[ 'image/bigtiff', 'scalable_image'],
+	[ 'image/tiff', 'scalable_image']
 ]);
 
 export const rootPathId: string = '0';

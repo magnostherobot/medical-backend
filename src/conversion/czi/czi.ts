@@ -7,7 +7,7 @@ import { logger, Logger } from '../../logger';
 import * as sharp from 'sharp';
 // tslint:disable-next-line:no-duplicate-imports
 import { SharpInstance } from 'sharp';
-import { isTileRelated, regionToExtract } from './tileExtraction';
+import { isTileRelated, regionToExtract } from '../types/tileExtraction';
 import * as parsexml from 'xml-parser';
 import { uuid } from '../../uuid'
 import { queue as jobQueue, Promiser as Job } from '../../ppq'

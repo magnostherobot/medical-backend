@@ -7,25 +7,15 @@ import { uuid } from '../../uuid'
 import { logger, Logger } from '../../logger';
 let log: Logger;
 
-// CHANGE ME FOR TESTING!!!!!
-const input: string = "diseessse1.scn"
-const baseDirname: string = '/cs/scratch/cjd24/tifers/';
-
-
-
-// Various constants for placing files and defining tiles
-const extensionBinariesDir: string = __dirname + `/../../../ext/bin/`;
-
 const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 512;
-
 
 export const crunchLeica: (original: string, space:string) => Promise<void> = async (original: string, space:string): Promise<void> => {
 	log = logger.for({component: "SCN Crunch", targetFile: original});
 	try {
 		let leica: SharpInstance = sharp(original).png();
 
-		checkForOutputDirectories([space]);
+		checkForOutputDirectories([space, space + "tmp/"]);
 		log.info("Creating new output directory for LECIA > DZI @ " + space);
 
 		let meta: sharp.Metadata = await leica.metadata();
@@ -77,15 +67,14 @@ export const crunchLeica: (original: string, space:string) => Promise<void> = as
 		writeJSONToFile(`${space}/supported_views.json`, supportedViews)
 		log.info("Wrote supported_views object in: " + space);
 
-		await sharp(baseDirname + input)
-			.png()
+		await leica
 			.tile({
 				size: tileSize,
 				overlap: tileOverlap,
 				layout: "dz"
 			})
 			.toFile(`${space}/output`);
-		log.success(`Finalised output of ${input} as .dzi`);
+		log.success(`Finalised output of ${original} as .dzi`);
 	}
 	catch (err) {
 		log.failure(`Lecia conversion failed with error: ${err}`)
