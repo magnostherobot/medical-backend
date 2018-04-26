@@ -469,7 +469,7 @@ export const views: {
 
 			if (isCZI) {
 				CZICrunch(original, space);
-			} else if (file.originalMimetype.includes('tif')){
+			} else if (file.originalMimetype.includes('tif') || file.originalMimetype.includes('leica')){
 				SCNCrunch(original, space);
 			} else {
 				const mt: string = file.originalMimetype;
