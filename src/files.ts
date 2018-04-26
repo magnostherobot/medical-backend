@@ -464,7 +464,7 @@ export const views: {
 						if (type === 'ZISRAWFILE') {
 							file.originalMimetype = 'image/zeiss';
 						} else {
-							file.originalMimetype = 'image/lecia';
+							file.originalMimetype = 'image/leica';
 						}
 						await file.save();
 						res(type === 'ZISRAWFILE');
