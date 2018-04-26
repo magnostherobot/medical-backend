@@ -460,9 +460,14 @@ export const views: {
 				    var buffer = new Buffer(10);
 				    fs.read(fd, buffer, 0, 10, 0, async function(err, num) {
 				        logger.debug(buffer.toString('utf8', 0, num));
-						file.originalMimetype = 'image/czi';
+						let type: string = buffer.toString('utf8', 0, num);
+						if (type === 'ZISRAWFILE') {
+							file.originalMimetype = 'image/zeiss';
+						} else {
+							file.originalMimetype = 'image/lecia';
+						}
 						await file.save();
-						res(buffer.toString('utf8', 0, num) === 'ZISRAWFILE');
+						res(type === 'ZISRAWFILE');
 				    });
 				});
 			});
