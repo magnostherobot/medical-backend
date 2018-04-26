@@ -108,7 +108,7 @@ async function reset(): Promise<void> {
 	});
 
 	const standardProjectUser: ContributorGroup = new ContributorGroup({
-		name: 'standardProjectUser',
+		name: 'regular',
 		canCreateFiles: true,
 		canViewFiles: true,
 		isInternal: false,
@@ -116,14 +116,14 @@ async function reset(): Promise<void> {
 	});
 
 	const readOnlyProjectUser: ContributorGroup = new ContributorGroup({
-		name: 'readOnlyProjectUser',
+		name: 'spectator',
 		canViewFiles: true,
 		isInternal: false,
 		description: 'Allows viewing of files in a project '
 	});
 
 	const projectUserManagement: ContributorGroup = new ContributorGroup({
-		name: 'projectUserManagement',
+		name: 'project_admin',
 		canAddUsers: true,
 		canEditUserPermissions: true,
 		canRemoveUsers: true,

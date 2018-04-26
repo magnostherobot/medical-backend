@@ -183,7 +183,6 @@ export const copyFile: (projName: string, fromId: string, toId: string, move?: b
 					if (!!move) {
 						await fs.remove(fromPathFull);
 					}
-					console.log(`copy success of file from \'${fromPathFull}\' to \'${toPathFull}\'`);
 				}).on('error', (err: any) => {
 					logger.error(`Error while copying file: ${err}`);
 				});

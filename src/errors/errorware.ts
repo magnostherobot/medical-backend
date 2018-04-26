@@ -117,11 +117,12 @@ export type Errorware =
 export const errorHandler: Errorware = (
 	err: Error, req: Request, res: Response, next: NextFunction
 ): void => {
-	logger.failure(`Responded to ${req.ip}`);
 	if (RequestError.is(err)) {
+		logger.failure(`Responded to ${req.ip}`);
 		res.status(err.code)
 			.json(err.responseBlock());
 	} else {
+		logger.error(`Uncaught error: ${err}`);
 		res.status(500).send(err.stack);
 	}
 };

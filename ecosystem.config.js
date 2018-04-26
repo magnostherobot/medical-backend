@@ -7,7 +7,6 @@ module.exports = {
 		{
 			name: 'JHBE4',
 			script: 'src/index.ts',
-			// cwd: '.',
 			args: '',
 			instances: 4,
 			watch: false,

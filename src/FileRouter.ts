@@ -374,8 +374,8 @@ const postUsername: Middleware = async(
 	let user: User | null | undefined = res.locals.user;
 	res.locals.modified = true;
 
-	if( req.query.action === 'update'){
-		if (user!= null){
+	if(req.query.action === 'update') {
+		if (user != null) {
 			logger.debug('Editing user');
 
 			if(req.body.password != null){
@@ -394,18 +394,16 @@ const postUsername: Middleware = async(
 				})
 				await user.$set('userGroups', priv);
 			}
-		}
-		else{
+		} else {
 			next(new RequestError(404, 'user_not_found'));
 			return;
 		}
 	}
 	else if( req.query.action === 'delete'){
 		logger.debug('Deleting a user');
-		if (user!= null){
+		if (user!= null) {
 			await user.destroy();
-		}
-		else{
+		} else {
 			next(new RequestError(404, 'user_not_found'));
 			return;
 		}
@@ -556,11 +554,12 @@ const postProjectName: Middleware = async(
 		if (project != null) {
 			project.destroy();
 		} else {
-			next(new RequestError(400, 'project_not_found'));
+			next(new RequestError(404, 'project_not_found'));
 		}
 	} else if (req.query.action === 'update_grant') {
+		logger.debug('Project grant update requested');
 		if (project == null) {
-			next(new RequestError(400, 'project_not_found'));
+			next(new RequestError(404, 'project_not_found'));
 		} else {
 			const ujp: UserJoinsProject | null = await UserJoinsProject.findOne({
 				include: [{all: true}],
@@ -570,9 +569,11 @@ const postProjectName: Middleware = async(
 				}
 			});
 			if (ujp != null) {
+				logger.debug(`Removing ${req.body.username}'s old privileges in ${project.name}`); 
 				await ujp.destroy();
 			}
 			if (req.body.access_level !== 'none') {
+				logger.debug(`Adding ${req.body.access_level} privileges for ${req.body.username} in ${project.name}`);
 				try {
 					let ujp: UserJoinsProject = new UserJoinsProject({
 						username: req.body.username,
@@ -581,9 +582,10 @@ const postProjectName: Middleware = async(
 					});
 					await ujp.save();
 				} catch (err) {
-					next(new RequestError(400, 'invalid_access_level'));
+					next(new RequestError(400, 'invalid_project_privilege'));
 				}
 			}
+			logger.debug('Privileges updated');
 		}
 	} else {
 		if (project == null) {
