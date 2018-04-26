@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import { logger } from './logger';
+import { RemoteResolver, remote } from './profiler';
 
 logger.info('Starting up server');
 logger.info('Creating necessary directories');
@@ -153,8 +154,11 @@ async function reset(): Promise<void> {
 			username: 'hafeez'
 		}
 	});
-
 }
+
+remote('Reset DB', (res: RemoteResolver): void => {
+	reset().then(() => res({ success: true }));
+});
 
 // tslint:disable:no-floating-promises
 (async(): Promise<void> => {
@@ -166,7 +170,7 @@ async function reset(): Promise<void> {
 		process.exit(1);
 	}
 
-	//await reset();
+	// await reset();
 
 	logger.info('Booting ExpressJS server');
 	app.listen(port, (err: Error) => {

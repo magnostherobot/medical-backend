@@ -569,7 +569,7 @@ const postProjectName: Middleware = async(
 				}
 			});
 			if (ujp != null) {
-				logger.debug(`Removing ${req.body.username}'s old privileges in ${project.name}`); 
+				logger.debug(`Removing ${req.body.username}'s old privileges in ${project.name}`);
 				await ujp.destroy();
 			}
 			if (req.body.access_level !== 'none') {
@@ -851,7 +851,7 @@ const postFilePath: Middleware = async(
 
 		if (res.locals.file) {
 			/* tslint:disable-next-line:curly */
-			if (req.query.action) switch (req.query.action) {
+			if (req.query.action && req.query.action !== 'upload') switch (req.query.action) {
 				case 'set_metadata': {
 					res.locals.file.metadata = JSON.parse(req.body.toString());
 					await res.locals.file.save();
@@ -934,7 +934,6 @@ const postFilePath: Middleware = async(
 				 }
 			}
 		} else {
-			/* tslint:disable-next-line:curly */
 			if (req.query.action) {
                 switch (req.query.action) {
     				case 'mkdir': {

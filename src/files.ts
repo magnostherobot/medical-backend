@@ -17,7 +17,7 @@ import { SupportedViews } from './conversion/types/helpers'
 import { CZITileRequest } from './conversion/types/customPyramidIndex'
 const readDir = require('util').promisify(fs.readdir);
 const readFile = require('util').promisify(fs.readFile);
-const cache = require('redis').createClient(13337);
+const cache = require('redis').createClient();
 cache.on("error", function(err: any) {
 	logger.error("Redis_Error: " + err);
 })
@@ -127,10 +127,11 @@ export const tempPath: (file: string, project: string) => string = (
 ): string =>
 	`${TEMP_BASE_DIRECTORY}/${uuid.generate()}`;
 
-export const saveFile: (data: Buffer, projectName: string,
-	fileId: string, query: Query) => Promise<void> =
-	async(data: Buffer, projectName: string,
-	fileId: string, query: Query): Promise<void> => {
+export const saveFile: (
+	data: Buffer, projectName: string, fileId: string, query: Query
+) => Promise<void> = async(
+	data: Buffer, projectName: string, fileId: string, query: Query
+): Promise<void> => {
 	// Ensure file exists
 	await fs.ensureFile(path(fileId, projectName));
 	// Truncate to offset
@@ -141,11 +142,11 @@ export const saveFile: (data: Buffer, projectName: string,
 	// Open file
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	// Write data to file
-	fs.write(fd, data, 0, data.length, Number(fuckingOffset), (err: any, bytesWritten: number, buffer: Buffer) => {
-		if (err) {
-			logger.failure("Error while writing to file: " + err);
-		}
-	});
+	try {
+		await fs.write(fd, data, 0, data.length, Number(fuckingOffset));
+	} catch (err) {
+		logger.failure("Error while writing to file: " + err);
+	}
 };
 
 export const deleteFile: (fileId: string, projectName: string) => void = async(
