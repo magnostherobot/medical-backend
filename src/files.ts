@@ -405,7 +405,7 @@ export const views: {
 			if (!cacheHit) {
 				try {
 					let retMe: CZITileRequest;
-					if (file.originalMimetype.includes('tif')) {
+					if (file.originalMimetype.includes('tif') || file.originalMimetype.includes('leica')) {
 						retMe = await getSCNTile(
 							path(file.uuid, project.name, 'scalable_image') + '/',
 							query.channel_name,
@@ -415,7 +415,7 @@ export const views: {
 							query.height,
 							query.zoom_level
 						);
-					} else if (file.originalMimetype.includes('czi')) {
+					} else if (file.originalMimetype.includes('czi') || file.originalMimetype.includes('zeiss')) {
 						retMe = await getCZITile(
 							path(file.uuid, project.name, 'scalable_image') + '/',
 							query.channel_name,
