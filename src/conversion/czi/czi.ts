@@ -946,7 +946,7 @@ log.notice("CZI Convertor Received new file: " + fileName);
 
 
 // console.log("REMEMBER TO REMOVE THE MAIN CALL AGAIN MR GOOSEMUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-// main("/cs/scratch/cjd24/0701.czi", "/cs/scratch/cjd24/0701-extract");
+//main("/cs/scratch/cjd24/0702.czi", "/cs/scratch/cjd24/0702-extract");
 
 // /* tslint:disable */
 // async function main2() {
