@@ -12,7 +12,7 @@ let log: Logger;
 export const getTile: Function = async function(imageDir: string, cVal: string, x:number = 0, y:number = 0, w:number = 1024, h:number = 1024, zoom: number = 1): Promise<CZITileRequest> {
 	log = logger.for({component: "SCN Live Server", req: {imageDir: imageDir, cVal: cVal, x:x = 0, y:y = 0, w:w, h:h, zoom: zoom}});
 
-	let orig: SharpInstance = await sharp(imageDir + "ORIGINAL");
+	let orig: SharpInstance = await sharp(imageDir + "../ORIGINAL");
 
 	let id: string = uuid.generate();
 	let outputFileName: string = `${imageDir}tmp/${id}-out.png`
