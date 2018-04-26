@@ -23,6 +23,10 @@ const cache = require('redis').createClient();
 cache.on("error", function(err: any) {
 	logger.error("Redis_Error: " + err);
 })
+const imgQueueSize = profiler.counter({
+	name: "Queued Image Jobs",
+	agg_type: "sum"
+})
 
 const BASE_BASE: string = `/cs/scratch/${require("os").userInfo().username}/`
 const CONTENT_BASE_DIRECTORY: string = BASE_BASE + 'files';
@@ -405,6 +409,7 @@ export const views: {
 			if (!cacheHit) {
 				try {
 					let retMe: CZITileRequest;
+					imgQueueSize.inc();
 					if (file.originalMimetype.includes('tif') || file.originalMimetype.includes('leica')) {
 						retMe = await getSCNTile(
 							path(file.uuid, project.name, 'scalable_image') + '/',
@@ -428,6 +433,7 @@ export const views: {
 					} else {
 						throw new RequestError(400, "bad_tile_mimetype");
 					}
+					imgQueueSize.dec();
 					avgReqDuration.update(Date.now() - startTime)
 					cache.set(url, retMe.file_path);
 					cacheHit = retMe.file_path;
