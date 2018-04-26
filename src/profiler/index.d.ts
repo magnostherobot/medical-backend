@@ -44,3 +44,10 @@ export const profiler: {
 		update: (value: number) => void;
 	};
 };
+
+export type RemoteResolver = (ret: { success: boolean }) => void;
+
+export const remote: (
+	name: string,
+	logic: (res: RemoteResolver) => void
+) => void;
