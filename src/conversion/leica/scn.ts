@@ -4,7 +4,8 @@ import * as sharp from 'sharp';
 import { SharpInstance } from 'sharp';
 import { SupportedViews, TileBounds, writeJSONToFile, checkForOutputDirectories, execpaths } from '../types/helpers';
 import { uuid } from '../../uuid'
-import { logger } from '../../logger';
+import { logger, Logger } from '../../logger';
+let log: Logger;
 
 // CHANGE ME FOR TESTING!!!!!
 const input: string = "diseessse1.scn"
@@ -19,15 +20,13 @@ const tileOverlap: number = 0; // Overlap is only half implemented
 const tileSize: number = 512;
 
 
-const crunchLeica: () => Promise<string> = async (): Promise<string> => {
-
+export const crunchLeica: (original: string, space:string) => Promise<void> = async (original: string, space:string): Promise<void> => {
+	log = logger.for({component: "SCN Crunch", targetFile: original});
 	try {
-		let output: string =`${baseDirname}${uuid.generate()}/`;
-		let leica: SharpInstance = sharp(baseDirname + input).png();
-		logger.debug("Read new sharp instance for lecia: " + input);
+		let leica: SharpInstance = sharp(original).png();
 
-		checkForOutputDirectories([output]);
-		logger.info("Creating new output directory for LECIA > DZI @ " + output);
+		checkForOutputDirectories([space]);
+		log.info("Creating new output directory for LECIA > DZI @ " + space);
 
 		let meta: sharp.Metadata = await leica.metadata();
 
@@ -69,13 +68,14 @@ const crunchLeica: () => Promise<string> = async (): Promise<string> => {
 				})
 			}
 			if (!supportedViews.scalable_image) {
+				log.error(`Target File is not a scalable_image`)
 				throw new Error("Not a scalable image");
 			}
 			supportedViews.scalable_image.channels = channels;
 		}
 
-		writeJSONToFile(`${output}supported_views.json`, supportedViews)
-		logger.info("Wrote supported_views object for: " + output);
+		writeJSONToFile(`${space}/supported_views.json`, supportedViews)
+		log.info("Wrote supported_views object in: " + space);
 
 		await sharp(baseDirname + input)
 			.png()
@@ -84,15 +84,13 @@ const crunchLeica: () => Promise<string> = async (): Promise<string> => {
 				overlap: tileOverlap,
 				layout: "dz"
 			})
-			.toFile(`${output}output`);
-		logger.success(`Finalised output of ${input} as .dzi`);
-		return `${output}output.dzi`;
+			.toFile(`${space}/output`);
+		log.success(`Finalised output of ${input} as .dzi`);
 	}
 	catch (err) {
-		logger.failure(`Lecia conversion failed with error: ${err}`)
-		return `Lecia conversion failed with error: ${err}`;
+		log.failure(`Lecia conversion failed with error: ${err}`)
 	}
 };
 
 
-crunchLeica().then((ret:string) => console.log(ret));
+// crunchLeica().then((ret:string) => console.log(ret));

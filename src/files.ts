@@ -138,12 +138,11 @@ export const saveFile: (
 	if (!!query.truncate) {
 		await truncateFile(fileId, projectName, query.offset || 0);
 	}
-	const fuckingOffset: number = query.offset || 0;
 	// Open file
 	const fd: number = await fs.open(path(fileId, projectName), 'r+');
 	// Write data to file
 	try {
-		await fs.write(fd, data, 0, data.length, Number(fuckingOffset));
+		await fs.write(fd, data, 0, data.length, Number(query.offset || 0));
 	} catch (err) {
 		logger.failure("Error while writing to file: " + err);
 	}
