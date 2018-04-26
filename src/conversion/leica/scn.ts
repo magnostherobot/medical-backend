@@ -15,7 +15,7 @@ export const crunchLeica: (original: string, space:string) => Promise<void> = as
 	try {
 		let leica: SharpInstance = sharp(original).png();
 
-		checkForOutputDirectories([space, space + "tmp/"]);
+		checkForOutputDirectories([space, space + "/tmp/"]);
 		log.info("Creating new output directory for LECIA > DZI @ " + space);
 
 		let meta: sharp.Metadata = await leica.metadata();
