@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PGDIR=${1-"$HOME/pg"}
+PGDIR=${1-"$PWD/pg"}
 
 # read -p "Press [Enter] key to start Postgres (will already be running if you just got it) use ctl+c to cancel";
 echo "> Starting Server";

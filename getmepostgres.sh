@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PGDIR=${1-"$HOME/pg"}
+PGDIR=${1-"$PWD/pg"}
 
 echo "> Checking for postgres at $PGDIR";
 if [ -d "$PGDIR" ]; then

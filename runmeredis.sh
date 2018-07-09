@@ -1,3 +1,3 @@
 #!/bin/sh
 
-./redis-stable/src/redis-server redis-stable/redis.conf &
+./redis-stable/src/redis-server redis-stable/redis.conf --daemonize yes
