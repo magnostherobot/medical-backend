@@ -1,10 +1,12 @@
 #!/bin/bash
 
-PGDIR=${1-"$PWD/pg"}
+set -e
 
-# read -p "Press [Enter] key to start Postgres (will already be running if you just got it) use ctl+c to cancel";
-echo "> Starting Server";
-"$PGDIR/postgres/bin/pg_ctl" -D "$PGDIR/postgres/data/" -l POSTGRES_logfile start;
+BIN_DIR="$PWD/ext/bin"
+PG_DATA=${1-"$PWD/db"}
 
-# echo "> Conecting as admin user: " + ${USER};
-# "$PGDIR/postgres/bin/psql" -U ${USER} postgres;
+export PATH="$BIN_DIR:$PATH"
+
+echo "> Starting Server"
+"$BIN_DIR/pg_ctl" -D "$PG_DATA/postgres/data/" -l db.log start
+echo "> Server Started"

@@ -2,7 +2,7 @@
 node_modules/
 
 # compiled files
-dist/
+ext/
 
 # LaTeX output files
 *.aux
@@ -14,8 +14,7 @@ dist/
 *.blg
 
 # PostreSQL log files
-POSTGRES_logfile
-*logfile
+*.log
 
 # Vim swap files
 *.sw*
@@ -28,8 +27,3 @@ docs/
 
 # project files
 files/*
-
-# redis folder
-redis*
-
-report/deliverable-3/main.synctex.gz
