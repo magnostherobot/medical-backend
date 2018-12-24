@@ -27,3 +27,6 @@ docs/
 
 # project files
 files/*
+
+# Mac metadata files
+*.DS_Store
