@@ -2,12 +2,3 @@ language: node_js
 
 cache:
     yarn: true
-
-before_install:
-    - export MAKEFLAGS="$MAKEFLAGS -j$(nproc)"
-
-install:
-    - ./install.sh
-
-before_script:
-    - export PATH="$PWD/ext/bin:$PATH"
